@@ -111,7 +111,8 @@ namespace sibr {
 			return VideoVolume(mat.clone(), w, h);
 		}
 
-		template<typename U, uint M = N> VideoVolume<U, M> convertTo() const {
+		template<typename U, uint M = N>
+		VideoVolume<U, M> convertTo() const {
 			VideoVolume<U, M> out(l, w, h);
 			for (int f = 0; f < l; ++f) {
 				cvConvertMatTo<U, M>(frame(f)).copyTo(out.frame(f));
@@ -129,8 +130,8 @@ namespace sibr {
 		void scale(double d) {
 			mat *= d;
 		}
-		template<typename T>
-		void add(const VideoVolume<T,N> & other) {
+		template<typename U>
+		void add(const VideoVolume<U,N> & other) {
 			cv::add(mat, other.mat, mat, cv::noArray(), cv_type);
 		}
 
@@ -190,8 +191,8 @@ namespace sibr {
 			return out;
 		}
 
-		template<typename T, uint M>
-		void applyMaskInPlace(const VideoVolume<T, M> & mask) {
+		template<typename U, uint M>
+		void applyMaskInPlace(const VideoVolume<U, M> & mask) {
 			for (int t = 0; t < l; ++t) {
 				cv::multiply(cvConvertMatTo<float, N>(frame(t)), cvConvertMatTo<float, N>(mask.frame(t)), frame(t), 1 / 255.0);
 			}
@@ -629,11 +630,8 @@ namespace sibr {
 
 		std::vector<VideoVolume<T, 3>> out;
 
-		//std::cout << " num_levels : " << num_levels << std::endl;
-
-		sibr::Volume3f current_v = vid.convertTo<float>(), down, up;
+		sibr::Volume3f current_v = vid.template convertTo<float>(), down, up;
 		for (int i = 0; i < (int)num_levels - 1; ++i) {
-			//std::cout << i << " " << current_v.l << std::endl;
 			down = current_v.pyrDownTemporal();
 			up = down.pyrUpTemporal(current_v.l);
 			//current_v.play(30, { 1200,800 });
@@ -653,7 +651,7 @@ namespace sibr {
 	sibr::VideoVolume<T,3> collapseLaplacianPyramidTemporal(const std::vector<sibr::VideoVolume<T, 3>>& pyr, double shift,
 		bool debug = false)
 	{
-		sibr::Volume3f v = pyr.back().convertTo<float>();
+		sibr::Volume3f v = (VideoVolume<T, 3>) pyr.back().convertTo();
 		for (int i = (int)pyr.size() - 2; i >= 0; --i) {
 			if (debug) {
 				v.play();
@@ -855,7 +853,7 @@ namespace sibr {
 
 	public:
 		Histogram(const Value & _min, const Value & _max, uint _numBins = 100)
-			: min(_min.cast<double>()), max(_max.cast<double>()), numBins(_numBins) {
+			: min(_min.template cast<double>()), max(_max.template cast<double>()), numBins(_numBins) {
 			Range diff = max - min;
 			scaling = numBins * diff.cwiseInverse();
 			bin_range = diff / numBins;
@@ -938,10 +936,10 @@ namespace sibr {
 
 		uint getModeIndice() const {
 			uint mode, mode_size = 0;
-			for (const auto & key_val : bins) {
-				if (key_val.second > mode_size) {
-					mode_size = key_val.second;
-					mode = key_val.first;
+			for (const auto & [key, val] : bins) {
+				if (val > mode_size) {
+					mode_size = val;
+					mode = key;
 				}
 			}
 			return mode;
@@ -1112,7 +1110,7 @@ namespace sibr {
 	};
 
 	template<typename FunType, typename... OtherArgsTypes>
-	static void VideoUtils::loopAndDisplay(cv::VideoCapture & cap, float ratio, FunType f, const OtherArgsTypes &... args)
+	void VideoUtils::loopAndDisplay(cv::VideoCapture & cap, float ratio, FunType f, const OtherArgsTypes &... args)
 	{
 		cv::Mat next;
 		static_assert(std::is_same_v<decltype(f(next, args...)), cv::Mat>, "FunType must return cv::Mat");

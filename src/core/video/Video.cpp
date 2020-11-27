@@ -11,7 +11,8 @@
 
 
 #include "Video.hpp"
-#include "VideoUtils.hpp"
+#include <opencv2/videoio.hpp>
+// #include "VideoUtils.hpp"
 
 namespace sibr
 {
@@ -102,7 +103,8 @@ namespace sibr
 		cv::Mat volume(L, N, CV_8UC1);
 		setCurrentFrame(starting_frame);
 		for (int i = 0; i < L; ++i) {
-			cap >> volume.row(i).reshape(3, h);
+			cv::Mat mat = volume.row(i).reshape(3, h);
+			cap >> mat;
 		}
 		setCurrentFrame(0);
 

@@ -66,6 +66,8 @@ namespace sibr
 		RENDERMODE_STEREO_QUADBUFFER
 	};
 
+
+
 	/** @} */
 
 	/* Parse and store the command line arguments specified by the user.
@@ -154,6 +156,7 @@ namespace sibr
 		bool getInternal(const std::string & key, T & val) const {
 			if (contains(key) && (N + 1)*NumberOfArg<T> <= args.at(key).size()) {
 				val = ValueGetter<T>::get(args.at(key), N);
+
 				return true;
 			} else {
 				return false;
@@ -179,20 +182,20 @@ namespace sibr
 	public:
 
 		/// \return a reference to the argument value
-		operator const T &() const { return value; }
+		operator const T &() const { return _value; }
 
 		/// \return a reference to the argument value
-		const T & get() const { return value; }
+		const T & get() const { return _value; }
 
 		/** Copy operator.
 		\param t the value to copy
 		\return a reference to the argument value
 		*/
-		T & operator=(const T & t) { value = t; return value; }
+		T & operator=(const T & t) { _value = t; return _value; }
 
 	protected:
 
-		T value; ///< the argument value.
+		T _value; ///< the argument value.
 	};
 
 	/** Template Arg class, will init itself in the defaut ctor using the command line args (ie. --key value)
@@ -210,7 +213,7 @@ namespace sibr
 		 *\param description help message description
 		 */
 		Arg(const std::string & key, const T & default_value, const std::string & description = "") {
-			value = CommandLineArgs::getGlobal().get<T>(key, default_value);
+			this->_value = CommandLineArgs::getGlobal().get<T>(key, default_value);
 			// \todo We could display default values if we had a common stringization method.
 			CommandLineArgs::getGlobal().registerCommand(key, description, ValueGetter<T>::toString(default_value));
 		}
@@ -230,9 +233,9 @@ namespace sibr
 		Arg(const std::string & key, const bool & default_value, const std::string & description = "") {
 			const bool arg_is_present = CommandLineArgs::getGlobal().get<bool>(key, false);
 			if (arg_is_present) {
-				value = !default_value;
+				_value = !default_value;
 			} else {
-				value = default_value;
+				_value = default_value;
 			}
 			const std::string defaultDesc = (default_value ? "enabled" : "disabled");
 			CommandLineArgs::getGlobal().registerCommand(key, description, defaultDesc);
@@ -254,7 +257,7 @@ namespace sibr
 		 */
 		Arg(const std::string & key, const std::string & description = "") {
 			const bool arg_is_present = CommandLineArgs::getGlobal().get<bool>(key, false);
-			value = arg_is_present;
+			_value = arg_is_present;
 			CommandLineArgs::getGlobal().registerCommand(key, description, "disabled");
 		}
 
@@ -272,23 +275,23 @@ namespace sibr
 		 */
 		RequiredArgBase(const std::string & _key, const std::string & description = "") : key(_key) {
 			if (CommandLineArgs::getGlobal().contains(key)) {
-				value = CommandLineArgs::getGlobal().get<T>(key, value);
+				_value = CommandLineArgs::getGlobal().get<T>(key, _value);
 				wasInit = true;
 			}
 			CommandLineArgs::getGlobal().registerRequiredCommand(key, description);
 		}
 
 		/// \return a reference to the argument value
-		operator const T &() const { checkInit(); return value; }
+		operator const T &() const { checkInit(); return _value; }
 
 		/// \return a reference to the argument value
-		const T & get() const { checkInit(); return value; }
+		const T & get() const { checkInit(); return _value; }
 
 		/** Copy operator.
 		\param t the value to copy
 		\return a reference to the argument value
 		*/
-		T & operator=(const T & t) { value = t; wasInit = true; return value; }
+		T & operator=(const T & t) { _value = t; wasInit = true; return _value; }
 
 		/// \return true if the argument was given
 		const bool & isInit() const { return wasInit; }
@@ -304,7 +307,7 @@ namespace sibr
 		}
 
 		std::string key; ///< Argument key.
-		T value; ///< Argument value.
+		T _value; ///< Argument value.
 		bool wasInit = false; ///< Was the argument initialized.
 	};
 
@@ -324,9 +327,9 @@ namespace sibr
 		
 	public:
 		using RequiredArgBase<std::string>::RequiredArgBase;
-		std::string & operator=(const std::string & t) { value = t; wasInit = true; return value; }
+		std::string & operator=(const std::string & t) { _value = t; wasInit = true; return _value; }
 
-		operator const char*() const { checkInit(); return value.c_str(); }
+		operator const char*() const { checkInit(); return _value.c_str(); }
 	};
 
 	/// Hierarchy of Args classes that can be seens as modules, and can be combined using virtual inheritance, with no duplication of code so derived Args has no extra work to do
@@ -510,27 +513,27 @@ namespace sibr
 		}
 	};
 
-	/// Specialization of value getter for sibr::Vectors.
+	/// Specialization of value getter for sibr::Vectors & eigen matrices.
 	/// \ingroup sibr_system
-	template<typename T, uint N>
-	struct ValueGetter<sibr::Vector<T, N>> {
-		static sibr::Vector<T, N> get(const std::vector<std::string> & values, uint n) {
-			sibr::Vector<T, N> out;
-			for (uint i = 0; i < N; ++i) {
-				out[i] = ValueGetter<T>::get(values, n*N*NumberOfArg<T> + i);
+	template<typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>
+	struct ValueGetter<Eigen::Matrix<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>> {
+		static Eigen::Matrix<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols> get(const std::vector<std::string> & values, uint n) {
+			Eigen::Matrix<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols> out;
+			for (uint i = 0; i < _Rows*_Cols; ++i) {
+				out[i] = ValueGetter<_Scalar>::get(values, n*_Rows*_Cols*NumberOfArg<_Scalar> + i);
 			}
 			return out;
 		}
-		static std::string toString(const sibr::Vector<T, N> & value) {
+		static std::string toString(const Eigen::Matrix<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols> & value) {
 			std::string res = "(";
-			for (uint i = 0; i < N; ++i) {
-				res.append(ValueGetter<T>::toString(value[i]));
-				if(i != N-1) {
+			for (uint i = 0; i < _Rows*_Cols; ++i) {
+				res.append(ValueGetter<_Scalar>::toString(value[i]));
+				if(i != _Rows*_Cols-1) {
 					res.append(",");
 				}
 			}
 			return res + ")";
 		}
 	};
-
 } // namespace sibr
+

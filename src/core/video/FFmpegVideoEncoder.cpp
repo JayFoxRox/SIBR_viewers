@@ -10,8 +10,7 @@
  */
 
 
-#include "FFMpegVideoEncoder.hpp"
-
+#include "FFmpegVideoEncoder.hpp"
 
 extern "C"
 {

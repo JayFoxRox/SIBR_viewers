@@ -625,7 +625,6 @@ function(install_runtime installedFilePathTargetAppToResolve)
 		]]
 	   COMPONENT ${inst_run_COMPONENT} CONFIGURATIONS ${CONFIG_TYPE}
 	)
-	
 
 endfunction()
 
@@ -751,9 +750,8 @@ macro(ibr_install_target target)
 	endif()
 	
 	if(DEFINED CMAKE_BUILD_TYPE)						## for make/nmake based
-		string(TOUPPER ${CMAKE_BUILD_TYPE} CONFIG_TYPES_UC)
-		set_target_properties(${target} PROPERTIES ${CONFIG_TYPES_UC}_POSTFIX 	"${CMAKE_${CONFIG_TYPES_UC}_POSTFIX}")
-		get_target_property(CURRENT_TARGET_BUILD_TYPE_POSTFIX ${target} ${CONFIG_TYPES_UC}_POSTFIX)
+		set_target_properties(${target} PROPERTIES ${CMAKE_BUILD_TYPE}_POSTFIX 	"${CMAKE_${CMAKE_BUILD_TYPE}_POSTFIX}")
+		get_target_property(CURRENT_TARGET_BUILD_TYPE_POSTFIX ${target} ${CMAKE_BUILD_TYPE}_POSTFIX)
 	endif()
 	foreach(CONFIG_TYPES ${CMAKE_CONFIGURATION_TYPES}) 	## for multi config types (MSVC based)
 		string(TOUPPER ${CONFIG_TYPES} CONFIG_TYPES_UC)
@@ -763,12 +761,16 @@ macro(ibr_install_target target)
 
 	## Specify default installation rules
 	if(DEFINED CMAKE_BUILD_TYPE)						## for make/nmake based
-		string(TOUPPER ${CMAKE_BUILD_TYPE} CONFIG_TYPES_UC)
 		install(TARGETS	${target}
 			CONFIGURATIONS ${CMAKE_BUILD_TYPE}
 			LIBRARY		DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY_${CMAKE_BUILD_TYPE}} ${installCompArg}
 			ARCHIVE		DESTINATION ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${CMAKE_BUILD_TYPE}} ${installCompArg}
 			RUNTIME 	DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_${CMAKE_BUILD_TYPE}} ${installCompArg}
+		)
+		install(TARGETS	${target}
+			CONFIGURATIONS ${CMAKE_BUILD_TYPE}
+			LIBRARY		DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_${CMAKE_BUILD_TYPE}} ${installCompArg}
+			ARCHIVE		DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_${CMAKE_BUILD_TYPE}} ${installCompArg}
 		)
 	endif()
 	foreach(CONFIG_TYPES ${CMAKE_CONFIGURATION_TYPES}) 	## for multi config types (MSVC based)
@@ -778,6 +780,11 @@ macro(ibr_install_target target)
 			LIBRARY		DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY_${CONFIG_TYPES_UC}} ${installCompArg}
 			ARCHIVE		DESTINATION ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${CONFIG_TYPES_UC}} ${installCompArg}
 			RUNTIME 	DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_${CONFIG_TYPES_UC}} ${installCompArg}
+		)
+		install(TARGETS	${target}
+			CONFIGURATIONS ${CONFIG_TYPES}
+			LIBRARY		DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_${CONFIG_TYPES_UC}} ${installCompArg}
+			ARCHIVE		DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_${CONFIG_TYPES_UC}} ${installCompArg}
 		)
 	endforeach()
 
@@ -819,7 +826,7 @@ macro(ibr_install_target target)
 					${installCompArg}
 					PLUGINS	## will be installed
 										${ibrInst${target}_PLUGINS}
-					DIRS				${CMAKE_RUNTIME_OUTPUT_DIRECTORY_${CONFIG_TYPES_UC}}
+					DIRS				${CMAKE_RUNTIME_OUTPUT_DIRECTORY_${CMAKE_BUILD_TYPE}}
 										${ibrInst${target}_DIRS}
 				)
 			endif()

@@ -1767,15 +1767,15 @@ namespace sibr
 		int n_edges;
 
 		std::string line;
-		std::getline(stream, line);
-		std::getline(stream, line);
+		safeGetline(stream, line);
+		safeGetline(stream, line);
 		std::istringstream iss(line);
 
 		iss >> n_vert >> n_faces >> n_edges;
 
 		_vertices.resize(n_vert);
 		for (int v = 0; v < n_vert; ++v) {
-			std::getline(stream, line);
+			safeGetline(stream, line);
 			std::istringstream lineStream(line);
 
 			lineStream >> _vertices[v][0] >> _vertices[v][1] >> _vertices[v][2];
@@ -1786,7 +1786,7 @@ namespace sibr
 		_triangles.reserve(3 * n_faces);
 		int face_size;
 		for (int t = 0; t < n_faces; ++t) {
-			std::getline(stream, line);
+			safeGetline(stream, line);
 			std::istringstream lineStream(line);
 
 			lineStream >> face_size;

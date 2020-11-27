@@ -31,7 +31,9 @@ MACRO(FFMPEG_FIND varname shortname headername)
 	FIND_PATH(FFMPEG_${varname}_INCLUDE_DIRS 
 		NAMES "lib${shortname}/${headername}" 
 		PATHS
-			"${FFMPEG_DIR}/include" # modify this to adapt according to OS/compiler			
+			"${FFMPEG_DIR}/include" # modify this to adapt according to OS/compiler	
+			"/usr/include"
+			"/usr/include/ffmpeg"		
 	)
 		
 	#Add libraries
@@ -42,12 +44,16 @@ MACRO(FFMPEG_FIND varname shortname headername)
 			NAMES ${shortname}
 			PATHS
 				${FFMPEG_DIR}/lib
+				"/usr/lib"
+				"/usr/lib64"
+				"/usr/local/lib"
+				"/usr/local/lib64"
 		)
 
 		# set libraries and other variables
 		SET(FFMPEG_${varname}_FOUND 1)
 		SET(FFMPEG_${varname}_INCLUDE_DIRS ${FFMPEG_${varname}_INCLUDE_DIR})
-		SET(FFMPEG_${varname}_LIBS ${FFMPEG_${varname}_LIBRARIES}) 
+		SET(FFMPEG_${varname}_LIBS ${FFMPEG_${varname}_LIBRARIES})
 	ENDIF()
  ENDMACRO(FFMPEG_FIND)
 

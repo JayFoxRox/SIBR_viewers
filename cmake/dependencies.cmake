@@ -28,6 +28,8 @@ Win3rdPartyGlobalCacheAction()
 
 find_package(OpenGL REQUIRED)
 
+set(OpenGL_GL_PREFERENCE "GLVND")
+
 ############
 ## Find GLEW
 ############
@@ -45,7 +47,7 @@ elseif (MSVC14)
             CHECK_CACHED_VAR GLEW_STATIC_LIBRARY_DEBUG         PATH "glew-2.0.0/${LIB_BUILT_DIR}/glew32sd.lib"
         )
 else ()
-    message("There is no provided GLEW library for your version of MSVC")
+    message("There is no provided GLEW library for your compiler, relying on find_package to find it")
 endif()
 sibr_addlibrary(NAME GLEW #VERBOSE ON
     MSVC11 "https://repo-sam.inria.fr/fungraph/dependencies/ibr-common/win3rdParty-MSVC11-splitted%20version/glew-1.10.0.7z"
@@ -74,7 +76,7 @@ elseif (MSVC14)
         CHECK_CACHED_VAR ASSIMP_DIR PATH "Assimp-4.1.0"
     )
 else ()
-    message("There is no provided ASSIMP library for your version of MSVC")
+    message("There is no provided ASSIMP library for your compiler, relying on find_package to find it")
 endif()
 
 sibr_addlibrary(NAME ASSIMP #VERBOSE ON
@@ -97,7 +99,7 @@ sibr_addlibrary(NAME FFMPEG
     MSVC14 "https://repo-sam.inria.fr/fungraph/dependencies/ibr-common/win3rdParty-MSVC15-splitted%20version/ffmpeg-4.0.2-win64-win3rdParty.7z"
     SET CHECK_CACHED_VAR FFMPEG_DIR PATH ${FFMPEG_WIN3RDPARTY_DIR}
 )
-find_package(FFMPEG QUIET)
+find_package(FFMPEG)
 include_directories(${FFMPEG_INCLUDE_DIR})
 
 ###################
@@ -154,7 +156,7 @@ if (WIN32)
             set(BOOST_MSVC14_ZIP "boost-1.71.7z")
         endif()
     else ()
-        message("There is no provided Boost library for your version of MSVC")
+        message("There is no provided Boost library for your compiler, relying on find_package to find it")
     endif()
 
     sibr_addlibrary(NAME Boost VCID TIMEOUT 600 #VERBOSE ON
@@ -170,7 +172,8 @@ if (WIN32)
     endif()
 endif()
 
-find_package(Boost 1.71.0 REQUIRED COMPONENTS ${Boost_REQUIRED_COMPONENTS})
+#find_package(Boost 1.71.0 REQUIRED COMPONENTS ${Boost_REQUIRED_COMPONENTS})
+find_package(Boost 1.65.0 REQUIRED COMPONENTS ${Boost_REQUIRED_COMPONENTS})
 
 if(WIN32)
     add_definitions(/EHsc)
@@ -193,11 +196,6 @@ link_directories(${BOOST_LIBRARYDIR} ${Boost_LIBRARY_DIRS})
 ##############
 find_package(OpenMP)
 
-sibr_addlibrary(
-    NAME NativeFileDialog
-    MSVC14 "https://repo-sam.inria.fr/fungraph/dependencies/sibr/~0.9/nfd.7z"  
-)
-
 ##############
 ## Find OpenCV
 ##############
@@ -210,7 +208,7 @@ elseif (MSVC14)
         CHECK_CACHED_VAR OpenCV_DIR PATH "opencv-4.5.0/build" ## see OpenCVConfig.cmake
     )
 else ()
-    message("There is no provided OpenCV library for your version of MSVC")
+    message("There is no provided OpenCV library for your compiler, relying on find_package to find it")
 endif()
 
 sibr_addlibrary(NAME OpenCV #VERBOSE ON
@@ -219,7 +217,7 @@ sibr_addlibrary(NAME OpenCV #VERBOSE ON
         MSVC14 "https://repo-sam.inria.fr/fungraph/dependencies/sibr/~0.9/opencv-4.5.0.7z"    # opencv compatible with msvc14 and with contribs
         SET ${opencv_set_arguments}
     )
-find_package(OpenCV REQUIRED) ## Use directly the OpenCVConfig.cmake provided
+find_package(OpenCV 4.5 REQUIRED) ## Use directly the OpenCVConfig.cmake provided
 
     ##https://stackoverflow.com/questions/24262081/cmake-relwithdebinfo-links-to-debug-libs
 set_target_properties(${OpenCV_LIBS} PROPERTIES MAP_IMPORTED_CONFIG_RELWITHDEBINFO RELEASE)
@@ -242,19 +240,26 @@ endif()
 ## Find GLFW
 ###################
 sibr_addlibrary(
-    NAME GLFW
+    NAME glfw3
     MSVC11 "https://repo-sam.inria.fr/fungraph/dependencies/ibr-common/win3rdParty-MSVC15-splitted%20version/glfw-3.2.1.7z"
     MSVC14 "https://repo-sam.inria.fr/fungraph/dependencies/ibr-common/win3rdParty-MSVC15-splitted%20version/glfw-3.2.1.7z"     # TODO SV: provide a valid version if required
+    SET CHECK_CACHED_VAR glfw3_DIR PATH "glfw-3.2.1"
 )
+find_package(glfw3 REQUIRED)
 
 sibr_gitlibrary(TARGET imgui
     GIT_REPOSITORY 	"https://gitlab.inria.fr/sibr/libs/imgui.git"
-    GIT_TAG			"e7f0fa31b9fa3ee4ecd2620b9951f131b4e377c6"
+    GIT_TAG			"90acee4883a56f22992d2a86e0c7c7568d277a82"
+)
+
+sibr_gitlibrary(TARGET nativefiledialog
+    GIT_REPOSITORY 	"https://gitlab.inria.fr/sibr/libs/nativefiledialog.git"
+    GIT_TAG			"06ffa119a318b46dcb0de82ca7e9f98492013bc3"
 )
 
 sibr_gitlibrary(TARGET mrf
     GIT_REPOSITORY 	"https://gitlab.inria.fr/sibr/libs/mrf.git"
-    GIT_TAG			"564e5e0b395c788d2f8b2cf4f879fed2493faea7"
+    GIT_TAG			"30c3c9494a00b6346d72a9e37761824c6f2b7207"
 )
 
 sibr_gitlibrary(TARGET nanoflann

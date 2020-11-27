@@ -36,7 +36,7 @@ namespace sibr
 
 	void CommandLineArgs::parseMainArgs(const int argc, const char * const * argv)
 	{
-		static const std::vector<std::string> acceptable_prexifes = { "--", "-" };
+		static const std::vector<std::string> acceptable_prefixes = { "--", "-" };
 
 		global.args.clear();
 
@@ -46,7 +46,7 @@ namespace sibr
 		for (int i = 1; i < argc; ++i) {
 			std::string arg = std::string(argv[i]);
 			bool new_arg = false;
-			for (const auto & prefix : acceptable_prexifes) {
+			for (const auto & prefix : acceptable_prefixes) {
 				if (arg.substr(0, prefix.size()) == prefix) {
 					current_arg = arg.substr(prefix.size());
 					new_arg = true;		
@@ -84,7 +84,6 @@ namespace sibr
 		}
 	}
 
-
 	void CommandLineArgs::displayHelp() const {
 		// Find the maximum length.
 		size_t maxLength = 0;
@@ -95,25 +94,10 @@ namespace sibr
 		const Path path = args.at("app_path")[0];
 		SIBR_LOG << "Help for " << path.filename().string() << ":" << std::endl;
 		for(const auto & command : commands) {
-			// Pad to align everything.
-			std::string req = "[required]";
-			std::string sec = command.second, xx;
-			bool tgreen = false;
-#ifdef WIN32 // green
-			if(sec.substr(sec.size()-req.size(), req.size()+1) == req) {
-				setupConsole();
-				printf("\x1b[32m");
-				tgreen = true;
-			}
-#endif
 			std::cout << "\t" << "--" << command.first;
+			// Pad to align everything.
 			std::cout << std::string(int(maxLength) - command.first.size() + 1, ' ');
 			std::cout << command.second << std::endl;
-
-#ifdef WIN32
-			if( tgreen )
-				restoreConsole();
-#endif
 		}
 		std::cout << std::endl;
 	}
@@ -146,5 +130,5 @@ namespace sibr
 		}
 	}
 
-} // namespace sirb
+} // namespace sibr
 

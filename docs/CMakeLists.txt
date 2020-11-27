@@ -13,7 +13,7 @@
 #########################################################
 option(BUILD_DOCUMENTATION "build doxygen documentation ('Build' DOCUMENTATION target, and find the compiled docs in install/docs/index.html)" ON)
 if(BUILD_DOCUMENTATION)
-	set(DOXYGEN_REQUIRED_VERSION "1.8.17")
+	set(DOXYGEN_REQUIRED_VERSION "1.8.10")
 	find_package(Doxygen)
 	if(NOT DOXYGEN_FOUND)
 		message(FATAL_ERROR "Doxygen not found, unable to generate documentation.")

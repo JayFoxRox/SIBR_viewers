@@ -452,7 +452,7 @@ namespace sibr
 		if (in.is_open())
 		{
 			int i = 0;
-			for (std::string line; std::getline(in, line); i++)
+			for (std::string line; safeGetline(in, line); i++)
 			{
 				int w = 1024, h = 768;
 				if (wh.size() > 0) {
@@ -656,7 +656,7 @@ namespace sibr
 
 		std::map<size_t, CameraParametersColmap> cameraParameters;
 
-		while (std::getline(camerasFile, line)) {
+		while (safeGetline(camerasFile, line)) {
 			if (line.empty() || line[0] == '#') {
 				continue;
 			}
@@ -691,7 +691,7 @@ namespace sibr
 			0, 0, -1;
 
 		int camid = 0;
-		while (std::getline(imagesFile, line)) {
+		while (safeGetline(imagesFile, line)) {
 			if (line.empty() || line[0] == '#') {
 				continue;
 			}
@@ -743,7 +743,7 @@ namespace sibr
 
 			++camid;
 			// Skip the observations.
-			std::getline(imagesFile, line);
+			safeGetline(imagesFile, line);
 		}
 
 

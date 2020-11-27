@@ -47,6 +47,7 @@ FIND_PATH(ASSIMP_INCLUDE_DIR
 		${ASSIMP_DIR}
 		## linux
 		/usr
+		/usr/include
 		/usr/local
 		/opt/local
 		## windows
@@ -58,7 +59,7 @@ FIND_PATH(ASSIMP_INCLUDE_DIR
 
 
 FIND_LIBRARY(ASSIMP_LIBRARY
-	NAMES assimp-vc140-mt
+	NAMES assimp-vc140-mt assimp
 	PATHS
 		${ASSIMP_DIR}/${ASSIMP_SEARCH_LIB}
 		${ASSIMP_DIR}/lib
@@ -68,6 +69,7 @@ FIND_LIBRARY(ASSIMP_LIBRARY
 		/usr/local/${ASSIMP_SEARCH_LIB}
 		/opt/local/${ASSIMP_SEARCH_LIB}
 		/usr/lib
+		/usr/lib64
 		/usr/local/lib
 		/opt/local/lib
 		## windows
@@ -84,9 +86,11 @@ set(ASSIMP_LIBRARIES ${ASSIMP_LIBRARY})
 
 if(ASSIMP_LIBRARY)
 	get_filename_component(ASSIMP_LIBRARY_DIR ${ASSIMP_LIBRARY} PATH)
-	file(GLOB ASSIMP_DYNAMIC_LIB "${ASSIMP_LIBRARY_DIR}/assimp*.dll")
-	if(NOT ASSIMP_DYNAMIC_LIB)
-		message("ASSIMP_DYNAMIC_LIB is missing... at ${ASSIMP_LIBRARY_DIR}")
+	if(WIN32)
+		file(GLOB ASSIMP_DYNAMIC_LIB "${ASSIMP_LIBRARY_DIR}/assimp*.dll")
+		if(NOT ASSIMP_DYNAMIC_LIB)
+			message("ASSIMP_DYNAMIC_LIB is missing... at ${ASSIMP_LIBRARY_DIR}")
+		endif()
 	endif()
 	set(ASSIMP_DYNAMIC_LIB ${ASSIMP_DYNAMIC_LIB} CACHE PATH "Windows dll location")
 endif()

@@ -58,17 +58,17 @@ namespace sibr
 		Window(const std::string & title, const sibr::Vector2i & margins, const WindowArgs & args = {}, const std::string& defaultSettingsFilename = "");
 
 		/** \return a pointer to the underlying GLFW window */
-		GLFWwindow *  GLFW(void);
+		GLFWwindow *		GLFW(void);
 
 		/** Activate the associated graphics context. */
-		inline void			makeContextCurrent(void);
+		void				makeContextCurrent(void);
 		/** \return the context currently in use (represented by a GLFW window) */
-		inline GLFWwindow *		getContextCurrent(void);
+		GLFWwindow *		getContextCurrent(void);
 		/** Deactivate the associated graphics context. */
-		inline void			makeContextNull(void);
+		void				makeContextNull(void);
 
 		/** Flush the graphics pipeline and perform rendering, displaying the result in the abck buffer. */
-		inline void			swapBuffer(void);
+		void				swapBuffer(void);
 
 		/** Reset window settings to default.
 		 */
@@ -133,40 +133,40 @@ namespace sibr
 		void				setVsynced(const bool vsync);
 
 		/** \return the window viewport */
-		const Viewport&	viewport(void) const;
+		const Viewport&		viewport(void) const;
 
 		/** Set the window viewport.
 		 *\param view the new viewport
 		 */
-		void			viewport(const Viewport& view);
+		void				viewport(const Viewport& view);
 
 		// From IRenderTarget
 		/** Get the backbuffer texture ID. unsuported. */
-		inline GLuint	texture(uint t = 0) const;
+		GLuint				texture(uint t = 0) const;
 
 		/** Get the backbuffer texture ID. unsuported. */
-		inline GLuint	handle(uint t = 0) const;
+		GLuint				handle(uint t = 0) const;
 
 		/** \return the window buffer ID (0) */
-		inline GLuint	fbo(void) const;
+		GLuint				fbo(void) const;
 
 		/** Bind the window buffer. */
-		inline void		bind(void);
+		void				bind(void);
 
 		/** Unind the window buffer. */
-		inline void		unbind(void);
+		void				unbind(void);
 
 		/** Clear the window buffer. */
-		inline void		clear(void);
+		void				clear(void);
 
 		/** \return the window buffer width */
-		inline uint		w(void) const;
+		uint				w(void) const;
 
 		/** \return the window buffer height */
-		inline uint		h(void) const;
+		uint				h(void) const;
 
 		/** \return the screens caling factor. */
-		inline float	scaling() const;
+		float				scaling() const;
 		
 		static int			contextId; ///< Last created window context ID (-1 initially).
 
@@ -208,15 +208,15 @@ namespace sibr
 	};
 
 	///// INLINES /////
-	void		Window::makeContextCurrent(void) {
+	inline void		Window::makeContextCurrent(void) {
 		glfwMakeContextCurrent(_glfwWin.get());
 	}
 
-	void		Window::makeContextNull(void) {
+	inline void		Window::makeContextNull(void) {
 		glfwMakeContextCurrent(0);
 	}
 
-	GLFWwindow *		Window::getContextCurrent(void) {
+	inline GLFWwindow *		Window::getContextCurrent(void) {
 		return glfwGetCurrentContext();
 	}
 
@@ -254,7 +254,7 @@ namespace sibr
 		return (uint)size().y();
 	}
 
-	inline float Window::scaling() const
+	inline float	Window::scaling() const
 	{
 		return _scaling;
 	}
