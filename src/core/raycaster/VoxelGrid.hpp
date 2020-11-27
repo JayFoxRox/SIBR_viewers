@@ -285,7 +285,8 @@ namespace sibr
 		\return a reference to the voxel
 		*/
 		CellType & operator()(int x, int y, int z) {
-			return data[getCellId({ x,y,z })];
+			sibr::Vector3i v(x,y,z);
+			return data[getCellId(v)];
 		}
 
 		/** Get voxel at given integer 3D coordinates.
@@ -295,7 +296,8 @@ namespace sibr
 		\return a reference to the voxel
 		*/
 		const CellType & operator()(int x, int y, int z) const {
-			return data[getCellId({ x,y,z })];
+			sibr::Vector3i v(x,y,z);
+			return data[getCellId(v)];
 		}
 
 		/** Get voxel at given integer 3D coordinates.

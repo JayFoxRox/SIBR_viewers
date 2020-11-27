@@ -602,7 +602,7 @@ namespace sibr {
 				ImGui::Checkbox(("##active_" + mesh.name).c_str(), &mesh.active);
 				ImGui::SameLine();
 				if (ImGui::Button(("OnlyMe##" + mesh.name).c_str())) {
-					for (auto & other_it = list_meshes.begin(); other_it != list_meshes.end(); ++other_it) {
+					for (auto other_it = list_meshes.begin(); other_it != list_meshes.end(); ++other_it) {
 						other_it->active = (other_it == mesh_it);
 					}
 				}

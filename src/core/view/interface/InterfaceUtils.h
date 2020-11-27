@@ -20,6 +20,8 @@
 
 #include <string>
 
+#include <imgui/imgui.h>
+
 namespace sibr {
 
 	/**

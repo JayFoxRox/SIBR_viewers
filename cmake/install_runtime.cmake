@@ -750,7 +750,7 @@ macro(ibr_install_target target)
         installTargetProject(${target} ${ibrInst${target}_COMPONENT})
 	endif()
 	
-	if(DEFINED CMAKE_BUILD_TYPE)						## for make/nmake based
+	if(DEFINED CMAKE_BUILD_TYPE AND DEFINED CONFIG_TYPES_UC)						## for make/nmake based
 		string(TOUPPER ${CMAKE_BUILD_TYPE} CONFIG_TYPES_UC)
 		set_target_properties(${target} PROPERTIES ${CONFIG_TYPES_UC}_POSTFIX 	"${CMAKE_${CONFIG_TYPES_UC}_POSTFIX}")
 		get_target_property(CURRENT_TARGET_BUILD_TYPE_POSTFIX ${target} ${CONFIG_TYPES_UC}_POSTFIX)
@@ -762,7 +762,7 @@ macro(ibr_install_target target)
 	endforeach()
 
 	## Specify default installation rules
-	if(DEFINED CMAKE_BUILD_TYPE)						## for make/nmake based
+	if(DEFINED CMAKE_BUILD_TYPE AND DEFINED CONFIG_TYPES_UC)						## for make/nmake based
 		string(TOUPPER ${CMAKE_BUILD_TYPE} CONFIG_TYPES_UC)
 		install(TARGETS	${target}
 			CONFIGURATIONS ${CMAKE_BUILD_TYPE}

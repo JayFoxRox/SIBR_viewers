@@ -47,7 +47,6 @@ ibr_install_target(${PROJECT_NAME}
     INSTALL_PDB                         ## mean install also MSVC IDE *.pdb file (DEST according to target type)
 	SHADERS ${SHADERS}
 	RSC_FOLDER ${SIBR_PROJECT}
-
-    #STANDALONE  ${INSTALL_STANDALONE}   ## mean call install_runtime with bundle dependencies resolution
+    STANDALONE  ${INSTALL_STANDALONE}   ## mean call install_runtime with bundle dependencies resolution
     COMPONENT   ${PROJECT_NAME}_install ## will create custom target to install only this project
 )

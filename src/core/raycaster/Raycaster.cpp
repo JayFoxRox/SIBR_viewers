@@ -335,7 +335,8 @@ namespace sibr
 					},
 					sibr::Vector3f(rh.hit.Ng_x[r], rh.hit.Ng_y[r], rh.hit.Ng_z[r]),
 					RayHit::Primitive{
-						(uint)rh.hit.primID[r] ,(uint)rh.hit.geomID[r],(uint)rh.hit.instID[r]
+						// Considering RTC_MAX_INSTANCE_LEVEL_COUNT to be 1 (Single-level instancing); see https://www.embree.org/api.html#rtchit
+						(uint)rh.hit.primID[r] ,(uint)rh.hit.geomID[r],(uint)rh.hit.instID[0][r]
 					}
 				};
 		}

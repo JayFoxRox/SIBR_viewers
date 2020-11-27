@@ -14,7 +14,7 @@ PROJECT(sibr_projects)
 
 ## Check the cmake version
 set(REQUIRED_VERSION "3.16.0")
-set(CHECKED_VERSION "3.18.4")
+set(CHECKED_VERSION "3.19.5")
 if (CMAKE_VERSION VERSION_LESS REQUIRED_VERSION)
     message(WARNING "Deprecated version of cmake. Please update to at least ${REQUIRED_VERSION} (${CHECKED_VERSION} recommended).")
 elseif (CMAKE_VERSION VERSION_GREATER CHECKED_VERSION)
@@ -35,6 +35,9 @@ git_describe(GIT_BRANCH SIBR_CORE_BRANCH GIT_COMMIT_HASH SIBR_CORE_COMMIT_HASH G
 
 message(STATUS "SIBR version :\n BRANCH ${SIBR_CORE_BRANCH}\n COMMIT_HASH ${SIBR_CORE_COMMIT_HASH}\n TAG ${SIBR_CORE_TAG}\n VERSION ${SIBR_CORE_VERSION}")
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 ## Allow C++11 + other flags
 include(CheckCXXCompilerFlag)
 get_filename_component(currentBuildTool ${CMAKE_BUILD_TOOL} NAME_WE)	# tool that can launch the native build system. returned value may be the full path
@@ -44,19 +47,20 @@ if(${currentBuildTool} MATCHES "(msdev|devenv|nmake|MSBuild)")
     set(CMAKE_CXX_STANDARD 14)
 	set(CMAKE_CXX_STANDARD_REQUIRED ON)
 	set(CMAKE_CXX_EXTENSIONS OFF)
-elseif(${currentBuildTool} MATCHES "(make|gmake)")
-    add_definitions("-Wall -Wno-unknown-pragmas -Wno-sign-compare -g -std=c++14 -D__forceinline=\"inline\ __attribute__((always_inline))\"")
+elseif(${currentBuildTool} MATCHES "(make|gmake|ninja)")
+#    add_definitions("-Wall -Wno-unknown-pragmas -Wno-sign-compare -g -std=c++14 -D__forceinline=\"inline\ __attribute__((always_inline))\"")
+	add_definitions("-fpermissive -fPIC -Wall -Wno-unknown-pragmas -Wno-sign-compare -g -std=c++17 -D__forceinline=\"inline\ __attribute__((always_inline))\"")
 	# CHECK_CXX_COMPILER_FLAG("-std=gnu++11" COMPILER_SUPPORTS_CXX11)
 	# CHECK_CXX_COMPILER_FLAG("-std=gnu++0x" COMPILER_SUPPORTS_CXX0X)
 	# if(COMPILER_SUPPORTS_CXX11)
-	# 	add_definitions(-std=gnu++11)
+	# 	add_definitions(-std=gnu++11 -fpermissive)
 	# elseif(COMPILER_SUPPORTS_CXX0X)
-	# 	add_definitions(-std=gnu++0x)
+	# 	add_definitions(-std=gnu++0x -fpermissive)
 	# else()
 	# 	message(SEND_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++14 support. Please use a different C++ compiler.")
 	# endif()
 elseif(APPLE) ## \todo TODO: do a better test and send error on unsupported c++14 compiler
-    add_definitions(-std=c++14 -stdlib=libc++)
+    add_definitions(-std=c++17 -stdlib=libc++)
 endif()
 
 set(INSTALL_STANDALONE ON)
