@@ -101,8 +101,13 @@ Our default interactive viewer has a main view running the algorithm and a top v
 
 @subsection sibr_checkout Checkout the code
 
-- Clone sibr_core repository (https://gitlab.inria.fr/sibr/sibr_core).
- @code git clone https://gitlab.inria.fr/sibr/sibr_core @endcode
+- Clone sibr_core repository (https://gitlab.inria.fr/sibr/sibr_core). We recommend that you checkout master branch, but you can also work with the develop branch (unstable).
+@code
+## through HTTPS
+git clone https://gitlab.inria.fr/sibr/sibr_core.git -b master
+## through SSH
+git clone git@gitlab.inria.fr:sibr/sibr_core.git -b master
+@endcode
 - You can add the projects' source code you would like to compile with SIBR, for this see @ref sibr_projects_add)
 @subsection sibr_configure_cmake Configuring the solution
 
