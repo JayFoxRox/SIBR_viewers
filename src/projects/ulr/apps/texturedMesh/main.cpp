@@ -33,6 +33,40 @@ struct TexturedMeshAppArgs :
 	Arg<bool> noScene = { "noScene" };
 };
 
+// order textured, mesh {obj} then mesh.ply
+std::string findCaprealMesh(const std::string& caprealDir)
+{
+	std::string texImgPath, meshPath, m1, m2, m3;
+	m1 = meshPath = caprealDir + "/textured.obj";
+	if (!fileExists(meshPath)) 
+		m2 = meshPath = caprealDir + "/mesh.obj";
+	if (!fileExists(meshPath)) 
+		m3 = meshPath = caprealDir + "/mesh.ply";
+	
+	if (!fileExists(meshPath))
+		SIBR_ERR << "Can't find mesh, tried: " << m1 << ":" << m2 << ":" << m3 << std::endl;
+
+	return meshPath;
+}
+
+// order texture, texture_u1_v1, textured, textured_u1_v1, mesh_u1_v1
+
+std::string findCaprealTexture(const std::string& caprealDir)
+{
+	std::string texImgPath, t1, t2, t3, t4;
+	t1 = texImgPath = caprealDir + "/texture.png";
+	if (!fileExists(texImgPath))
+		t2 = texImgPath = caprealDir + "/texture_u1_v1.png";
+	if (!fileExists(texImgPath)) 
+		t3 = texImgPath = caprealDir + "/mesh.png";
+	if (!fileExists(texImgPath)) 
+		t4 = texImgPath = caprealDir + "/mesh_u1_v1.png";
+	if (!fileExists(texImgPath))
+		SIBR_ERR << "Cant find texture, tried " << t1 << ":" << t2 << ":" << t3 << ":" << t4 << std::endl;
+	return texImgPath;
+}
+
+
 int main( int ac, char** av )
 {
 	{
@@ -79,39 +113,13 @@ int main( int ac, char** av )
 
 			// Cleanup; move the Scene ?
 			std::cerr << "Reading " << myArgs.dataset_path.get() + "/capreal" << std::endl;
-			if (!directoryExists(myArgs.dataset_path.get() + "/capreal")) {
-				std::cerr << "Reading " << parentDirectory(myArgs.dataset_path.get()) + "/capreal" << std::endl;
-				if (!directoryExists(parentDirectory(myArgs.dataset_path.get()) + "/capreal"))
-					SIBR_ERR << "Cant find capreal and textured mesh" << std::endl;
-				else {
-					m1 = meshPath = parentDirectory(myArgs.dataset_path.get()) + "/capreal/textured.obj";
-					t1 = texImgPath = parentDirectory(myArgs.dataset_path.get()) + "/capreal/textured_u1_v1.png";
-					if (!fileExists(meshPath)) {
-						m2 = meshPath = parentDirectory(myArgs.dataset_path.get()) + "/capreal/mesh.obj";
-						if (!fileExists(texImgPath)) {
-							texImgPath = parentDirectory(myArgs.dataset_path.get()) + "/capreal/texture.png";
-							if (!fileExists(texImgPath))
-								SIBR_ERR << "Cant find texture " << t1 << std::endl;
-							else {
-								m3 = meshPath = parentDirectory(myArgs.dataset_path.get()) + "/capreal/mesh.ply";
-								t2 = texImgPath = parentDirectory(myArgs.dataset_path.get()) + "/capreal/texture.png";
-								if (!fileExists(meshPath))
-									SIBR_ERR << "Cant find mesh, tried " << m1 << " / " << m2 << " / " << m3 << std::endl;
-								if (!fileExists(texImgPath))
-									SIBR_ERR << "Cant find texture, tried " << t1 << " / " << t2 << std::endl;
-							}
-						}
-					}
-					else if (!fileExists(texImgPath)) {
-						t2 = texImgPath = parentDirectory(myArgs.dataset_path.get()) + "/capreal/texture.png";
-						if (!fileExists(texImgPath))
-							SIBR_ERR << "Cant find texture, tried " << t1 << " / " << t2 << std::endl;
-					}
-				}
-			}
-			else {
-				meshPath = myArgs.dataset_path.get() + "/capreal/mesh.ply";
-				texImgPath = myArgs.dataset_path.get() + "/capreal/texture.png";
+			std::string caprealDir = myArgs.dataset_path.get() + "/capreal";
+			if (!directoryExists(caprealDir))
+				caprealDir = parentDirectory(myArgs.dataset_path.get()) + "/capreal";
+
+			if (directoryExists(caprealDir)) {
+				meshPath = findCaprealMesh(caprealDir);
+				texImgPath = findCaprealTexture(caprealDir);
 			}
 		}
 

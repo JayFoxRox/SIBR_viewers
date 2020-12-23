@@ -108,16 +108,16 @@ namespace sibr
 
 		// load input images
 
+		uint mwidth = width;
 		if (_currentOpts.images) {
 			_imgs->loadFromData(_data);
 			std::cout << "Number of Images loaded: " << _imgs->inputImages().size() << std::endl;
-		}
 
-		uint mwidth = width;
-		if( width == 0 ) {// default
-			if (_imgs->inputImages()[0]->w() > 1920) {
-				SIBR_LOG << "Limiting width to 1920 for performance; use --texture_width to override" << std::endl;
-				mwidth = 1920;
+			if (width == 0) {// default
+				if (_imgs->inputImages()[0]->w() > 1920) {
+					SIBR_LOG << "Limiting width to 1920 for performance; use --texture_width to override" << std::endl;
+					mwidth = 1920;
+				}
 			}
 		}
 		_renderTargets.reset(new RenderTargetTextures(mwidth));
