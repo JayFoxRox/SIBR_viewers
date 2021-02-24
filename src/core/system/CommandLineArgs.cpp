@@ -21,7 +21,6 @@ namespace sibr
 
 	const CommandLineArgs & getCommandLineArgs()
 	{
-		// force instataitea
 		return CommandLineArgs::getGlobal();
 	}
 
