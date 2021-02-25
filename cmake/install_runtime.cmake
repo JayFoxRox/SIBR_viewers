@@ -750,9 +750,8 @@ macro(ibr_install_target target)
 	endif()
 	
 	if(DEFINED CMAKE_BUILD_TYPE)						## for make/nmake based
-		string(TOUPPER ${CMAKE_BUILD_TYPE} CONFIG_TYPES_UC)
-		set_target_properties(${target} PROPERTIES ${CONFIG_TYPES_UC}_POSTFIX 	"${CMAKE_${CONFIG_TYPES_UC}_POSTFIX}")
-		get_target_property(CURRENT_TARGET_BUILD_TYPE_POSTFIX ${target} ${CONFIG_TYPES_UC}_POSTFIX)
+		set_target_properties(${target} PROPERTIES ${CMAKE_BUILD_TYPE}_POSTFIX 	"${CMAKE_${CMAKE_BUILD_TYPE}_POSTFIX}")
+		get_target_property(CURRENT_TARGET_BUILD_TYPE_POSTFIX ${target} ${CMAKE_BUILD_TYPE}_POSTFIX)
 	endif()
 	foreach(CONFIG_TYPES ${CMAKE_CONFIGURATION_TYPES}) 	## for multi config types (MSVC based)
 		string(TOUPPER ${CONFIG_TYPES} CONFIG_TYPES_UC)
