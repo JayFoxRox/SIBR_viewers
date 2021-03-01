@@ -128,18 +128,20 @@ int main(int ac, char** av) {
 	multiViewManager.addIBRSubView("ULR view", ulrView, usedResolution, ImGuiWindowFlags_ResizeFromAnySide);
 	multiViewManager.addCameraForView("ULR view", generalCamera);
 
-	// Top view
-	const std::shared_ptr<sibr::SceneDebugView> topView(new sibr::SceneDebugView(scene, generalCamera, myArgs));
-	multiViewManager.addSubView("Top view", topView, usedResolution);
-
 	CHECK_GL_ERROR;
 
-	if (myArgs.pathFile.get() !=  "" ) {
+	if (myArgs.offscreen || myArgs.pathFile.get() !=  "" ) {
 		generalCamera->getCameraRecorder().loadPath(myArgs.pathFile.get(), usedResolution.x(), usedResolution.y());
 		generalCamera->getCameraRecorder().recordOfflinePath(myArgs.outPath, multiViewManager.getIBRSubView("ULR view"), "ulr");
 		if( !myArgs.noExit )
 			exit(0);
 	}
+
+	// Top view
+	const std::shared_ptr<sibr::SceneDebugView> topView(new sibr::SceneDebugView(scene, generalCamera, myArgs));
+	multiViewManager.addSubView("Top view", topView, usedResolution);
+
+	CHECK_GL_ERROR;
 
 	// Main looooooop.
 	while (window.isOpened()) {

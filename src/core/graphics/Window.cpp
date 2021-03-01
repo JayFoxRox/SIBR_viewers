@@ -133,7 +133,7 @@ namespace sibr
 		return windowCounter > 0;
 	}
 
-	Window::AutoInitializer::AutoInitializer( void )
+	Window::AutoInitializer::AutoInitializer( const WindowArgs & args ) : _useGUI(!args.no_gui && !args.offscreen)
 	{
 		if (windowCounter == 0)
 		{
@@ -142,7 +142,8 @@ namespace sibr
 
 			if (!glfwInit())
 				SIBR_ERR << "cannot init glfw" << std::endl;
-			sibr::Input::global().key().clearStates();
+			if (!args.offscreen)
+				sibr::Input::global().key().clearStates();
 
 		}
 		++windowCounter;
@@ -153,8 +154,10 @@ namespace sibr
 		--windowCounter;
 		if (windowCounter == 0)
 		{
-			ImGui_ImplGlfwGL3_Shutdown();	/// \todo TODO: not sure it safe with multi-context
-			ImGui::DestroyContext();
+			if(_useGUI) {
+				ImGui_ImplGlfwGL3_Shutdown();	/// \todo TODO: not sure if safe with multi-context
+				ImGui::DestroyContext();
+			}
 			glfwSetErrorCallback(nullptr);
 			SIBR_LOG << "Deinitialization of GLFW" << std::endl;
 			glfwTerminate();
@@ -162,7 +165,7 @@ namespace sibr
 	}
 
 	Window::Window(uint w, uint h, const std::string& title, const WindowArgs & args, const std::string& defaultSettingsFilename) 
-		: _useGUI(!args.no_gui), _shouldClose(false) 
+		: _hiddenInit(args), _useGUI(!args.no_gui && !args.offscreen), _shouldClose(false) 
 	{
 		
 		setup(w, h, title, args, defaultSettingsFilename);
@@ -178,9 +181,16 @@ namespace sibr
 	}
 
 	Window::Window(const std::string& title, const sibr::Vector2i & margins, const WindowArgs & args, const std::string& defaultSettingsFilename)
-		: _useGUI(!args.no_gui), _shouldClose(false)
+		: _hiddenInit(args), _useGUI(!args.no_gui && !args.offscreen), _shouldClose(false)
 	{
-		const sibr::Vector2i winSize = desktopSize();
+		sibr::Vector2i winSize;
+		if (args.offscreen) {
+			winSize = sibr::Vector2i(args.win_width, args.win_height);
+		}
+		else {
+			winSize = desktopSize();
+		}
+		
 		// Here autoInitializer is already initialized, thus glfwInit() has been called
 		setup(winSize.x() - 2*margins.x(), winSize.y() - 2*margins.y(), title, args, defaultSettingsFilename);
 
@@ -199,8 +209,8 @@ namespace sibr
 		}
 		glfwSwapBuffers(_glfwWin.get());
 		// Keep the call below in all cases to avoid accumulating all interfaces in one frame.
-		ImGui_ImplGlfwGL3_NewFrame();
-
+		if (_useGUI)
+			ImGui_ImplGlfwGL3_NewFrame();
 	}
 	
 	void Window::resetSettingsToDefault() {
@@ -246,16 +256,17 @@ namespace sibr
 	}
 
 	void Window::setup(int width, int height, const std::string& title, const WindowArgs & args, const std::string& defaultSettingsFilename) {
-		// IMPORTANT NOTE: if you got compatibility problem with old opengl function,
-		// try to load compat 3.2 instead of core 4.2
-
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
-		// or
-		//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
-		//glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-		//glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+
+#ifdef GLEW_EGL
+		glfwWindowHint(GLFW_CONTEXT_CREATION_API, (args.offscreen) ?
+													GLFW_EGL_CONTEXT_API :
+													GLFW_NATIVE_CONTEXT_API);
+#else
+		if(args.offscreen) SIBR_WRG << "Offscreen enabled without EGL implementation. Using native context (Offscreen might run into issues if no real display is available)." << std::endl;
+#endif
 
 		glfwWindowHint(GLFW_RED_BITS, 8);
 		glfwWindowHint(GLFW_GREEN_BITS, 8);
@@ -271,7 +282,7 @@ namespace sibr
 		_glfwWin = GLFWwindowptr(
 			glfwCreateWindow(
 				width, height, title.c_str(),
-				args.fullscreen ? glfwGetPrimaryMonitor() : NULL
+				(args.fullscreen && !args.offscreen) ? glfwGetPrimaryMonitor() : NULL
 				, NULL ), 
 			glfwDestroyWindow
 		);
@@ -296,7 +307,11 @@ namespace sibr
 
 		glewExperimental = GL_TRUE;
 		GLenum err = glewInit();
+#ifdef GLEW_EGL
+		if (err != GLEW_OK && (!args.offscreen || err != GLEW_ERROR_NO_GLX_DISPLAY)) // Small hack for glew, this error occurs but does not concern offscreen
+#else
 		if (err != GLEW_OK)
+#endif
 			SIBR_ERR << "cannot initialize GLEW (used to load OpenGL function)" << std::endl;
 		(void)glGetError(); // I notice that glew might do wrong things during its init()
 							// some drivers complain about it. So I reset OpenGL's errors to discard this.
@@ -319,54 +334,49 @@ namespace sibr
 			glDebugMessageCallback(glErrorCallback, nullptr);
 		}
 
-		//contextId
-		++Window::contextId;
+		if(_useGUI) {
+			//contextId
+			++Window::contextId;
 
-		// Setup ImGui binding
-		ImGui::CreateContext();
-		ImGui_ImplGlfwGL3_Init(_glfwWin.get(), false);
-		glfwSetCharCallback(_glfwWin.get(), ImGui_ImplGlfw_CharCallback);
+			// Setup ImGui binding
+			ImGui::CreateContext();
+			ImGui_ImplGlfwGL3_Init(_glfwWin.get(), false);
+			glfwSetCharCallback(_glfwWin.get(), ImGui_ImplGlfw_CharCallback);
 
-		ImGui_ImplGlfwGL3_NewFrame();
+			ImGui_ImplGlfwGL3_NewFrame();
 
-		_windowImguiSettingsFilename = defaultSettingsFilename;
+			_windowImguiSettingsFilename = defaultSettingsFilename;
 
-		// Set user specific file for this particular window as default ini file
-		std::string iniFilename = std::string(getAppDataDirectory() + "/" + std::regex_replace(title, std::regex("[^0-9A-Za-z\\-_]"), "_") + ".ini").c_str();
-		char* iniFilenameCStr = new char[iniFilename.length()+1];
-		strcpy(iniFilenameCStr, iniFilename.c_str());
-		ImGui::GetIO().IniFilename = iniFilenameCStr;
+			// Set user specific file for this particular window as default ini file
+			std::string iniFilename = std::string(getAppDataDirectory() + "/" + std::regex_replace(title, std::regex("[^0-9A-Za-z\\-_]"), "_") + ".ini").c_str();
+			char* iniFilenameCStr = new char[iniFilename.length()+1];
+			strcpy(iniFilenameCStr, iniFilename.c_str());
+			ImGui::GetIO().IniFilename = iniFilenameCStr;
 
-		loadSettings();
-
-		_oldPosition = position();
-		_oldSize = size();
-
-		// Support for HiDPI on Windows. The default is 96.
-		// Compute the pixel density at the current definition.
-		int widthmm, heightmm;
-		glfwGetMonitorPhysicalSize(glfwGetPrimaryMonitor(), &widthmm, &heightmm);
-		const float defaultDPI = 96.0f;
-		sibr::Vector2i dsize = desktopSize();
-		
-		_scaling = sibr::clamp(std::round(dsize.x() / (widthmm / 25.4f) / defaultDPI), 1.0f, 2.0f);
-
-		if (args.hdpi) {
-			ImGui::GetStyle().ScaleAllSizes(scaling());
-			ImGui::GetIO().FontGlobalScale = scaling();
+			loadSettings();
 		}
 
-		/** \todo
-		TODO: fix issue on some HiDPI screens + interaction with GUI labels generation.
-		// If we have a screen in HiDPI mode, scale the interface accordingly.
-		if (_scaling > 1.0f) {
-			ImGui::GetStyle().ScaleAllSizes(_scaling);
-			ImGui::GetIO().FontGlobalScale = _scaling;
+		if(!args.offscreen) {
+			_oldPosition = position();
+			_oldSize = size();
+
+			// Support for HiDPI on Windows. The default is 96.
+			// Compute the pixel density at the current definition.
+			int widthmm, heightmm;
+			glfwGetMonitorPhysicalSize(glfwGetPrimaryMonitor(), &widthmm, &heightmm);
+			const float defaultDPI = 96.0f;
+			sibr::Vector2i dsize = desktopSize();
+			
+			_scaling = sibr::clamp(std::round(dsize.x() / (widthmm / 25.4f) / defaultDPI), 1.0f, 2.0f);
+
+			if (_useGUI && args.hdpi) {
+				ImGui::GetStyle().ScaleAllSizes(scaling());
+				ImGui::GetIO().FontGlobalScale = scaling();
+			}
 		}
-		*/
 	}
 
-	/*static*/ Vector2i		Window::desktopSize( void )
+	Vector2i		Window::desktopSize( void )
 	{
 		const GLFWvidmode * mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 		return Vector2i(mode->width, mode->height);
@@ -455,6 +465,11 @@ namespace sibr
 	bool Window::isVsynced(void) const
 	{
 		return _useVSync;
+	}
+
+	bool Window::isGUIEnabled(void) const
+	{
+		return _useGUI;
 	}
 
 	void Window::setVsynced(const bool vsync) {

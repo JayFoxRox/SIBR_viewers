@@ -481,8 +481,9 @@ namespace sibr
 		    return is;
 		case std::streambuf::traits_type::eof():
 		    // Also handle the case when the last line has no line ending
-		    if(t.empty())
 			is.setstate(std::ios::eofbit);
+			// this helps ignore the last line if it's empty (otherwise it's a different behavior from std::get_line)
+			if (t.empty()) is.setstate(std::ios::badbit);
 		    return is;
 		default:
 		    t += (char)c;

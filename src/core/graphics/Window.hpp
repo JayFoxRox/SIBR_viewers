@@ -126,6 +126,10 @@ namespace sibr
 
 		/** \return true if the window is using V-sync. */
 		bool				isVsynced(void) const;
+
+		/** \return true if the window is enabling GUI. */
+		bool				isGUIEnabled(void) const;
+		
 		/** Toggle V-sync.
 		 *\param vsync if true, framerate will be limited to 60 FPS
 		 *\note When set to false, tearing might be visible.
@@ -188,8 +192,10 @@ namespace sibr
 		/// Helper to handle window creation/destruction.
 		struct AutoInitializer
 		{
-			AutoInitializer(void);
+			AutoInitializer(const WindowArgs & args = {});
 			~AutoInitializer(void);
+			
+			const bool			_useGUI; ///< Should ImGui windows be displayed.
 		};
 
 		bool				_shouldClose; ///< Is the window marked as closed.
@@ -234,8 +240,6 @@ namespace sibr
 
 	inline void		Window::bind(void) {
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-		
 	}
 
 	inline void		Window::unbind(void) {

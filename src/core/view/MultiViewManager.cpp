@@ -90,7 +90,7 @@ namespace sibr
 
 				renderSubView(subview.second);
 
-				if (_showSubViewsGui) {
+				if (_enableGUI && _showSubViewsGui) {
 					subview.second.view->onGUI();
 					if (subview.second.handler) {
 						subview.second.handler->onGUI("Camera " + subview.first);
@@ -103,7 +103,7 @@ namespace sibr
 
 				renderSubView(subview.second);
 				
-				if (_showSubViewsGui) {
+				if (_enableGUI && _showSubViewsGui) {
 					subview.second.view->onGUI();
 					if (subview.second.handler) {
 						subview.second.handler->onGUI("Camera " + subview.first);
@@ -133,10 +133,12 @@ namespace sibr
 
 	void MultiViewBase::addSubView(const std::string & title, ViewBase::Ptr view, const ViewUpdateFunc updateFunc, const Vector2u & res, const ImGuiWindowFlags flags)
 	{
+		float titleBarHeight = 0.0f;
+		if(_enableGUI) titleBarHeight = ImGui::GetTitleBarHeight();
 		// We have to shift vertically to avoid an overlap with the menu bar.
-		const Viewport viewport(0.0f, ImGui::GetTitleBarHeight(),
+		const Viewport viewport(0.0f, titleBarHeight,
 			res.x() > 0 ? res.x() : (float)_defaultViewResolution.x(),
-			(res.y() > 0 ? res.y() : (float)_defaultViewResolution.y()) + ImGui::GetTitleBarHeight());
+			(res.y() > 0 ? res.y() : (float)_defaultViewResolution.y()) + titleBarHeight);
 		RenderTargetRGB::Ptr rtPtr(new RenderTargetRGB((uint)viewport.finalWidth(), (uint)viewport.finalHeight(), SIBR_CLAMP_UVS));
 		_subViews[title] = {view, rtPtr, viewport, title, flags, updateFunc };
 
@@ -144,10 +146,12 @@ namespace sibr
 
 	void MultiViewBase::addIBRSubView(const std::string & title, ViewBase::Ptr view, const IBRViewUpdateFunc updateFunc, const Vector2u & res, const ImGuiWindowFlags flags, const bool defaultFuncUsed)
 	{
+		float titleBarHeight = 0.0f;
+		if(_enableGUI) titleBarHeight = ImGui::GetTitleBarHeight();
 		// We have to shift vertically to avoid an overlap with the menu bar.
-		const Viewport viewport(0.0f, ImGui::GetTitleBarHeight(),
+		const Viewport viewport(0.0f, titleBarHeight,
 			res.x() > 0 ? res.x() : (float)_defaultViewResolution.x(),
-			(res.y() > 0 ? res.y() : (float)_defaultViewResolution.y()) + ImGui::GetTitleBarHeight());
+			(res.y() > 0 ? res.y() : (float)_defaultViewResolution.y()) + titleBarHeight);
 		RenderTargetRGB::Ptr rtPtr(new RenderTargetRGB((uint)viewport.finalWidth(), (uint)viewport.finalHeight(), SIBR_CLAMP_UVS));
 		if (_ibrSubViews.count(title) > 0){
 			const auto handler = _ibrSubViews[title].handler;
@@ -240,9 +244,12 @@ namespace sibr
 			}
 		}
 
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-		subview.view->setFocus(showImGuiWindow(subview.view->name(), *subview.rt, subview.flags, subview.viewport, false, subview.shouldUpdateLayout));
-		ImGui::PopStyleVar();
+		if(_enableGUI)
+		{
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+			subview.view->setFocus(showImGuiWindow(subview.view->name(), *subview.rt, subview.flags, subview.viewport, false, subview.shouldUpdateLayout));
+			ImGui::PopStyleVar();
+		}
 		// If we have updated the layout, don't do it next frame.
 		subview.shouldUpdateLayout = false;
 	}
@@ -350,7 +357,8 @@ namespace sibr
 		// Do square decomposition for now.
 		// Find the next square.
 		const int sideCount = int(std::ceil(std::sqrt(viewsCount)));
-		const int verticalShift = int(ImGui::GetTitleBarHeight());
+		int verticalShift = 0;
+		if(_enableGUI) verticalShift = ImGui::GetTitleBarHeight();
 
 		Viewport usedVP = Viewport(vp.finalLeft(), vp.finalTop() + verticalShift, vp.finalRight(), vp.finalBottom());
 		Vector2f itemRatio = Vector2f(1, 1) / sideCount;
@@ -428,6 +436,8 @@ namespace sibr
 	MultiViewManager::MultiViewManager(Window& window, bool resize)
 		: _window(window), _fpsCounter(false)
 	{
+		_enableGUI = window.isGUIEnabled();
+		
 		if (resize) {
 			window.size(
 				Window::desktopSize().x() - 200,
@@ -443,7 +453,7 @@ namespace sibr
 		int h = int(window.size().y() * 0.5f);
 		setDefaultViewResolution(Vector2i(w, h));
 
-		ImGui::GetStyle().WindowBorderSize = 0.0;
+		if(_enableGUI) ImGui::GetStyle().WindowBorderSize = 0.0;
 	}
 
 	void MultiViewManager::onUpdate(Input & input)
@@ -466,7 +476,7 @@ namespace sibr
 
 		MultiViewBase::onRender(win);
 
-		_fpsCounter.update(_showGUI);
+		_fpsCounter.update(_enableGUI && _showGUI);
 	}
 
 	void MultiViewManager::onGui(Window & win)

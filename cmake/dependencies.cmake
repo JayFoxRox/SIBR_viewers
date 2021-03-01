@@ -33,6 +33,16 @@ set(OpenGL_GL_PREFERENCE "GLVND")
 ############
 ## Find GLEW
 ############
+##for headless rendering
+find_package(EGL QUIET)
+
+if(EGL_FOUND)
+    add_definitions(-DGLEW_EGL)
+    message("Activating EGL support for headless GLFW/GLEW")
+else()
+    message("EGL not found : EGL support for headless GLFW/GLEW is disabled")
+endif()
+
 if (MSVC11 OR MSVC12)
     set(glew_multiset_arguments 
             CHECK_CACHED_VAR GLEW_INCLUDE_DIR	    PATH "glew-1.10.0/include" DOC "default empty doc"
@@ -245,6 +255,7 @@ sibr_addlibrary(
     MSVC14 "https://repo-sam.inria.fr/fungraph/dependencies/ibr-common/win3rdParty-MSVC15-splitted%20version/glfw-3.2.1.7z"     # TODO SV: provide a valid version if required
     SET CHECK_CACHED_VAR glfw3_DIR PATH "glfw-3.2.1"
 )
+
 find_package(glfw3 REQUIRED)
 
 sibr_gitlibrary(TARGET imgui
