@@ -211,7 +211,6 @@ namespace sibr
 		// Keep the call below in all cases to avoid accumulating all interfaces in one frame.
 		if (_useGUI)
 			ImGui_ImplGlfwGL3_NewFrame();
-
 	}
 	
 	void Window::resetSettingsToDefault() {
@@ -370,7 +369,7 @@ namespace sibr
 			
 			_scaling = sibr::clamp(std::round(dsize.x() / (widthmm / 25.4f) / defaultDPI), 1.0f, 2.0f);
 
-			if (args.hdpi) {
+			if (_useGUI && args.hdpi) {
 				ImGui::GetStyle().ScaleAllSizes(scaling());
 				ImGui::GetIO().FontGlobalScale = scaling();
 			}
