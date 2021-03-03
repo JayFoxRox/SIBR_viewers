@@ -42,12 +42,13 @@ alignMeshes.exe --path2Align dataset2Align --pathRef refDataset --out outputPath
 ```
 This will align the two datasets, and write the aligned mesh in <code>outputPath</code> as well as the file <code>transform.txt</code> that contains the transformation matrix of the <code>dataset2Align</code> to <code>refDataset</code>.
 
+Please note that alignMeshes may not manage to completely align meshes: please lalways compare the aligned mesh with the target (e.g., using meshlab). If alignmeshes fails, an alternative is to use a manual tool such as CloudCompare or meshlab.
+
 You can then transform a camera path defined in the first dataset to the a path in the reference dataset:
 
 ```
 cameraConverter_rwdi.exe --input inputPath.(out|lookat|path|tst) --output outputPath.(out|lookat|path|tst)
 cameraConverter.exe --input inputPath.(out|lookat|path|tst) --output outputPath.(out|lookat|path|tst)
 ```
-
 
  */
