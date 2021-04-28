@@ -3,7 +3,7 @@
  * GRAPHDECO research group, https://team.inria.fr/graphdeco
  * All rights reserved.
  *
- * This software is free for non-commercial, research and evaluation use 
+ * This software is free for non-commercial, research and evaluation use
  * under the terms of the LICENSE.md file.
  *
  * For inquiries contact sibr@inria.fr and/or George.Drettakis@inria.fr
@@ -13,7 +13,7 @@
 #include <projects/ulr/renderer/ULRV3View.hpp>
 #include <core/graphics/GUI.hpp>
 
-sibr::ULRV3View::ULRV3View(const sibr::BasicIBRScene::Ptr & ibrScene, uint render_w, uint render_h) :
+sibr::ULRV3View::ULRV3View(const sibr::BasicIBRScene::Ptr& ibrScene, uint render_w, uint render_h) :
 	_scene(ibrScene),
 	sibr::ViewBase(render_w, render_h)
 {
@@ -31,16 +31,16 @@ sibr::ULRV3View::ULRV3View(const sibr::BasicIBRScene::Ptr & ibrScene, uint rende
 
 	// Tell the scene we are a priori using all active cameras.
 	std::vector<uint> imgs_ulr;
-	const auto & cams = ibrScene->cameras()->inputCameras();
-	for(size_t cid = 0; cid < cams.size(); ++cid) {
-		if(cams[cid]->isActive()) {
+	const auto& cams = ibrScene->cameras()->inputCameras();
+	for (size_t cid = 0; cid < cams.size(); ++cid) {
+		if (cams[cid]->isActive()) {
 			imgs_ulr.push_back(uint(cid));
 		}
 	}
 	_scene->cameras()->debugFlagCameraAsUsed(imgs_ulr);
 }
 
-void sibr::ULRV3View::setScene(const sibr::BasicIBRScene::Ptr & newScene) {
+void sibr::ULRV3View::setScene(const sibr::BasicIBRScene::Ptr& newScene) {
 	_scene = newScene;
 	const uint w = getResolution().x();
 	const uint h = getResolution().y();
@@ -57,7 +57,7 @@ void sibr::ULRV3View::setScene(const sibr::BasicIBRScene::Ptr & newScene) {
 
 	// Tell the scene we are a priori using all active cameras.
 	std::vector<uint> imgs_ulr;
-	const auto & cams = newScene->cameras()->inputCameras();
+	const auto& cams = newScene->cameras()->inputCameras();
 	for (size_t cid = 0; cid < cams.size(); ++cid) {
 		if (cams[cid]->isActive()) {
 			imgs_ulr.push_back(uint(cid));
@@ -79,16 +79,16 @@ void sibr::ULRV3View::setMode(const WeightsMode mode) {
 	}
 }
 
-void sibr::ULRV3View::onRenderIBR(sibr::IRenderTarget & dst, const sibr::Camera & eye)
+void sibr::ULRV3View::onRenderIBR(sibr::IRenderTarget& dst, const sibr::Camera& eye)
 {
 	// Perform ULR rendering, either directly to the destination RT, or to the intermediate RT when poisson blending is enabled.
 	_ulrRenderer->process(
-			_scene->proxies()->proxy(),
-			eye, 
-			_poissonBlend ? *_blendRT : dst,
-			_scene->renderTargets()->getInputRGBTextureArrayPtr(),
+		_scene->proxies()->proxy(),
+		eye,
+		_poissonBlend ? *_blendRT : dst,
+		_scene->renderTargets()->getInputRGBTextureArrayPtr(),
 		_scene->renderTargets()->getInputDepthMapArrayPtr()
-		);
+	);
 
 	// Perform Poisson blending if enabled and copy to the destination RT.
 	if (_poissonBlend) {
@@ -98,7 +98,7 @@ void sibr::ULRV3View::onRenderIBR(sibr::IRenderTarget & dst, const sibr::Camera 
 
 }
 
-void sibr::ULRV3View::onUpdate(Input & input)
+void sibr::ULRV3View::onUpdate(Input& input)
 {
 }
 
@@ -117,8 +117,12 @@ void sibr::ULRV3View::onGUI()
 		ImGui::InputFloat("Epsilon occlusion", &_ulrRenderer->epsilonOcclusion(), 0.001f, 0.01f);
 
 		ImGui::Separator();
+		if (ImGui::Button("Save Leave One Out")) {
+			saveLeaveOneOut();
+		}
+		ImGui::Separator();
 		// Rendering mode selection.
-		if(ImGui::Combo("Rendering mode", (int*)(&_renderMode), "Standard\0One image\0Leave one out\0Every N\0\0")) {
+		if (ImGui::Combo("Rendering mode", (int*)(&_renderMode), "Standard\0One image\0Leave one out\0Every N\0\0")) {
 			updateCameras(true);
 		}
 
@@ -143,7 +147,7 @@ void sibr::ULRV3View::onGUI()
 		if (ImGui::Combo("Weights mode", (int*)(&_weightsMode), "Standard ULR\0Variance based\0Fast ULR\0\0")) {
 			setMode(_weightsMode);
 		}
-		
+
 		ImGui::Checkbox("Occlusion Testing", &_ulrRenderer->occTest());
 		ImGui::Checkbox("Debug weights", &_ulrRenderer->showWeights());
 		ImGui::Checkbox("Gamma correction", &_ulrRenderer->gammaCorrection());
@@ -155,17 +159,19 @@ void sibr::ULRV3View::onGUI()
 void sibr::ULRV3View::updateCameras(bool allowResetToDefault) {
 	// If we are here, the rendering mode or the selected index have changed, we need to update the enabled cameras.
 	std::vector<uint> imgs_ulr;
-	const auto & cams = _scene->cameras()->inputCameras();
+	const auto& cams = _scene->cameras()->inputCameras();
 
 	// Compute the cameras indices based on the new mode.
 	if (_renderMode == RenderMode::ONE_CAM) {
 		// We only use the given camera (if it is active).
 		if (cams[_singleCamId]->isActive()) {
 			imgs_ulr = { (uint)_singleCamId };
-		} else {
+		}
+		else {
 			std::cerr << "The camera is not active, using all cameras." << std::endl;
 		}
-	} else if (_renderMode == RenderMode::LEAVE_ONE_OUT) {
+	}
+	else if (_renderMode == RenderMode::LEAVE_ONE_OUT) {
 		// We use all active cameras apart from the one given.
 		for (size_t cid = 0; cid < cams.size(); ++cid) {
 			if (cid != (size_t)_singleCamId && cams[cid]->isActive()) {
@@ -180,7 +186,8 @@ void sibr::ULRV3View::updateCameras(bool allowResetToDefault) {
 				imgs_ulr.push_back(uint(cid));
 			}
 		}
-	} else if(allowResetToDefault){
+	}
+	else if (allowResetToDefault) {
 		// We use all active cameras.
 		for (size_t cid = 0; cid < cams.size(); ++cid) {
 			if (cams[cid]->isActive()) {
@@ -189,11 +196,65 @@ void sibr::ULRV3View::updateCameras(bool allowResetToDefault) {
 		}
 	}
 	// Only update if there is at least one camera enabled.
-	if(!imgs_ulr.empty()) {
+	if (!imgs_ulr.empty()) {
 		// Update the shader informations in the renderer.
 		_ulrRenderer->updateCameras(imgs_ulr);
 		// Tell the scene which cameras we are using for debug visualization.
 		_scene->cameras()->debugFlagCameraAsUsed(imgs_ulr);
 	}
-	
+
+}
+
+void sibr::ULRV3View::saveLeaveOneOut()
+{
+	ImGui::End();
+	std::string pathOut = _scene->data()->basePathName() + "/Leave1OutULR/";
+	sibr::makeDirectory(pathOut);
+	for (int c = 0; c < _scene->cameras()->inputCameras().size(); c++) {
+		sibr::Input::poll();
+		sibr::InputCamera cam = *_scene->cameras()->inputCameras()[c];
+		sibr::ImageRGB::Ptr im = _scene->images()->inputImages()[c];
+
+		ImGui::Begin("Stop");
+		if (ImGui::Button("STOP")) {
+			break;
+		}
+		ImGui::End();
+		sibr::RenderTargetRGB32F dst(900, 600);
+
+		// If we are here, the rendering mode or the selected index have changed, we need to update the enabled cameras.
+		std::vector<uint> imgs_ulr;
+		const auto& cams = _scene->cameras()->inputCameras();
+
+		// We use all active cameras apart from the one given.
+		for (size_t cid = 0; cid < cams.size(); ++cid) {
+			if (cid != (size_t)c && cams[cid]->isActive()) {
+				imgs_ulr.push_back(uint(cid));
+			}
+		}
+		// Only update if there is at least one camera enabled.
+		if (!imgs_ulr.empty()) {
+			// Update the shader informations in the renderer.
+			_ulrRenderer->updateCameras(imgs_ulr);
+			// Tell the scene which cameras we are using for debug visualization.
+			_scene->cameras()->debugFlagCameraAsUsed(imgs_ulr);
+		}
+
+		onRenderIBR(dst, cam);
+
+		sibr::ImageRGB render;
+		dst.readBack(render);
+		sibr::ImageRGB gt = im->clone().resized(900,600);
+
+		std::ostringstream outNum;
+		outNum << std::internal << std::setfill('0') << std::setw(8) << c;
+
+		render.save(pathOut + "/renders/" + outNum.str() + ".png");
+		gt.save(pathOut + "/gt/" + outNum.str() + ".png");
+	}
+
+	const std::string guiName = "ULRV3 Settings (" + name() + ")";
+	ImGui::Begin(guiName.c_str());
+
+
 }

@@ -88,6 +88,11 @@ namespace sibr {
 		 */
 		void updateCameras(bool allowResetToDefault);
 
+		/**
+		 * Save the input camera "path" in a leave one out fashion.
+		 */
+		void saveLeaveOneOut();
+
 		std::shared_ptr<sibr::BasicIBRScene> _scene; ///< The current scene.
 		ULRV3Renderer::Ptr		_ulrRenderer; ///< The ULR renderer.
 		PoissonRenderer::Ptr	_poissonRenderer; ///< The poisson filling renderer.
