@@ -308,7 +308,8 @@ namespace sibr
 		glewExperimental = GL_TRUE;
 		GLenum err = glewInit();
 #ifdef GLEW_EGL
-		if (err != GLEW_OK && (!args.offscreen || err != GLEW_ERROR_NO_GLX_DISPLAY)) // Small hack for glew, this error occurs but does not concern offscreen
+//		if (err != GLEW_OK && (!args.offscreen || err != GLEW_ERROR_NO_GLX_DISPLAY)) // Small hack for glew, this error occurs but does not concern offscreen
+		if (err != GLEW_OK && (!args.offscreen )) // Small hack for glew, this error occurs but does not concern offscreen
 #else
 		if (err != GLEW_OK)
 #endif

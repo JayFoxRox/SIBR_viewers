@@ -212,6 +212,138 @@ namespace sibr
 		return true;
 	}
 
+	sibr::Matrix4f parseTransform(const rapidxml::xml_node<>* nodeTrans)
+	{
+		sibr::Matrix4f objectToWorld = sibr::Matrix4f::Identity();
+		if (nodeTrans)
+		{
+			// Helper functions
+			const auto getfValue = [&](rapidxml::xml_node<>* n, std::string const& name, float& value) {
+				if (n && n->first_attribute(name.c_str())) {
+					value = std::stof(n->first_attribute(name.c_str())->value());
+				}
+			};
+			const auto getVector = [&](rapidxml::xml_node<>* n, std::string const& name, sibr::Vector3f& vec) {
+				const auto isNonFloat = [](const char c) {
+					return c == ',' || c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '"' || c == 0;
+				};
+				const auto eatNonFloat = [&](const char* str, int& i) {
+					while (isNonFloat(str[i])) ++i;
+				};
+				const auto eatFloat = [&](const char* str, int& i) {
+					while (!isNonFloat(str[i])) ++i;
+				};
+				if (n && n->first_attribute(name.c_str())) {
+					int index = 0;
+					const char* value = n->first_attribute(name.c_str())->value();
+					for (int i = 0; i < vec.size(); ++i) {
+						eatNonFloat(value, index);
+						vec[i] = std::atof(value + index);
+						eatFloat(value, index);
+					}
+				}
+			};
+			const auto getAxesValues = [&](rapidxml::xml_node<>* n, float& x, float& y, float& z) {
+				getfValue(n, "x", x);
+				getfValue(n, "y", y);
+				getfValue(n, "z", z);
+			};
+
+			// Loop through all the transform commands,
+							// and "accumulate" the transform matrices into "objectToWorld"
+			for (rapidxml::xml_node<>* node = nodeTrans->first_node(); node; node = node->next_sibling()) {
+				sibr::Matrix4f nodeMatrix = sibr::Matrix4f::Identity();
+				const char* transformType = node->name();
+				if (strcmp(transformType, "matrix") == 0) {
+					std::string matrixValue = node->first_attribute("value")->value();
+					std::istringstream issMatrix(matrixValue);
+					std::vector<std::string> split(
+						std::istream_iterator<std::string>{issMatrix},
+						std::istream_iterator<std::string>());
+					nodeMatrix <<
+						std::stof(split[0]), std::stof(split[1]), std::stof(split[2]), std::stof(split[3]),
+						std::stof(split[4]), std::stof(split[5]), std::stof(split[6]), std::stof(split[7]),
+						std::stof(split[8]), std::stof(split[9]), std::stof(split[10]), std::stof(split[11]),
+						std::stof(split[12]), std::stof(split[13]), std::stof(split[14]), std::stof(split[15]);
+				}
+				else if (strcmp(transformType, "translate") == 0) {
+					getAxesValues(node, nodeMatrix(0, 3), nodeMatrix(1, 3), nodeMatrix(2, 3));
+				}
+				else if (strcmp(transformType, "scale") == 0) {
+					float scale = 1.f;
+					getfValue(node, "value", scale);
+					getAxesValues(node, nodeMatrix(0, 0), nodeMatrix(1, 1), nodeMatrix(2, 2));
+					nodeMatrix(0, 0) *= scale;
+					nodeMatrix(1, 1) *= scale;
+					nodeMatrix(2, 2) *= scale;
+				}
+				else if (strcmp(transformType, "rotate") == 0) {
+					float rotateX = 0.f, rotateY = 0.f, rotateZ = 0.f;
+					float angleDegrees = 0.f;
+					getAxesValues(node, rotateX, rotateY, rotateZ);
+					getfValue(node, "angle", angleDegrees);
+					float angleRadians = angleDegrees * (float)M_PI / 180.f;
+					sibr::Transform3<float> transform;
+					transform.rotate(Eigen::Quaternionf(
+						Eigen::AngleAxisf(angleRadians,
+							Eigen::Vector3f(rotateX, rotateY, rotateZ))));
+					nodeMatrix = transform.matrix();
+				}
+				else if (strcmp(transformType, "lookat") == 0) {
+					sibr::Vector3f eye{ 0, 0, 0 }, target{ 0, 0, 1 }, up{ 0, 1, 0 };
+					getVector(node, "origin", eye);
+					getVector(node, "target", target);
+					getVector(node, "up", up);
+					// WTF why inverse the lookat???
+					nodeMatrix = sibr::lookAt(eye, target, up).inverse();
+				}
+				else {
+					throw std::runtime_error(std::string("Mitsuba xml parser: Unknown tranform type: ") + transformType);
+				}
+				objectToWorld = nodeMatrix * objectToWorld;
+			}
+		}
+		return objectToWorld;
+	}
+
+	// Extracts Name from (can accept node == nullptr)
+	// <ref id="Name"/>
+	std::string parseMatID(const rapidxml::xml_node<>* node)
+	{
+		std::string res;
+		if (node)
+		{
+			const rapidxml::xml_attribute<>* id = node->first_attribute("id");
+			res = id->value();
+		}
+		return res;
+	}
+
+	bool shouldFlipNormals(const rapidxml::xml_node<>* shape)
+	{
+		assert(shape != nullptr);
+		for (const rapidxml::xml_node<>* node = shape->first_node("boolean"); node; node = node->next_sibling("boolean"))
+		{
+			if (node->first_attribute("name")->value() == std::string("flipNormals"))
+			{
+				return node->first_attribute("value")->value() == std::string("true");
+			}
+		}
+		return false;
+	}
+
+	std::string parseFilename(const rapidxml::xml_node<>* shape)
+	{
+		assert(shape);
+		for (const rapidxml::xml_node<>* node = shape->first_node("string"); node; node = node->next_sibling("string"))
+		{
+			if (node->first_attribute("name")->value() == std::string("filename"))
+			{
+				return node->first_attribute("value")->value();
+			}
+		}
+		return "";
+	}
 
 	bool	MaterialMesh::loadMtsXML(const std::string& xmlFile, bool loadTextures)
 	{
@@ -221,10 +353,25 @@ namespace sibr
 			.string();
 		sibr::XMLTree doc(xmlFile);
 		std::map<std::string, sibr::MaterialMesh> meshes;
-		std::map<std::string, std::string> idToFilename;
+
+		struct ShapeGroup {
+			struct Shape
+			{
+				std::string filename;
+				std::string matname;
+				sibr::Matrix4f toWorld = sibr::Matrix4f::Identity();
+				Shape& operator=(Shape const&) = default;
+				bool flipNormals = false;
+			};
+			std::vector<Shape> shapes;
+			sibr::Matrix4f objectToWorld = sibr::Matrix4f::Identity();
+		};
+
+		std::map<std::string, ShapeGroup> idToShapegroups;
 
 		rapidxml::xml_node<> *nodeScene = doc.first_node("scene");
 
+		// First parse all the shapegroups
 		for (rapidxml::xml_node<> *node = nodeScene->first_node("shape");
 			node; node = node->next_sibling("shape"))
 		{
@@ -234,12 +381,22 @@ namespace sibr
 				//std::cout << "Found : " << node->first_attribute("id")->value() << std::endl;
 
 				std::string id = node->first_attribute("id")->value();
-				std::string filename = node->first_node("shape")
-					->first_node("string")->first_attribute("value")->value();
-				idToFilename[id] = filename;
+				ShapeGroup shapeGroup;
+				for (rapidxml::xml_node<>* shapeNode = node->first_node("shape");shapeNode;shapeNode=shapeNode->next_sibling())
+				{
+					ShapeGroup::Shape shape;
+					shape.filename = parseFilename(shapeNode);
+					shape.toWorld = parseTransform(shapeNode->first_node("transform"));
+					shape.matname = parseMatID(shapeNode->first_node("ref"));
+					shape.flipNormals = shouldFlipNormals(shapeNode);
+					shapeGroup.shapes.push_back(shape);
+				}
+				rapidxml::xml_node<>* tNode = node->first_node("transform");
+				shapeGroup.objectToWorld = parseTransform(tNode);
+				idToShapegroups[id] = shapeGroup;
 			}
 		}
-
+		// Second: Create all the actual shapes
 		for (rapidxml::xml_node<> *node = nodeScene->first_node("shape");
 			node; node = node->next_sibling("shape"))
 		{
@@ -247,65 +404,55 @@ namespace sibr
 				first_attribute();
 				browserAttributes;
 				browserAttributes = browserAttributes->next_attribute()) {
-
+				// Create the instances of the shapegroups
 				if (strcmp(browserAttributes->name(), "type") == 0 &&
 					strcmp(browserAttributes->value(), "instance") == 0
 					) {
-					rapidxml::xml_node<> *nodeRef = node->first_node("ref");
-					const std::string id = nodeRef->first_attribute("id")->value();
-					const std::string filename = idToFilename[id];
-					const std::string meshPath = pathFolder + "/" + filename;
+					rapidxml::xml_node<>* nodeRef = node->first_node("ref");
+					const std::string _id = nodeRef->first_attribute("id")->value();
+					SIBR_LOG << "Instancing " << _id << std::endl;
+					if (idToShapegroups.find(_id) == idToShapegroups.end())
+					{
+						SIBR_WRG << "Could not find shapegroup " << _id << "!!!" << std::endl;
+						continue;
+					}
+					const ShapeGroup& shapeGroup = idToShapegroups[_id];
+					rapidxml::xml_node<>* nodeTrans = node->first_node("transform");
+					// I am not 100% sure of the order of the matrices
+					sibr::Matrix4f objectToWorld = shapeGroup.objectToWorld * parseTransform(nodeTrans);
+					sibr::MaterialMesh instance;
+					for (const auto& shape : shapeGroup.shapes)
+					{
+						std::cout << shape.filename;
+						const std::string meshPath = pathFolder + "/" + shape.filename;
 
-					if (meshes.find(filename) == meshes.end()) {
-						meshes[filename] = sibr::MaterialMesh();
-						if (!meshes[filename].load(meshPath)) {
-							return false;
+						if (meshes.find(meshPath) == meshes.end())
+						{
+							meshes[meshPath] = MaterialMesh();
+							meshes[meshPath].load(meshPath);
 						}
 
-					}
-
-					SIBR_LOG << "Adding one instance of: " << filename << std::endl;
-
-					rapidxml::xml_node<> *nodeTrans = node->first_node("transform");
-					sibr::MaterialMesh toWorldMesh = meshes[filename];
-
-					if (nodeTrans) {
-						rapidxml::xml_node<> *nodeM1 = nodeTrans->first_node("matrix");
-						std::string matrix1 = nodeM1->first_attribute("value")->value();
-						rapidxml::xml_node<> *nodeM2 = nodeM1->next_sibling("matrix");
-						std::string matrix2 = nodeM2->first_attribute("value")->value();
-
-
-						std::istringstream issM1(matrix1);
-						std::vector<std::string> splitM1(std::istream_iterator
-							<std::string>{issM1},
-							std::istream_iterator<std::string>());
-						sibr::Matrix4f m1;
-						m1 <<
-							std::stof(splitM1[0]), std::stof(splitM1[1]), std::stof(splitM1[2]), std::stof(splitM1[3]),
-							std::stof(splitM1[4]), std::stof(splitM1[5]), std::stof(splitM1[6]), std::stof(splitM1[7]),
-							std::stof(splitM1[8]), std::stof(splitM1[9]), std::stof(splitM1[10]), std::stof(splitM1[11]),
-							std::stof(splitM1[12]), std::stof(splitM1[13]), std::stof(splitM1[14]), std::stof(splitM1[15]);
-
-						std::istringstream issM2(matrix2);
-						std::vector<std::string> splitM2(
-							std::istream_iterator<std::string>{issM2},
-							std::istream_iterator<std::string>());
-						sibr::Matrix4f m2;
-						m2 <<
-							std::stof(splitM2[0]), std::stof(splitM2[1]), std::stof(splitM2[2]), std::stof(splitM2[3]),
-							std::stof(splitM2[4]), std::stof(splitM2[5]), std::stof(splitM2[6]), std::stof(splitM2[7]),
-							std::stof(splitM2[8]), std::stof(splitM2[9]), std::stof(splitM2[10]), std::stof(splitM2[11]),
-							std::stof(splitM2[12]), std::stof(splitM2[13]), std::stof(splitM2[14]), std::stof(splitM2[15]);
-
+						sibr::MaterialMesh toWorldMesh = meshes[meshPath];
+						
+						if (shape.flipNormals && toWorldMesh.hasNormals())
 						{
-							sibr::MaterialMesh::Vertices vertices;
+							const auto& refNormals = toWorldMesh.normals();
+							sibr::Mesh::Normals normals(refNormals.size());
+							for (int nid = 0; nid < refNormals.size(); ++nid)
+							{
+								normals[nid] = -refNormals[nid];
+							}
+							toWorldMesh.normals(normals);
+						}
+						// Convert to world coordinates
+						sibr::Matrix4f matrix = shape.toWorld * objectToWorld;
+						{
+							sibr::MaterialMesh::Vertices vertices(toWorldMesh.vertices().size());
 							for (int v = 0; v < toWorldMesh.vertices().size(); v++) {
 								sibr::Vector4f v4(toWorldMesh.vertices()[v].x(),
 									toWorldMesh.vertices()[v].y(),
 									toWorldMesh.vertices()[v].z(), 1.0);
-								vertices.push_back((m2*(m1*v4)).xyz());
-
+								vertices[v] = (matrix* v4).xyz();
 							}
 
 							toWorldMesh.vertices(vertices);
@@ -313,20 +460,25 @@ namespace sibr
 
 						// If the mesh has normals, we should transform them also.
 						if (toWorldMesh.hasNormals()) {
-							sibr::Mesh::Normals normals;
-							const sibr::Matrix4f m1Inv = (m2*m1).inverse().transpose();
+							sibr::Mesh::Normals normals(toWorldMesh.normals().size());
+							const sibr::Matrix3f normalTMatrix = matrix.block(0, 0, 3, 3).inverse().transpose();
 							for (int v = 0; v < toWorldMesh.normals().size(); v++) {
-								const sibr::Vector3f & ln = toWorldMesh.normals()[v];
-								sibr::Vector4f n4(ln[0], ln[1], ln[2], 1.0);
-								normals.push_back((m1Inv * n4).xyz());
+								const sibr::Vector3f& ln = toWorldMesh.normals()[v];
+								normals[v] = (normalTMatrix * ln).xyz();
 							}
 							toWorldMesh.normals(normals);
 						}
+						
+						if (!shape.matname.empty())
+						{
+							toWorldMesh.matId2Name({ shape.matname });
+						}
 
+						instance.merge(toWorldMesh);
 					}
-					merge(toWorldMesh);
-
+					merge(instance);
 				}
+				// Create the "unique" shapes
 				else if (strcmp(browserAttributes->name(), "type") == 0 &&
 					(strcmp(browserAttributes->value(), "obj") == 0 ||
 						strcmp(browserAttributes->value(), "ply") == 0)) {
@@ -376,6 +528,7 @@ namespace sibr
 					rapidxml::xml_node<> *nodeTrans = node
 						->first_node("transform");
 
+					sibr::Matrix4f objectToWorld = parseTransform(nodeTrans);
 
 					sibr::MaterialMesh toWorldMesh = meshes[filename];
 
@@ -390,94 +543,14 @@ namespace sibr
 					}
 
 					if (nodeTrans) {
-						sibr::Matrix4f objectToWorld = sibr::Matrix4f::Identity();
-						const auto getfValue = [&](rapidxml::xml_node<>* n, std::string const& name, float& value) {
-							if (n && n->first_attribute(name.c_str())) {
-								value = std::stof(n->first_attribute(name.c_str())->value());
-							}
-						};
-						const auto getVector = [&](rapidxml::xml_node<>* n, std::string const& name, sibr::Vector3f& vec) {
-							const auto isNonFloat = [](const char c) {
-								return c == ',' || c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '"' || c == 0;
-							};
-							const auto eatNonFloat = [&](const char* str, int& i) {
-								while (isNonFloat(str[i])) ++i;
-							};
-							const auto eatFloat = [&](const char* str, int& i) {
-								while (!isNonFloat(str[i])) ++i;
-							};
-							if (n && n->first_attribute(name.c_str())) {
-								int index = 0;
-								const char* value = n->first_attribute(name.c_str())->value();
-								for (int i = 0; i < vec.size(); ++i) {
-									eatNonFloat(value, index);
-									vec[i] = std::atof(value + index);
-									eatFloat(value, index);
-								}
-							}
-						};
-						const auto getAxesValues = [&](rapidxml::xml_node<>* n, float& x, float& y, float& z) {
-							getfValue(n, "x", x);
-							getfValue(n, "y", y);
-							getfValue(n, "z", z);
-						};	
-						// Loop through all the transform commands,
-						// and "accumulate" the transform matrices into "objectToWorld"
-						for (rapidxml::xml_node<>* node = nodeTrans->first_node(); node; node = node->next_sibling()) {
-							sibr::Matrix4f nodeMatrix = sibr::Matrix4f::Identity();
-							const char* transformType = node->name();
-							if (strcmp(transformType, "matrix") == 0) {
-								std::string matrixValue = node->first_attribute("value")->value();
-								std::istringstream issMatrix(matrixValue);
-								std::vector<std::string> split(
-									std::istream_iterator<std::string>{issMatrix},
-									std::istream_iterator<std::string>());
-								nodeMatrix <<
-									std::stof(split[0]), std::stof(split[1]), std::stof(split[2]), std::stof(split[3]),
-									std::stof(split[4]), std::stof(split[5]), std::stof(split[6]), std::stof(split[7]),
-									std::stof(split[8]), std::stof(split[9]), std::stof(split[10]), std::stof(split[11]),
-									std::stof(split[12]), std::stof(split[13]), std::stof(split[14]), std::stof(split[15]);
-							} else if(strcmp(transformType, "translate") == 0){ 
-								getAxesValues(node, nodeMatrix(0, 3), nodeMatrix(1, 3), nodeMatrix(2, 3));
-							} else if (strcmp(transformType, "scale") == 0) {
-								float scale = 1.f;
-								getfValue(node, "value", scale);
-								getAxesValues(node, nodeMatrix(0, 0), nodeMatrix(1, 1), nodeMatrix(2, 2));
-								nodeMatrix(0, 0) *= scale;
-								nodeMatrix(1, 1) *= scale;
-								nodeMatrix(2, 2) *= scale;
-							} else if (strcmp(transformType, "rotate") == 0) {
-								float rotateX = 0.f, rotateY = 0.f, rotateZ = 0.f;
-								float angleDegrees = 0.f;
-								getAxesValues(node, rotateX, rotateY, rotateZ);
-								getfValue(node, "angle", angleDegrees);
-								float angleRadians = angleDegrees * (float)M_PI / 180.f;
-								sibr::Transform3<float> transform;
-								transform.rotate(Eigen::Quaternionf(
-									Eigen::AngleAxisf(angleRadians,
-										Eigen::Vector3f(rotateX, rotateY, rotateZ))));
-								nodeMatrix = transform.matrix();
-							} else if (strcmp(transformType, "lookat") == 0) {
-								sibr::Vector3f eye{ 0, 0, 0 }, target{ 0, 0, 1 }, up{ 0, 1, 0 };
-								getVector(node, "origin", eye);
-								getVector(node, "target", target);
-								getVector(node, "up", up);
-								// WTF why inverse the lookat???
-								nodeMatrix = sibr::lookAt(eye, target, up).inverse();
-							} else {
-								throw std::runtime_error(std::string("Mitsuba xml parser: Unknown tranform type: ") + transformType);
-							}
-							objectToWorld = nodeMatrix * objectToWorld;
-						}
-
 						// Transform the vertices position
 						{
-							sibr::Mesh::Vertices vertices;
+							sibr::Mesh::Vertices vertices(toWorldMesh.vertices().size());
 							for (int v = 0; v < toWorldMesh.vertices().size(); v++) {
 								sibr::Vector4f v4(toWorldMesh.vertices()[v].x(),
 									toWorldMesh.vertices()[v].y(),
 									toWorldMesh.vertices()[v].z(), 1.0);
-								vertices.push_back((objectToWorld*v4).xyz());
+								vertices[v] = (objectToWorld*v4).xyz();
 
 							}
 							toWorldMesh.vertices(vertices);
@@ -485,11 +558,11 @@ namespace sibr
 						
 						// Transform the normals too
 						if (toWorldMesh.hasNormals()) {
-							sibr::Mesh::Normals normals;
+							sibr::Mesh::Normals normals(toWorldMesh.normals().size());
 							const sibr::Matrix3f normalTMatrix = objectToWorld.block(0, 0, 3, 3).inverse().transpose();
 							for (int v = 0; v < toWorldMesh.normals().size(); v++) {
 								const sibr::Vector3f& ln = toWorldMesh.normals()[v];
-								normals.push_back((normalTMatrix * ln));
+								normals[v] = (normalTMatrix * ln);
 							}
 							toWorldMesh.normals(normals);
 						}
@@ -501,7 +574,7 @@ namespace sibr
 		}
 
 		SIBR_LOG << "Loaded mesh: " << vertices().size() << " verts, " << meshIds().size() << " ids." << std::endl;
-
+		// Load all the materials
 		for (rapidxml::xml_node<> *node = nodeScene->first_node("bsdf");
 			node; node = node->next_sibling("bsdf"))
 		{

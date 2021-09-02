@@ -163,6 +163,46 @@ static void loadRawRC(std::string pathRC, std::vector<sibr::InputCamera::Ptr>& c
 	}
 }
 
+static bool isRawSynthetic(std::string pathSynthetic)
+{
+	// do we have bundle, mesh and list images ?
+	sibr::Mesh mesh2Align;
+	if (!fileExists(pathSynthetic + "/scene.obj")) {
+		SIBR_WRG << "***** No file " << pathSynthetic + "/scene.obj ; make sure your mesh has the correct name !!";
+		return false;
+	}
+	if (!fileExists(pathSynthetic + "/cameras.lookat")) {
+		SIBR_WRG << "***** No file " << pathSynthetic + "/cameras.lookat ; make sure your bundle file has the correct name !!";
+		return false;
+	}
+	if (!directoryExists(pathSynthetic + "/images")) {
+		SIBR_WRG << "***** No file " << pathSynthetic + "/images ; make sure you have images folder inside the scene ";
+		return false;
+	}
+	return true;
+}
+
+static void loadRawSynthetic(std::string pathSynthetic, std::vector<sibr::InputCamera::Ptr>& cams2Align,
+	std::vector<sibr::ImageRGB::Ptr>& imgs2Align, sibr::Mesh& mesh2Align)
+{
+	cams2Align = sibr::InputCamera::loadLookat(pathSynthetic + "/cameras.lookat", std::vector<sibr::Vector2u>{sibr::Vector2u(1920, 1080)}, 0.01f, 1000.0f);
+	SIBR_WRG << "We assume a size of the synthetic images of 1920*1080. If it is not your case, this loading will not work properly";
+	mesh2Align.load(pathSynthetic + "/scene.obj");
+	imgs2Align.resize(cams2Align.size());
+	for (int c = 0; c < cams2Align.size(); c++) {
+		sibr::ImageRGB::Ptr imgPtr;
+		sibr::ImageRGB img;
+		if (!img.load(pathSynthetic + "/images/" + cams2Align[c]->name()))
+			if (!img.load(pathSynthetic + "/images/" + cams2Align[c]->name() + ".png"))
+				if (!img.load(pathSynthetic + "/images/" + cams2Align[c]->name() + ".jpg")) {
+					SIBR_ERR << "Error loading dataset to align from " << pathSynthetic;
+					SIBR_ERR << "Problem loading images from raw RC, exiting ";
+				}
+
+		imgs2Align[c] = img.clonePtr();
+	}
+}
+
 
 int assignImages(
 	std::vector<sibr::ImageRGB::Ptr>& imgs2Align, std::vector<sibr::ImageRGB>& imgs2AlignSmall,
@@ -309,9 +349,13 @@ int main(int ac, char** av)
 	}
 
    	catch(...) {
-		std::cout << "Loading Raw RealityCapture data" << std::endl;
-		if (isRawRC(argsRefScene.dataset_path))  // try "raw RC" option
+		std::cout << "Trying to load Raw RealityCapture or Synthetic data" << std::endl;
+		if (isRawRC(argsRefScene.dataset_path)) {  // try "raw RC" option
 			loadRawRC(argsRefScene.dataset_path, camsRef, imgsRef, meshRef);
+		}
+		else if (isRawSynthetic(argsRefScene.dataset_path)) {
+			loadRawSynthetic(argsRefScene.dataset_path, camsRef, imgsRef, meshRef);
+		}
 		else 
 			SIBR_ERR << "Error loading reference dataset from " << myArgs.pathRef.get();
    	}
@@ -338,9 +382,13 @@ int main(int ac, char** av)
 
 
    	catch(...) {
-		std::cout << "Loading Raw RealityCapture data" << std::endl;
-		if (isRawRC(argsAlignScene.dataset_path)) // try "raw RC" option
+		std::cout << "Trying to load Raw RealityCapture or Synthetic data" << std::endl;
+		if (isRawRC(argsAlignScene.dataset_path)){ // try "raw RC" option
 			loadRawRC(argsAlignScene.dataset_path, cams2Align, imgs2AlignOriginal, mesh2Align);
+		}
+		else if (isRawSynthetic(argsAlignScene.dataset_path)) {
+			loadRawSynthetic(argsAlignScene.dataset_path, cams2Align, imgs2AlignOriginal, mesh2Align);
+		}
 		else
 			SIBR_ERR << "Error loading dataset to align from " << myArgs.pathToAlign.get();
    	}

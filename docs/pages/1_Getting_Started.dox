@@ -83,7 +83,7 @@ Once you have built the system or downloaded the binaries (see above), go to *in
 ```
 
 You will have an interactive viewer and you can navigate freely in the captured scene. 
-Our default interactive viewer has a main view running the algorithm and a top view to visualize the position of the calibrated cameras. By default you are in WASD mode, and can toggle to trackball using the "y" key. Please see the page [Interface](https://sibr.gitlabpages.inria.fr/docs/develop/howto_sibr_useful_objects.html) for more details on the interface.
+Our default interactive viewer has a main view running the algorithm and a top view to visualize the position of the calibrated cameras. By default you are in WASD mode, and can toggle to trackball using the "y" key. Please see the page [Interface](https://sibr.gitlabpages.inria.fr/docs/nightly/howto_sibr_useful_objects.html) for more details on the interface.
 
 
 @subsection sibr_prerequisite Prerequisites
@@ -101,8 +101,13 @@ Our default interactive viewer has a main view running the algorithm and a top v
 
 @subsection sibr_checkout Checkout the code
 
-- Clone sibr_core repository (https://gitlab.inria.fr/sibr/sibr_core).
- @code git clone https://gitlab.inria.fr/sibr/sibr_core @endcode
+- Clone sibr_core repository (https://gitlab.inria.fr/sibr/sibr_core). We recommend that you checkout master branch, but you can also work with the develop branch (unstable).
+@code
+## through HTTPS
+git clone https://gitlab.inria.fr/sibr/sibr_core.git -b master
+## through SSH
+git clone git@gitlab.inria.fr:sibr/sibr_core.git -b master
+@endcode
 - You can add the projects' source code you would like to compile with SIBR, for this see @ref sibr_projects_add)
 @subsection sibr_configure_cmake Configuring the solution
 

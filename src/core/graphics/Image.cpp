@@ -12,6 +12,7 @@
 
 
 #include "core/graphics/Image.hpp"
+#include <fstream>
 
 namespace sibr
 {

@@ -24,7 +24,7 @@ target_link_libraries(${PROJECT_NAME}
 	${Boost_LIBRARIES}
 	${OpenCV_LIBRARIES}
 	OpenMP::OpenMP_CXX
-	glfw3
+	${GLFW_LIBRARY}
 	mrf
 	sibr_system
 	sibr_graphics

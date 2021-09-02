@@ -153,6 +153,9 @@ namespace sibr
 		/** \return the focal length */
 		float focal() const;
 
+		/** \return the focal length x */
+		float focalx() const;
+
 		/** set the focal length ; to be used with caution; focal is usually inferred from the fov*/
 		void setFocal(float focal) { _focal = focal; }
 
@@ -311,6 +314,7 @@ namespace sibr
 	protected:
 
 		float _focal; ///< focal length
+		float _focalx; ///< focal length x, if there is one (colmap typically; -1 by default use with caution)
 		float _k1; ///< K1 bundler distorsion parameter
 		float _k2; ///< K2 bundler dist parameter
 		uint _w; ///< Image width

@@ -21,9 +21,15 @@
 
 if(NOT ASSIMP_DIR)
     set(ASSIMP_DIR "$ENV{ASSIMP_DIR}" CACHE PATH "ASSIMP root directory")
+	message("NO ASSIMP DIR " ASSIMP_DIR )
+	file(TO_CMAKE_PATH "/data/graphdeco/share/usr/local" ASSIMP_DIR)
+        set(ASSIMP_DIR "/data/graphdeco/share/usr/local" )
+	message("SETTING ASSIMP DIR " ASSIMP_DIR )
 endif()
 if(ASSIMP_DIR)
 	file(TO_CMAKE_PATH ${ASSIMP_DIR} ASSIMP_DIR)
+	file(TO_CMAKE_PATH "/data/graphdeco/share/usr/local" ASSIMP_DIR)
+	message("ASSIMP DIR " ASSIMP_DIR )
 endif()
 
 

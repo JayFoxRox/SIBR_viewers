@@ -12,12 +12,14 @@
 
 #include "FFmpegVideoEncoder.hpp"
 
+#ifndef HEADLESS
 extern "C"
 {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 }
+#endif
 
 #define QQ(rat) (rat.num/(double)rat.den)
 
@@ -35,6 +37,7 @@ namespace sibr {
 		bool forceResize
 	) : filepath(_filepath), fps(_fps), _forceResize(forceResize)
 	{
+#ifndef HEADLESS
 		/** Init FFMPEG, registering available codec plugins. */
 		if (!ffmpegInitDone) {
 			SIBR_LOG << "[FFMPEG] Registering all." << std::endl;
@@ -60,6 +63,7 @@ namespace sibr {
 		}
 		
 		init(sizeFix);
+#endif
 	}
 
 	bool FFVideoEncoder::isFine() const
@@ -69,6 +73,7 @@ namespace sibr {
 
 	void FFVideoEncoder::close()
 	{
+#ifndef HEADLESS
 		if (av_write_trailer(pFormatCtx) < 0) {
 			SIBR_WRG << "[FFMPEG] Can not av_write_trailer " << std::endl;
 		}
@@ -81,6 +86,7 @@ namespace sibr {
 		avformat_free_context(pFormatCtx);
 
 		needFree = false;
+#endif
 	}
 
 	FFVideoEncoder::~FFVideoEncoder()
@@ -93,6 +99,7 @@ namespace sibr {
 
 	void FFVideoEncoder::init(const sibr::Vector2i & size)
 	{
+#ifndef HEADLESS
 		w = size[0];
 		h = size[1];
 
@@ -177,11 +184,13 @@ namespace sibr {
 
 		initWasFine = true;
 		needFree = true;
+#endif
 	}
 
 
 	bool FFVideoEncoder::operator<<(cv::Mat frame)
 	{
+#ifndef HEADLESS
 		if (!video_st) {
 			return false;
 		}
@@ -207,12 +216,17 @@ namespace sibr {
 		++frameCount;
 
 		return encode(frameYUV);
+#else
+		SIBR_ERR << "Not supported in headless" << std::endl;
+		return false;
+#endif
 	}
 
 	bool FFVideoEncoder::operator<<(const sibr::ImageRGB & frame){
 		return (*this)<<(frame.toOpenCVBGR());
 	}
 
+#ifndef HEADLESS
 	bool FFVideoEncoder::encode(AVFrame * frame)
 	{
 		int got_picture = 0;
@@ -230,5 +244,6 @@ namespace sibr {
 
 		return true;
 	}
+#endif
 
 }
