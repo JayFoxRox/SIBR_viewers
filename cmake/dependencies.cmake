@@ -256,7 +256,6 @@ endif()
 ###################
 ## Find GLFW
 ###################
-<<<<<<< HEAD
 sibr_addlibrary(
     NAME glfw3
     MSVC11 "https://repo-sam.inria.fr/fungraph/dependencies/ibr-common/win3rdParty-MSVC15-splitted%20version/glfw-3.2.1.7z"
