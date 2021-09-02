@@ -8,12 +8,12 @@
 # For inquiries contact sibr@inria.fr and/or George.Drettakis@inria.fr
 
 
-CMAKE_MINIMUM_REQUIRED(VERSION 3.16.3)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0)
 set (CMAKE_SYSTEM_VERSION 10.0.15063.0 CACHE INTERNAL "Cmake system version" FORCE)
 PROJECT(sibr_projects)
 
 ## Check the cmake version
-set(REQUIRED_VERSION "3.16.0")
+set(REQUIRED_VERSION "3.10.0")
 set(CHECKED_VERSION "3.19.5")
 if (CMAKE_VERSION VERSION_LESS REQUIRED_VERSION)
     message(WARNING "Deprecated version of cmake. Please update to at least ${REQUIRED_VERSION} (${CHECKED_VERSION} recommended).")
@@ -170,4 +170,4 @@ ADD_SUBDIRECTORY(src)
 
 
 ## handle documentation
-ADD_SUBDIRECTORY(docs)
+#ADD_SUBDIRECTORY(docs)

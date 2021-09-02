@@ -41,6 +41,7 @@ namespace sibr
 		global.args.clear();
 
 		global.args["app_path"] = { std::string(argv[0])};
+std::cerr <<"PRINT app args: " <<  std::string(argv[0]) << std::endl;
 
 		std::string current_arg;
 		for (int i = 1; i < argc; ++i) {

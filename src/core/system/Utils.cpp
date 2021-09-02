@@ -16,7 +16,10 @@
 #include <sstream>
 #include <vector>
 #include "core/system/Utils.hpp"
+#ifdef USE_NFD
 #include <nfd.h>
+#endif
+
 
 #ifdef SIBR_OS_WINDOWS 
 	#include <Windows.h>
@@ -425,6 +428,7 @@ namespace sibr
 	bool showFilePicker(std::string & selectedElement,
 
 		const FilePickerMode mode, const std::string & directoryPath, const std::string & extensionsAllowed) {
+#ifdef USE_NFD
 		nfdchar_t *outPath = NULL;
 		nfdresult_t result = NFD_CANCEL;
 		
@@ -449,6 +453,7 @@ namespace sibr
 			std::cout << std::string(NFD_GetError()) << std::endl;
 		}
 		free(outPath);
+#endif
 
 		return false;
 

@@ -31,7 +31,7 @@ target_link_libraries(${PROJECT_NAME}
 	${OpenCV_LIBRARIES}
 	OpenMP::OpenMP_CXX
 	imgui
-	glfw3
+	${GLFW_LIBRARY}
 	sibr_system
 )
 

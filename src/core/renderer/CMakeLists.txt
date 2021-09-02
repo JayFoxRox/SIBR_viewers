@@ -28,7 +28,7 @@ target_link_libraries(${PROJECT_NAME}
 	${GLEW_LIBRARIES}
 	${OPENGL_LIBRARIES}
 	${OpenCV_LIBRARIES}
-	glfw3
+	${GLFW_LIBRARY}
 	sibr_system
 	sibr_view
 	sibr_assets
