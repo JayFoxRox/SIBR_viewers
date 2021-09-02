@@ -122,7 +122,9 @@ sibr_addlibrary(
     MSVC14 "https://repo-sam.inria.fr/fungraph/dependencies/ibr-common/win3rdParty-MSVC15-splitted%20version/embree-3.6.1.x64.vc14.windows.7z"     # TODO SV: provide a valid version if required
 )
 
-find_package(embree 3.0 REQUIRED PATHS "/data/graphdeco/share/embree/usr/local/lib64/cmake/" )
+# CLUSTER
+#find_package(embree 3.0 REQUIRED PATHS "/data/graphdeco/share/embree/usr/local/lib64/cmake/" )
+find_package(embree 3.0 )
 
 ###################
 ## Find eigen3

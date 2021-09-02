@@ -23,7 +23,8 @@ include_directories(
 target_link_libraries(${PROJECT_NAME}
 	OpenMP::OpenMP_CXX
 	embree
-	/data/graphdeco/share/tbb/lib64/libtbb.so
+# CLUSTER
+#	/data/graphdeco/share/tbb/lib64/libtbb.so
 	sibr_graphics
 	sibr_assets
 	nanoflann
