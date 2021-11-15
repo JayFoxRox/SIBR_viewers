@@ -132,6 +132,14 @@ namespace sibr {
 		 **/
 		void resize(const unsigned int w, const unsigned int h);
 
+
+		/// Getter for selected cam.
+		int& selectedCam() { return _selectedCam.get(); }
+
+
+		/// Getter for camsCount cam.
+		int& viewCam() { return _camsCount.get(); }
+
 		/// Should the final RT be cleared or not.
 		bool & clearDst() { return _clearDst; }
 
@@ -194,6 +202,7 @@ namespace sibr {
 
 		size_t _maxNumCams = 0;
 		GLuniform<int> _camsCount = 0;
+		GLuniform<int> _selectedCam = 0;
 
 		GLuniform<float>					_epsilonOcclusion = 0.01f;
 		bool								_backFaceCulling = true;

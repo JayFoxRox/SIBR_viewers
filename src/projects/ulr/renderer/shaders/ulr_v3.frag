@@ -254,6 +254,7 @@ void main(void){
 		return;
 	}
     
+
 	float thresh = 1.0000001 * color3.w;
     color0.w = max(0, 1.0 - color0.w/thresh);
     color1.w = max(0, 1.0 - color1.w/thresh);
@@ -274,6 +275,7 @@ void main(void){
              color2.w*color2.xyz +
              color3.w*color3.xyz
             ) / (color0.w + color1.w + color2.w + color3.w);
+
     gl_FragDepth = point.w;
 	
 }

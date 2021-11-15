@@ -53,7 +53,7 @@ sibr::ULRV3Renderer::ULRV3Renderer(const std::vector<InputCamera::Ptr> & cameras
 	setupShaders(fragString, vertexString);
 
 	// Create the intermediate rendertarget.
-	_depthRT.reset(new sibr::RenderTargetRGBA32F(w, h));
+	_depthRT.reset(new sibr::RenderTargetRGBA32F(w, h, SIBR_GPU_LINEAR_SAMPLING, 2));
 
 	CHECK_GL_ERROR;
 }
@@ -88,6 +88,7 @@ void sibr::ULRV3Renderer::setupShaders(const std::string & fShader, const std::s
 	_winnerTakesAll.init(_ulrShader, "winner_takes_all");
 	_camsCount.init(_ulrShader, "camsCount");
 	_gammaCorrection.init(_ulrShader, "gammaCorrection");
+	_selectedCam.init(_ulrShader, "selectedCam");
 
 	CHECK_GL_ERROR;
 }
@@ -233,10 +234,11 @@ void sibr::ULRV3Renderer::renderBlending(
 	_camsCount.send();
 	_winnerTakesAll.send();
 	_gammaCorrection.send();
+	_selectedCam.send();
 
 	// Textures.
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, _depthRT->handle());
+	glBindTexture(GL_TEXTURE_2D, _depthRT->handle(0));
 
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, inputRGBHandle);
@@ -254,6 +256,10 @@ void sibr::ULRV3Renderer::renderBlending(
 	glBindBuffer(GL_UNIFORM_BUFFER, _uboIndex);
 	glBindBufferBase(GL_UNIFORM_BUFFER, 4, _uboIndex);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	
+	// Textures.
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, _depthRT->handle(1));
 
 	if (passthroughDepth) {
 		glEnable(GL_DEPTH_TEST);

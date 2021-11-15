@@ -345,7 +345,7 @@ namespace sibr
 		return "";
 	}
 
-	bool	MaterialMesh::loadMtsXML(const std::string& xmlFile, bool loadTextures)
+	bool	MaterialMesh::loadMtsXML(const std::string& xmlFile, bool loadTextures, const std::vector<std::string>& suffix)
 	{
 		srand(static_cast <unsigned> (time(0)));
 		bool allLoaded = true;
@@ -375,25 +375,31 @@ namespace sibr
 		for (rapidxml::xml_node<> *node = nodeScene->first_node("shape");
 			node; node = node->next_sibling("shape"))
 		{
-			if (strcmp(node->first_attribute()->name(), "type") == 0 &&
-				strcmp(node->first_attribute()->value(), "shapegroup") == 0) {
+			//SIBR_LOG << node->first_attribute()->name() << ", " << node->first_attribute()->value() << std::endl;
+			for (rapidxml::xml_attribute<>* browserAttributes = node->
+				first_attribute();
+				browserAttributes;
+				browserAttributes = browserAttributes->next_attribute()) {
+				if (strcmp(browserAttributes->name(), "type") == 0 &&
+					strcmp(browserAttributes->value(), "shapegroup") == 0) {
 
-				//std::cout << "Found : " << node->first_attribute("id")->value() << std::endl;
+					//std::cout << "Found : " << node->first_attribute("id")->value() << std::endl;
 
-				std::string id = node->first_attribute("id")->value();
-				ShapeGroup shapeGroup;
-				for (rapidxml::xml_node<>* shapeNode = node->first_node("shape");shapeNode;shapeNode=shapeNode->next_sibling())
-				{
-					ShapeGroup::Shape shape;
-					shape.filename = parseFilename(shapeNode);
-					shape.toWorld = parseTransform(shapeNode->first_node("transform"));
-					shape.matname = parseMatID(shapeNode->first_node("ref"));
-					shape.flipNormals = shouldFlipNormals(shapeNode);
-					shapeGroup.shapes.push_back(shape);
+					std::string id = node->first_attribute("id")->value();
+					ShapeGroup shapeGroup;
+					for (rapidxml::xml_node<>* shapeNode = node->first_node("shape"); shapeNode; shapeNode = shapeNode->next_sibling())
+					{
+						ShapeGroup::Shape shape;
+						shape.filename = parseFilename(shapeNode);
+						shape.toWorld = parseTransform(shapeNode->first_node("transform"));
+						shape.matname = parseMatID(shapeNode->first_node("ref"));
+						shape.flipNormals = shouldFlipNormals(shapeNode);
+						shapeGroup.shapes.push_back(shape);
+					}
+					rapidxml::xml_node<>* tNode = node->first_node("transform");
+					shapeGroup.objectToWorld = parseTransform(tNode);
+					idToShapegroups[id] = shapeGroup;
 				}
-				rapidxml::xml_node<>* tNode = node->first_node("transform");
-				shapeGroup.objectToWorld = parseTransform(tNode);
-				idToShapegroups[id] = shapeGroup;
 			}
 		}
 		// Second: Create all the actual shapes
@@ -424,12 +430,16 @@ namespace sibr
 					for (const auto& shape : shapeGroup.shapes)
 					{
 						std::cout << shape.filename;
-						const std::string meshPath = pathFolder + "/" + shape.filename;
+						std::string meshPath;
+						for(auto suff : suffix){
+							meshPath = pathFolder + suff + "/" + shape.filename;
 
-						if (meshes.find(meshPath) == meshes.end())
-						{
-							meshes[meshPath] = MaterialMesh();
-							meshes[meshPath].load(meshPath);
+							if (meshes.find(meshPath) == meshes.end() && sibr::fileExists(meshPath))
+							{
+								meshes[meshPath] = MaterialMesh();
+								meshes[meshPath].load(meshPath);
+								break;
+							}
 						}
 
 						sibr::MaterialMesh toWorldMesh = meshes[meshPath];
@@ -576,7 +586,7 @@ namespace sibr
 		SIBR_LOG << "Loaded mesh: " << vertices().size() << " verts, " << meshIds().size() << " ids." << std::endl;
 		// Load all the materials
 		for (rapidxml::xml_node<> *node = nodeScene->first_node("bsdf");
-			node; node = node->next_sibling("bsdf"))
+			node && !loadTextures; node = node->next_sibling("bsdf"))
 		{
 			//getting id 
 			rapidxml::xml_attribute<> *attribute = node->first_attribute("id");

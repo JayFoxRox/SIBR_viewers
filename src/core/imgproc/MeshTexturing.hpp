@@ -56,6 +56,13 @@ namespace sibr {
 		*/
 		void reproject(const std::vector<InputCamera::Ptr> & cameras, const std::vector<sibr::ImageRGB::Ptr> & images, const float sampleRatio = 1.0);
 
+
+		/** Compute the variance of the samples for a set of images and reproject them into the texture map.
+		* \param cameras the cameras poses
+		* \param images the images to reproject
+		*/
+		void variance(const std::vector<InputCamera::Ptr>& cameras, const std::vector<sibr::ImageRGB::Ptr>& images, const float sampleRatio = 1.0);
+
 		/** Get the final result. 
 		* \param options the options to apply to the generated texture map.
 		*/

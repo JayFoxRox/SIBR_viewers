@@ -15,10 +15,13 @@
 uniform mat4 proj;
 
 layout(location = 0) in vec3 in_vertex;
+layout(location = 3) in vec3 in_normal;
 
 out vec3 vertex_coord;
+out vec3 vertex_normal;
 
 void main(void) {
 	gl_Position = proj * vec4(in_vertex,1.0);
     vertex_coord  = in_vertex;
+    vertex_normal = in_normal;
 }

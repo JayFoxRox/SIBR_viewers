@@ -172,6 +172,115 @@ namespace sibr {
 		}
 	}
 
+	void MeshTexturing::variance(const std::vector<InputCamera::Ptr>& cameras, const std::vector<sibr::ImageRGB::Ptr>& images, const float sampleRatio)
+	{
+		// We need a mesh for reprojection.
+		if (!_mesh) {
+			SIBR_WRG << "[Texturing] No mesh available." << std::endl;
+			return;
+		}
+
+
+		struct SampleInfos {
+			sibr::Vector3f color;
+			float weight;
+		};
+
+
+		const int w = _accum.w();
+		const int h = _accum.h();
+
+		sibr::LoadingProgress			progress(h, "[Texturing] Gathering color samples from cameras");
+		SIBR_LOG << "[Texturing] Gathering color samples from " << cameras.size() << " cameras ..." << std::endl;
+
+#pragma omp parallel for
+		for (int py = 0; py < h; ++py) {
+			for (int px = 0; px < w; ++px) {
+				// Check if we fall inside a triangle in the UV map.
+				RayHit hit;
+				const bool hasHit = sampleNeighborhood(px, py, hit);
+
+				// We really have no triangle in the neighborhood to use, skip.
+				if (!hasHit) {
+					continue;
+				}
+
+				// Need the smooth position and normal in the initial mesh.
+				sibr::Vector3f vertex, normal;
+				interpolate(hit, vertex, normal);
+
+				sibr::Vector3f avgColor(0.0f, 0.0f, 0.0f);
+				float totalWeight = 0.0f;
+
+				std::vector<SampleInfos> samples;
+
+				for (int cid = 0; cid < cameras.size(); ++cid) {
+					const auto& cam = cameras[cid];
+					if (!cam->frustumTest(vertex)) {
+						continue;
+					}
+
+					// Check for occlusions.
+					sibr::Vector3f occDir = (vertex - cam->position());
+					const float dist = occDir.norm();
+					if (dist > 0.0f) {
+						occDir /= dist;
+					}
+					const RayHit hitOcc = _worldRaycaster.intersect(Ray(cam->position(), occDir));
+					if (hitOcc.hitSomething() && (hitOcc.dist() + 0.0001f) < dist) {
+						continue;
+					}
+
+					// Reproject, read color.
+					const sibr::Vector2f pos = cam->projectImgSpaceInvertY(vertex).xy();
+					const sibr::Vector3f col = images[cid]->bilinear(pos).cast<float>().xyz();
+					// Angle-based weight for now.
+					/*const float angleWeight = std::max(-occDir.dot(normal), 0.0f);
+					const float weight = angleWeight;*/
+					//avgColor += weight * col;
+					//totalWeight += weight;
+					samples.emplace_back();
+					samples.back().color = col;
+					samples.back().weight = 1.0;
+				}
+				if (samples.empty()) {
+					continue;
+				}
+
+				std::sort(samples.begin(), samples.end(), [](const SampleInfos& a, const SampleInfos& b)
+				{
+					return a.weight > b.weight;
+				});
+
+				// Re-weight and accumulate the samples.
+				// The code is written this way to support 'best sampleRatio of all samples' approaches.
+				for (int i = 0; i < samples.size(); ++i) {
+					float w = samples[i].weight;
+					w = w * w;
+					totalWeight += w;
+					avgColor += w * samples[i].color;
+				}
+
+				if (totalWeight > 0.0f) {
+					avgColor = avgColor / totalWeight;
+				}
+
+				sibr::Vector3f sum(0.0f, 0.0f, 0.0f);
+				for (int i = 0; i < samples.size(); ++i) {
+					sibr::Vector3f diff = samples[i].color - avgColor;
+					sum += Vector3f(diff[0]*diff[0], diff[1] * diff[1], diff[2] * diff[2]);
+				}
+
+				if (totalWeight > 0.0f) {
+					_accum(px, py) = sum / totalWeight;
+					_mask(px, py)[0] = 255;
+				}
+			}
+			if ((py % 1000) == 0)
+				progress.walk(1000);
+		}
+	}
+
 	sibr::ImageRGB::Ptr MeshTexturing::getTexture(uint options) const {
 
 		ImageRGB32F output;

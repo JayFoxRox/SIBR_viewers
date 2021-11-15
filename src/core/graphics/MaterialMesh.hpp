@@ -348,7 +348,7 @@ namespace sibr
 		\param loadTextures should the material textures be loaded
 		\return a success flag
 		*/
-		bool	loadMtsXML(const std::string& xmlFile, bool loadTextures = true);
+		bool	loadMtsXML(const std::string& xmlFile, bool loadTextures = true, const std::vector<std::string>& suffix = { "" });
 
 		/*
 		Load tags image files from a list of file paths.

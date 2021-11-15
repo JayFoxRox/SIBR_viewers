@@ -13,9 +13,12 @@
 #version 420
 
 layout(location = 0) out vec4 out_color;
+layout(location = 1) out vec4 out_normal;
 
 in vec3 vertex_coord;
+in vec3 vertex_normal;
 
 void main(void) {
 	out_color = vec4(vertex_coord, gl_FragCoord.z);
+    out_normal = vec4(vertex_normal, gl_FragCoord.z);
 }
