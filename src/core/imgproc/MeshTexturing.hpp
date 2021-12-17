@@ -29,6 +29,12 @@ namespace sibr {
 	{
 	public:
 
+
+		struct SampleInfos {
+			sibr::Vector3f color;
+			float weight;
+		};
+
 		/** \brief Export options
 		 */
 		enum Options : uint {
@@ -57,12 +63,19 @@ namespace sibr {
 		void reproject(const std::vector<InputCamera::Ptr> & cameras, const std::vector<sibr::ImageRGB::Ptr> & images, const float sampleRatio = 1.0);
 
 
+		/** Reproject a set of images into the texture map, using the associated cameras.
+		* \param cameras the cameras poses
+		* \param images the images to reproject
+		*/
+		float computeMedian(const std::vector<MeshTexturing::SampleInfos> samples, const int channel);
+
 		/** Compute the variance of the samples for a set of images and reproject them into the texture map.
 		* \param cameras the cameras poses
 		* \param images the images to reproject
 		*/
-		void variance(const std::vector<InputCamera::Ptr>& cameras, const std::vector<sibr::ImageRGB::Ptr>& images, const float sampleRatio = 1.0);
+		void reproject_stats(const std::vector<InputCamera::Ptr>& cameras, const std::vector<sibr::ImageRGB::Ptr>& images, const std::string& stat="mean", const float sampleRatio = 1.0);
 
+		
 		/** Get the final result. 
 		* \param options the options to apply to the generated texture map.
 		*/
@@ -128,6 +141,7 @@ namespace sibr {
 		static sibr::ImageRGB32F::Ptr poissonFill(const sibr::ImageRGB32F & image, const sibr::ImageL8 & mask);
 
 	private:
+
 
 		/** Test if the UV-space mesh covers a pixel of the texture map.
 		* \param px pixel x coordinate

@@ -25,6 +25,7 @@ layout(binding=0) uniform sampler2D proxy;
 struct CameraInfos
 {
   mat4 vp;
+  mat4 v;
   vec3 pos;
   int selected;
   vec3 dir;

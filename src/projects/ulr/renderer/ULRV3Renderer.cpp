@@ -28,6 +28,7 @@ sibr::ULRV3Renderer::ULRV3Renderer(const std::vector<InputCamera::Ptr> & cameras
 	for (size_t i = 0; i < _maxNumCams; ++i) {
 		const auto & cam = *cameras[i];
 		_cameraInfos[i].vp = cam.viewproj();
+		_cameraInfos[i].v = cam.proj();
 		_cameraInfos[i].pos = cam.position();
 		_cameraInfos[i].dir = cam.dir();
 		_cameraInfos[i].selected = cam.isActive();
@@ -38,7 +39,7 @@ sibr::ULRV3Renderer::ULRV3Renderer(const std::vector<InputCamera::Ptr> & cameras
 	glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxBlockSize);
 	glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &maxSlicesSize);
 	// For each camera we store a matrix, 2 vecs3, 2 floats (including padding).
-	const unsigned int bytesPerCamera = 4 * (16 + 2 * 3 + 2);
+	const unsigned int bytesPerCamera = 4 * (16 + 16 + 2 * 3 + 2);
 	const unsigned int maxCamerasAllowed = std::min((unsigned int)maxSlicesSize, (unsigned int)(maxBlockSize / bytesPerCamera));
 	std::cout << "[ULRV3Renderer] " << "MAX_UNIFORM_BLOCK_SIZE: " << maxBlockSize << ", MAX_ARRAY_TEXTURE_LAYERS: " << maxSlicesSize << ", meaning at most " << maxCamerasAllowed << " cameras." << std::endl;
 
@@ -53,7 +54,7 @@ sibr::ULRV3Renderer::ULRV3Renderer(const std::vector<InputCamera::Ptr> & cameras
 	setupShaders(fragString, vertexString);
 
 	// Create the intermediate rendertarget.
-	_depthRT.reset(new sibr::RenderTargetRGBA32F(w, h, SIBR_GPU_LINEAR_SAMPLING, 2));
+	_depthRT.reset(new sibr::RenderTargetRGBA32F(w, h, SIBR_GPU_LINEAR_SAMPLING, 3));
 
 	CHECK_GL_ERROR;
 }
@@ -76,6 +77,7 @@ void sibr::ULRV3Renderer::setupShaders(const std::string & fShader, const std::s
 
 	// Setup uniforms.
 	_nCamProj.init(_depthShader, "proj");
+	_nView.init(_depthShader, "view");
 	_nCamPos.init(_ulrShader, "ncam_pos");
 	_occTest.init(_ulrShader, "occ_test");
 	_useMasks.init(_ulrShader, "doMasking");
@@ -198,6 +200,7 @@ void sibr::ULRV3Renderer::renderProxyDepth(const sibr::Mesh & mesh, const sibr::
 	// Render the mesh from the current viewpoint, output positions.
 	_depthShader.begin();
 	_nCamProj.set(eye.viewproj());
+	_nView.set(eye.view());
 
 	mesh.render(true, _backFaceCulling);
 	
@@ -260,6 +263,9 @@ void sibr::ULRV3Renderer::renderBlending(
 	// Textures.
 	glActiveTexture(GL_TEXTURE5);
 	glBindTexture(GL_TEXTURE_2D, _depthRT->handle(1));
+
+	glActiveTexture(GL_TEXTURE6);
+	glBindTexture(GL_TEXTURE_2D, _depthRT->handle(2));
 
 	if (passthroughDepth) {
 		glEnable(GL_DEPTH_TEST);

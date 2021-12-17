@@ -17,7 +17,9 @@
 
 in vec2 vertex_coord;
 layout(location = 0) out vec4 out_color;
-layout(location = 1) out vec4 out_weights;
+layout(location = 1) out vec4 out_depth;
+layout(location = 2) out vec4 out_normal;
+layout(location = 3) out vec4 out_weights;
 
 // 2D proxy texture.
 layout(binding=0) uniform sampler2D proxy;
@@ -26,6 +28,7 @@ layout(binding=0) uniform sampler2D proxy;
 struct CameraInfos
 {
   mat4 vp;
+  mat4 v;
   vec3 pos;
   int selected;
   vec3 dir;
@@ -91,6 +94,7 @@ layout(binding=3) uniform sampler2DArray input_masks;
 
 // 2D proxy normals.
 layout(binding=5) uniform sampler2D normals;
+layout(binding=6) uniform sampler2D normalsCam;
 
 vec4 getRGBD(vec3 xy_camid){
 	if(flipRGBs){
@@ -133,21 +137,14 @@ vec3 getRandomColor(int x);
 void main(void){
   		
   vec4 point = texture(proxy, vertex_coord);
-  
   vec4 normalW = texture(normals, vertex_coord);	// [-1, 1]
-  // discard if there was no intersection with the proxy
-  if ( point.w >= 1.0) {
-	discard;
-  }
+  vec4 normalC = texture(normalsCam, vertex_coord);	// [-1, 1]
+  float depth = point.w;
+  
 
   vec4  color0 = vec4(0.0,0.0,0.0,INFTY_W);
-  vec4  color1 = vec4(0.0,0.0,0.0,INFTY_W);
-  vec4  color2 = vec4(0.0,0.0,0.0,INFTY_W);
-  vec4  color3 = vec4(0.0,0.0,0.0,INFTY_W);
-
-  bool atLeastOneValid = false;
   
-  vec3 normalC, view_dir;
+  vec3 norm, view_dir;
   for(int i = 0; i < NUM_CAMS; i++){
 	
 	if(selectedCam != i){
@@ -166,91 +163,40 @@ void main(void){
 
 	if (frustumTest(point.xyz, ndc, i)){
 		vec3 xy_camid = vec3(uvd.xy,i);
-		
-		
 		vec4 color = getRGBD(xy_camid);
-
-		
-
-		if(doMasking){        
-			float masked = getMask(xy_camid);
-             
-            if( invert_mask ){
-                masked = 1.0 - masked;
-            }
-            
-            if( is_binary_mask ){
-                if( masked < 0.5) {
-                    continue;
-                }
-			} else {
-                color.xyz = masked*color.xyz;
-            }
-			
-		}
-		
-		if (discard_black_pixels){
-			if(all(equal(color.xyz, vec3(0.0)))){
-				continue;
-			}
-		}
- 		
-		if (occ_test){
-			if(abs(uvd.z-color.w) >= epsilonOcclusion) {	  
-				continue;
-			}
-		}
-
-		// Support output weights as random colors for debug.
-		if(showWeights){
-			color.xyz = getRandomColor(i);
-		}
 
 		float penaltyValue = 0;
 
-		if (!useUVDerivatives) {
-			// classic ulr
-			vec3 v1 = (point.xyz - cameras[i].pos);
-			vec3 v2 = (point.xyz - ncam_pos);
-			float dist_i2p 	= length(v1);
-			float dist_n2p 	= length(v2);
+		// compute ang deviation, ulr weights
+		vec3 v1 = (point.xyz - cameras[i].pos);
+		vec3 v2 = (point.xyz - ncam_pos);
+		float dist_i2p 	= length(v1);
+		float dist_n2p 	= length(v2);
 
-			float penalty_ang = float(occ_test) * max(0.0001, acos(dot(v1,v2)/(dist_i2p*dist_n2p)));
-
-			float penalty_res = max(0.0001, (dist_i2p - dist_n2p)/dist_i2p );
+		float penalty_ang = float(occ_test) * max(0.0001, acos(dot(v1,v2)/(dist_i2p*dist_n2p)));
+		float penalty_res = max(0.0001, (dist_i2p - dist_n2p)/dist_i2p );
 		 
-			penaltyValue = penalty_ang + BETA*penalty_res;
-			view_dir = normalize(-v1); //project(-v1, cameras[i].vp);
-			normalC =  normalize(normalW.xyz); //project(normalW.xyz, cameras[i].vp);
-			//normalC =  project(normalW.xyz, cameras[camsCount].vp);
-			color.xyz = vec3(dot(view_dir, normalC));
-		} else {
-			/// use uv derivatives
-			/// \todo TODO: check if uv needs to be scale by screen size as needed in unity hlsl
-
-			vec3 crossProduct = cross(vec3(uv_ddx, 0), vec3(uv_ddy, 0));
-			float transformScale = length (crossProduct);
-			float weight = 1.0f / transformScale;
-			penaltyValue = weight;
-		}
-
-        atLeastOneValid = true;
-		color.w = penaltyValue;  
+		penaltyValue = penalty_ang + BETA*penalty_res;
+		view_dir = normalize(-v1); //project(-v1, cameras[i].vp);
+		norm =  normalize(normalW.xyz); //project(normalW.xyz, cameras[i].vp);
+		//normalC =  project(normalW.xyz, cameras[camsCount].vp);
+		color.xyz = vec3(dot(view_dir, norm));
+		
+        color.w = penaltyValue;  
 		color0=color;
 	 }  
    }
    
-   if(!atLeastOneValid){
-        discard;
-   }
+  
    
     // output weights
 	out_color.xyz = color0.xyz;
-//	out_color.xyz = normalC.xyz*0.5 + 0.5;
-//	out_color.xyz = normalize(normalW.xyz*0.5 + 0.5);
-//	out_color.xyz = normalize(project(normalW.xyz, cameras[selectedCam].vp));
 	out_color.w = 1.0;
-    out_weights.xyz = vec3(color0.w);
+	out_depth.xyz = vec3(pow(depth, 1));
+	out_depth.w = 1.0;
+	out_normal.xyz = normalC.xyz;
+	out_normal.w = 1.0;
+	out_weights.xyz = vec3(color0.w);
 	out_weights.w = 1.0;
     gl_FragDepth = point.w;
 	

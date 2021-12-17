@@ -81,13 +81,6 @@ namespace sibr {
 			return;
 		}
 
-
-		struct SampleInfos {
-			sibr::Vector3f color;
-			float weight;
-		};
-
-
 		const int w = _accum.w();
 		const int h = _accum.h();
 
@@ -171,8 +164,29 @@ namespace sibr {
 				progress.walk(1000);
 		}
 	}
+	
+	float MeshTexturing::computeMedian(const std::vector<MeshTexturing::SampleInfos> samples, const int channel)
+	{
+		std::vector<float> values;
+		for (int i = 0; i < samples.size(); ++i) {
+			values.push_back(samples[i].color[channel]);
+		}
 
-	void MeshTexturing::variance(const std::vector<InputCamera::Ptr>& cameras, const std::vector<sibr::ImageRGB::Ptr>& images, const float sampleRatio)
+		sort(values.begin(), values.end());
+
+		int numElements = values.size();
+		if (numElements / 2 == 0) { // even number of candidate
+			int midIdx1 = values.size() / 2;
+			int midIdx2 = midIdx1 - 1;
+			return values[midIdx1] + values[midIdx2] / 2;
+		}
+		else {	// odd number of candidate
+			int midIdx = values.size() / 2;
+			return values[midIdx];
+		}
+	}
+
+	void MeshTexturing::reproject_stats(const std::vector<InputCamera::Ptr>& cameras, const std::vector<sibr::ImageRGB::Ptr>& images, const std::string& stat, const float sampleRatio)
 	{
 		// We need a mesh for reprojection.
 		if (!_mesh) {
@@ -181,10 +195,6 @@ namespace sibr {
 		}
 
 
-		struct SampleInfos {
-			sibr::Vector3f color;
-			float weight;
-		};
 
 
 		const int w = _accum.w();
@@ -209,7 +219,7 @@ namespace sibr {
 				sibr::Vector3f vertex, normal;
 				interpolate(hit, vertex, normal);
 
-				sibr::Vector3f avgColor(0.0f, 0.0f, 0.0f);
+				sibr::Vector3f sumColor(0.0f, 0.0f, 0.0f), avgColor(0.0f, 0.0f, 0.0f);
 				float totalWeight = 0.0f;
 
 				std::vector<SampleInfos> samples;
@@ -256,24 +266,43 @@ namespace sibr {
 				// The code is written this way to support 'best sampleRatio of all samples' approaches.
 				for (int i = 0; i < samples.size(); ++i) {
 					float w = samples[i].weight;
-					w = w * w;
 					totalWeight += w;
-					avgColor += w * samples[i].color;
+					sumColor += w * samples[i].color;
 				}
 
 				if (totalWeight > 0.0f) {
-					avgColor = avgColor / totalWeight;
+					avgColor = sumColor / totalWeight;
 				}
+
 
 				sibr::Vector3f sum(0.0f, 0.0f, 0.0f);
-				for (int i = 0; i < samples.size(); ++i) {
-					sibr::Vector3f diff = samples[i].color - avgColor;
-					sum += Vector3f(diff[0]*diff[0], diff[1] * diff[1], diff[2] * diff[2]);
+				if (stat == "mean") {
+					if (totalWeight > 0.0f) {
+						_accum(px, py) = avgColor;
+						_mask(px, py)[0] = 255;
+					}
 				}
+				else if (stat == "median") {
+					float colorR = computeMedian(samples, 0);
+					float colorG = computeMedian(samples, 1);
+					float colorB = computeMedian(samples, 2);
+					if (totalWeight > 0.0f) {
+						_accum(px, py) = Vector3f(colorR, colorG, colorB);
+						_mask(px, py)[0] = 255;
+					}
+				}
+				else if(stat == "variance"){
+					for (int i = 0; i < samples.size(); ++i) {
+						sibr::Vector3f diff = samples[i].color - avgColor;
+						sum += Vector3f(diff[0] * diff[0], diff[1] * diff[1], diff[2] * diff[2]);
+					}
 
-				if (totalWeight > 0.0f) {
-					_accum(px, py) = sum / totalWeight;
-					_mask(px, py)[0] = 255;
+					if (totalWeight > 0.0f) {
+						sibr::Vector3f var = sum / totalWeight;
+						float totVar = var.x() + var.y() + var.z();
+						_accum(px, py) = Vector3f(totVar, totVar, totVar);
+						_mask(px, py)[0] = 255;
+					}
 				}
 			}
 			if ((py % 1000) == 0)

@@ -187,6 +187,7 @@ namespace sibr {
 
 		sibr::RenderTargetRGBA32F::Ptr		_depthRT;
 		GLuniform<Matrix4f>					_nCamProj;
+		GLuniform<Matrix4f>					_nView;
 		GLuniform<Vector3f>					_nCamPos;
 
 		GLuniform<bool>
@@ -212,6 +213,7 @@ namespace sibr {
 			We have to be careful about alignment if we want to send those struct directly into the UBO. */
 		struct CameraUBOInfos {	 
 			Matrix4f vp; ///< Matrix viewproj.
+			Matrix4f v; ///< Matrix view.
 			Vector3f pos; ///< Camera position.
 			int selected = 0; ///< Is the camera selected (0/1).
 			Vector3f dir; ///< Camera direction.
