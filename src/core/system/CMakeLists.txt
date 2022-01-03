@@ -25,7 +25,7 @@ target_link_libraries(${PROJECT_NAME}
 	${Boost_LIBRARIES}
 	picojson
 	rapidxml
-#	nativefiledialog
+	#nativefiledialog
 )
 
 add_definitions( -DSIBR_SYSTEM_EXPORTS -DBOOST_ALL_DYN_LINK  )

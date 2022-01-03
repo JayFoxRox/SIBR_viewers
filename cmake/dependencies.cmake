@@ -111,6 +111,7 @@ include_directories(${ASSIMP_INCLUDE_DIR})
 #)
 #find_package(FFMPEG)
 #include_directories(${FFMPEG_INCLUDE_DIR})
+## COMMENT OUT ALL FFMPEG FOR CLUSTER
 
 ###################
 ## Find embree3
@@ -121,7 +122,9 @@ sibr_addlibrary(
     MSVC14 "https://repo-sam.inria.fr/fungraph/dependencies/ibr-common/win3rdParty-MSVC15-splitted%20version/embree-3.6.1.x64.vc14.windows.7z"     # TODO SV: provide a valid version if required
 )
 
+# CLUSTER
 find_package(embree 3.0 REQUIRED PATHS "/data/graphdeco/share/embree/usr/local/lib64/cmake/" )
+#find_package(embree 3.0 )
 
 ###################
 ## Find eigen3
@@ -184,9 +187,10 @@ if (WIN32)
     endif()
 endif()
 
-#find_package(Boost 1.71.0 REQUIRED COMPONENTS ${Boost_REQUIRED_COMPONENTS})
 #find_package(Boost 1.65.0 REQUIRED COMPONENTS ${Boost_REQUIRED_COMPONENTS})
+# for CLUSTER
 find_package(Boost 1.58.0 REQUIRED COMPONENTS ${Boost_REQUIRED_COMPONENTS})
+
 
 if(WIN32)
     add_definitions(/EHsc)
@@ -230,9 +234,10 @@ sibr_addlibrary(NAME OpenCV #VERBOSE ON
         MSVC14 "https://repo-sam.inria.fr/fungraph/dependencies/sibr/~0.9/opencv-4.5.0.7z"    # opencv compatible with msvc14 and with contribs
         SET ${opencv_set_arguments}
     )
+#find_package(OpenCV 4.5 REQUIRED) ## Use directly the OpenCVConfig.cmake provided
+## FOR CLUSTER
 find_package(OpenCV 4.5 REQUIRED PATHS "/data/graphdeco/share/opencv/usr/local/lib64/cmake/opencv4/" ) ## Use directly the OpenCVConfig.cmake provided
-
-    ##https://stackoverflow.com/questions/24262081/cmake-relwithdebinfo-links-to-debug-libs
+    #https://stackoverflow.com/questions/24262081/cmake-relwithdebinfo-links-to-debug-libs
 set_target_properties(${OpenCV_LIBS} PROPERTIES MAP_IMPORTED_CONFIG_RELWITHDEBINFO RELEASE)
 
 add_definitions(-DOPENCV_TRAITS_ENABLE_DEPRECATED) 
@@ -258,21 +263,25 @@ endif()
 #    MSVC14 "https://repo-sam.inria.fr/fungraph/dependencies/ibr-common/win3rdParty-MSVC15-splitted%20version/glfw-3.2.1.7z"     # TODO SV: provide a valid version if required
 #    SET CHECK_CACHED_VAR glfw3_DIR PATH "glfw-3.2.1"
 #)
-#
-#find_package(glfw3 REQUIRED 3.3 PATHS "/data/graphdeco/share/glfw/usr/local/lib64/cmake/glfw3" )
+
+### FOR CLUSTER COMMENT OUT lines above, uncomment lines below
 find_package(GLFW REQUIRED 3.3 )
-message("***********=============> GLFW IS " ${GLFW_LIBRARY})
-message("***********=============> GLFW IS " ${GLFW_LIBRARIES})
+##message("***********=============> GLFW IS " ${GLFW_LIBRARY})
+##message("***********=============> GLFW IS " ${GLFW_LIBRARIES})
+
+find_package(glfw3 REQUIRED)
 
 sibr_gitlibrary(TARGET imgui
     GIT_REPOSITORY 	"https://gitlab.inria.fr/sibr/libs/imgui.git"
     GIT_TAG			"90acee4883a56f22992d2a86e0c7c7568d277a82"
 )
 
+## FOR CLUSTER COMMENT OUT nativefiledialog
 #sibr_gitlibrary(TARGET nativefiledialog
 #    GIT_REPOSITORY 	"https://gitlab.inria.fr/sibr/libs/nativefiledialog.git"
 #    GIT_TAG			"06ffa119a318b46dcb0de82ca7e9f98492013bc3"
 #)
+
 
 sibr_gitlibrary(TARGET mrf
     GIT_REPOSITORY 	"https://gitlab.inria.fr/sibr/libs/mrf.git"
