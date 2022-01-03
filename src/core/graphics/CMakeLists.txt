@@ -23,6 +23,8 @@ include_directories(
 	${Boost_INCLUDE_DIRS}
 	${imgui_INCLUDE_DIRS}
 )
+message("***** =>>>>> GLFW " ${GLFW_LIBRARY})
+message("***** =>>>>> GLEW " ${GLEW_LIBRARIES})
 target_link_libraries(${PROJECT_NAME}
 	${Boost_LIBRARIES}
 	${ASSIMP_LIBRARIES}

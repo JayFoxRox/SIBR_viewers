@@ -1,0 +1,12 @@
+#/bin/tcsh
+module load cmake/3.19.6
+module load gcc/9.2.0
+module load cuda/11.0
+# tcsh
+setenv GLFW_LOCATION   /data/graphdeco/share/glfw/usr/local/
+setenv BOOST_ROOT  /data/graphdeco/share/boost/boost_1_65_1/
+# bash
+export GLFW_LOCATION=/data/graphdeco/share/glfw/usr/local/
+export BOOST_ROOT=/data/graphdeco/share/boost/boost_1_65_1/
+export OptiX_INSTALL_DIR=/data/graphdeco/share/optix/NVIDIA-OptiX-SDK-7.0.0-linux64/
+export DISPLAY=:0

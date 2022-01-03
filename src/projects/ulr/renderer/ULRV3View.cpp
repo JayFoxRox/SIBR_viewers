@@ -66,7 +66,7 @@ void sibr::ULRV3View::setScene(const sibr::BasicIBRScene::Ptr & newScene) {
 	_scene->cameras()->debugFlagCameraAsUsed(imgs_ulr);
 }
 
-void sibr::ULRV3View::setMode(const WeightsMode mode) {
+void sibr::ULRV3View::setMode(const WeightsMode mode, int camID, int viewCam) {
 	_weightsMode = mode;
 	if (_weightsMode == VARIANCE_BASED_W) {
 		_ulrRenderer->setupShaders("ulr/ulr_v3_alt");
@@ -74,9 +74,21 @@ void sibr::ULRV3View::setMode(const WeightsMode mode) {
 	else if (_weightsMode == ULR_FAST) {
 		_ulrRenderer->setupShaders("ulr/ulr_v3_fast");
 	}
+	else if (_weightsMode == ULR_WEIGHTS_OUT) {
+		_ulrRenderer->setupShaders("ulr/ulr_v3_weights");
+		_ulrRenderer->selectedCam() = camID;
+		_ulrRenderer->viewCam() = viewCam;
+	}
 	else {
 		_ulrRenderer->setupShaders();
 	}
+}
+
+void sibr::ULRV3View::setRenderMode(const RenderMode mode, int camID)
+{
+	_renderMode = mode;
+	_singleCamId = camID;
+	updateCameras(false);
 }
 
 void sibr::ULRV3View::onRenderIBR(sibr::IRenderTarget & dst, const sibr::Camera & eye)
@@ -100,6 +112,32 @@ void sibr::ULRV3View::onRenderIBR(sibr::IRenderTarget & dst, const sibr::Camera 
 
 void sibr::ULRV3View::onUpdate(Input & input)
 {
+	// Live shader reloading for debug.
+	if (input.key().isReleased(Key::F8)) {
+		
+		const std::string shaderSrcPath = "../../src/projects/ulr/renderer/shaders/";
+		const std::string shaderDstPath = sibr::getShadersDirectory("ulr") + "/";
+		const auto files = sibr::listFiles(shaderSrcPath, false, false, { "vert", "frag", "geom" });
+		for (const auto& file : files) {
+			sibr::copyFile(shaderSrcPath + file, shaderDstPath + file, true);
+		}
+
+
+		if (_weightsMode == VARIANCE_BASED_W) {
+			_ulrRenderer->setupShaders("ulr/ulr_v3_alt");
+		}
+		else if (_weightsMode == ULR_FAST) {
+			_ulrRenderer->setupShaders("ulr/ulr_v3_fast");
+		}
+		else if (_weightsMode == ULR_WEIGHTS_OUT) {
+			_ulrRenderer->setupShaders("ulr/ulr_v3_weights");
+			_ulrRenderer->selectedCam() = _singleCamId;
+		}
+		else {
+			_ulrRenderer->setupShaders();
+		}
+
+	}
 }
 
 void sibr::ULRV3View::onGUI()
@@ -140,8 +178,13 @@ void sibr::ULRV3View::onGUI()
 		}
 		ImGui::Separator();
 		// Switch the shaders for ULR rendering.
-		if (ImGui::Combo("Weights mode", (int*)(&_weightsMode), "Standard ULR\0Variance based\0Fast ULR\0\0")) {
+		if (ImGui::Combo("Weights mode", (int*)(&_weightsMode), "Standard ULR\0Variance based\0Fast ULR\0Weights Out\0\0")) {
 			setMode(_weightsMode);
+		}
+		if (_weightsMode == ULR_WEIGHTS_OUT) {
+			const bool changedIndex = ImGui::InputInt("Selected image", &_singleCamId, 1, 10);
+			_singleCamId = sibr::clamp(_singleCamId, 0, (int)_scene->cameras()->inputCameras().size() - 1);
+			_ulrRenderer->selectedCam() = _singleCamId;
 		}
 		
 		ImGui::Checkbox("Occlusion Testing", &_ulrRenderer->occTest());

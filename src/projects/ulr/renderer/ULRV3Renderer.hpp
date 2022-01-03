@@ -132,6 +132,14 @@ namespace sibr {
 		 **/
 		void resize(const unsigned int w, const unsigned int h);
 
+
+		/// Getter for selected cam.
+		int& selectedCam() { return _selectedCam.get(); }
+
+
+		/// Getter for camsCount cam.
+		int& viewCam() { return _camsCount.get(); }
+
 		/// Should the final RT be cleared or not.
 		bool & clearDst() { return _clearDst; }
 
@@ -179,6 +187,7 @@ namespace sibr {
 
 		sibr::RenderTargetRGBA32F::Ptr		_depthRT;
 		GLuniform<Matrix4f>					_nCamProj;
+		GLuniform<Matrix4f>					_nView;
 		GLuniform<Vector3f>					_nCamPos;
 
 		GLuniform<bool>
@@ -194,6 +203,7 @@ namespace sibr {
 
 		size_t _maxNumCams = 0;
 		GLuniform<int> _camsCount = 0;
+		GLuniform<int> _selectedCam = 0;
 
 		GLuniform<float>					_epsilonOcclusion = 0.01f;
 		bool								_backFaceCulling = true;
@@ -203,6 +213,7 @@ namespace sibr {
 			We have to be careful about alignment if we want to send those struct directly into the UBO. */
 		struct CameraUBOInfos {	 
 			Matrix4f vp; ///< Matrix viewproj.
+			Matrix4f v; ///< Matrix view.
 			Vector3f pos; ///< Camera position.
 			int selected = 0; ///< Is the camera selected (0/1).
 			Vector3f dir; ///< Camera direction.

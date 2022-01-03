@@ -64,7 +64,6 @@ if (WIN32)
 endif ()
 
 if (${CMAKE_HOST_UNIX})
-    #set( GLFW_LOCATION /data/graphdeco/share/glfw/usr/local/)
     message("GFLW LOCATION " $ENV{GLFW_LOCATION} )
     find_path( GLFW_INCLUDE_DIR
         NAMES
