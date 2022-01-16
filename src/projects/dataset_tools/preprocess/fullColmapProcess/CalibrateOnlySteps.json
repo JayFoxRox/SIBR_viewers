@@ -1,0 +1,71 @@
+{
+    "steps" : [
+        {
+            "name": "build_dataset_structure",
+            "function": "utils.datasets.buildDatasetStructure",
+            "function_args": {
+                "path" : "${path}",
+                "types" : ["colmap"]
+            }
+        },
+        {
+            "name": "colmap_feature_extractor",
+            "app": "colmap",
+            "command_args": [
+                "feature_extractor",
+                "--database_path", "${path}/colmap/dataset.db",
+		        "--image_path", "${path}/images/",
+                "--ImageReader.camera_model", "PINHOLE",
+                "--ImageReader.single_camera", "0"
+            ]
+        },
+        {
+            "name": "colmap_exhaustive_matcher",
+            "app": "colmap",
+            "command_args": [
+                "exhaustive_matcher",
+                "--database_path", "${path}/colmap/dataset.db",
+                "--SiftMatching.gpu_index", "${gpusIndices}"
+            ]
+        },
+        {
+            "name": "colmap_mapper",
+            "app": "colmap",
+            "command_args": [
+                "mapper",
+                "--database_path", "${path}/colmap/dataset.db",
+                "--image_path", "${path}/images/",
+                "--output_path", "${path}/colmap/sparse/",
+                "--Mapper.num_threads", "16",
+                "--Mapper.init_min_tri_angle", "4",
+                "--Mapper.multiple_models", "0",
+                "--Mapper.extract_colors", "0",
+                "--Mapper.ba_global_images_ratio", "1.2",
+                "--Mapper.ba_global_points_ratio", "1.2",
+                "--Mapper.ba_global_max_num_iterations", "20",
+                "--Mapper.ba_global_max_refinements", "3",
+                "--Mapper.ba_global_points_freq", "200000"
+            ]
+        },
+        {
+            "name": "colmap_model_converter",
+            "app": "colmap",
+            "command_args": [
+                "model_converter",
+                "--input_path", "${path}/colmap/sparse/0",
+                "--output_path", "${path}/colmap/sparse/",
+                "--output_type", "TXT"
+            ]
+        },
+        {
+            "name": "colmap_model_converter",
+            "app": "colmap",
+            "command_args": [
+                "model_converter",
+                "--input_path", "${path}/colmap/sparse/",
+                "--output_path", "${path}/text/",
+                "--output_type", "TXT"
+            ]
+        }
+    ]
+}
