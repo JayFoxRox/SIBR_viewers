@@ -144,27 +144,6 @@ def main():
            shutil.copyfile(camerasfile, dstpath +"\\cameras.txt")
         cnt = cnt + 1
 
-    # move all the video images so they are not taken into account in further processing
-    imagedir = args["path"] + "\\images"
-    image_directory = os.listdir(imagedir)
-
-    videodir = args["path"] + "\\videos"
-    video_directory = os.listdir(videodir)
-
-    # move video images
-    cnt = 0
-    for videoname in video_directory: 
-      if os.path.isdir(os.path.join(videodir, videoname)):
-         dstpath = os.path.join(os.path.abspath(os.path.join(args["path"], "images\\")) , videoname)
-         print("Creating ", dstpath)
-         os.makedirs(dstpath, exist_ok=True)
-         for fname in image_directory: 
-           print("Search ", videoname , " in " , fname )
-           if videoname in fname:
-             if not os.path.exists(os.path.join(dstpath,fname)):
-                shutil.move(os.path.join(imagedir,fname), os.path.join(dstpath,fname))
-                print('moving ', os.path.join(imagedir,fname), " to " , os.path.join(dstpath,fname))
-
     programs = {
         "colmap": {
             "path": getColmap(args["colmapPath"])

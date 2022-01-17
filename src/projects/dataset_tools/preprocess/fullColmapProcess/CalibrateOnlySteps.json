@@ -8,6 +8,14 @@
                 "types" : ["colmap"]
             }
         },
+		{
+			"name": "extract_video_frames",
+			"function": "colmap_for_refl.extract_video_frames",
+			"function_args": {
+				"pathIn": "${path}/videos",
+				"pathOut": "${path}/images"
+			}
+		},
         {
             "name": "colmap_feature_extractor",
             "app": "colmap",
@@ -66,6 +74,13 @@
                 "--output_path", "${path}/text/",
                 "--output_type", "TXT"
             ]
-        }
+        },
+		{	
+			"name": "fix_cameras",
+			"function": "colmap_for_refl.fix_cameras",
+			"function_args": {
+				"path": "${path}"
+			}
+		}
     ]
 }

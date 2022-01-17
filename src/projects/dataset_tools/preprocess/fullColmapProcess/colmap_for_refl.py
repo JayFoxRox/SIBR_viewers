@@ -6,7 +6,7 @@ import argparse
 import cv2
 print(cv2.__version__)
 
-def extractImages(pathIn, pathOut, videoName, maxNumFrames = -1, resize=False):
+def extract_images(pathIn, pathOut, videoName, maxNumFrames = -1, resize=False):
     count = 0
     vidcap = cv2.VideoCapture(pathIn)
     fps = round(vidcap.get(cv2.CAP_PROP_FPS))
@@ -16,6 +16,11 @@ def extractImages(pathIn, pathOut, videoName, maxNumFrames = -1, resize=False):
     success = True
     print("Extracting ", total_frames/2, " Frames" )
     fileNames = []
+    newFolder = pathOut + "\\%s" % (videoName)
+    if not os.path.exists(newFolder):
+      print( "Creating: ", newFolder)
+      os.makedirs(newFolder, exist_ok=True)
+
     for frame in range(round(total_frames/2)):
         # every 2nd frame
         vidcap.set(cv2.CAP_PROP_POS_MSEC,(frame*2))
@@ -31,9 +36,9 @@ def extractImages(pathIn, pathOut, videoName, maxNumFrames = -1, resize=False):
             dim = (width, height)
             resized = cv2.resize(image, dim, interpolation = cv2.INTER_AREA)
 
-        print( "Writing: ", pathOut + "\\%s_frame%04d.png" % (videoName, count))     
-        fileNames.append(pathOut + "\\%s_frame%04d.png" % (videoName, count))     
-        cv2.imwrite( pathOut + "\\%s_frame%04d.png" % (videoName, count), resized)     # save frame as JPEG file
+        print( "Writing: ", pathOut + "\\%s\\frame%04d.png" % (videoName, count))     
+        fileNames.append(pathOut + "\\%s\\frame%04d.png" % (videoName, count))     
+        cv2.imwrite( pathOut + "\\%s\\frame%04d.png" % (videoName, count), resized)     # save frame as PNG file
  
         if maxNumFrames == count:
            break;
@@ -42,24 +47,21 @@ def extractImages(pathIn, pathOut, videoName, maxNumFrames = -1, resize=False):
     return fileNames
 
 
-if __name__=="__main__":
-    a = argparse.ArgumentParser()
-    a.add_argument("--pathIn", help="path to video")
-    a.add_argument("--pathOut", help="path to images")
-    args = a.parse_args()
-    print(args)
+def fix_cameras(path):
+	return True
 
+def extract_video_frames(pathIn, pathOut):
     cnt = 0
     fileNames = []
-    for filename in os.listdir(args.pathIn):
-      with open(os.path.join(args.pathIn, filename), 'r') as f:
+    for filename in os.listdir(pathIn):
+      with open(os.path.join(pathIn, filename), 'r') as f:
           print("Extracting Video from File: ", f.name)
-#          fileNames  = fileNames + extractImages(f.name, args.pathOut, "Video%d" % cnt, maxNumFrames=30, resize=True)
-          fileNames  = fileNames + extractImages(f.name, args.pathOut, "Video%d" % cnt, resize=True)
-#          extractImages(f.name, args.pathOut, videoName="Video%d" % cnt)
+#          fileNames  = fileNames + extract_images(f.name, pathOut, "Video%d" % cnt, maxNumFrames=30, resize=True)
+          fileNames  = fileNames + extract_images(f.name, pathOut, "Video%d" % cnt, resize=True)
+#          extract_images(f.name, pathOut, videoName="Video%d" % cnt)
           cnt = cnt+1
 
-    with open(os.path.dirname(args.pathIn) + "\\videos\\Video_Frames.txt", 'w') as f:
+    with open(os.path.dirname(pathIn) + "\\videos\\Video_Frames.txt", 'w') as f:
        for item in fileNames:
           f.write("%s\n" % os.path.basename(item))
        f.close()
