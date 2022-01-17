@@ -367,6 +367,7 @@ namespace sibr
 
 	void CameraRecorder::recordOfflinePath(const std::string& outPathDir, ViewBase::Ptr view, const std::string& prefix) {
 		sibr::ImageRGBA32F::Ptr outImage;
+
 		outImage.reset(new ImageRGBA32F(_ow, _oh));
 		std::string outpathd = outPathDir;
 
@@ -396,7 +397,12 @@ namespace sibr
 			view->onRenderIBR(*outFrame, _cameras[i]);
 			std::ostringstream ssZeroPad;
 			ssZeroPad << std::setw(8) << std::setfill('0') << i;
-			outFileName = outpathd + "/" +  ssZeroPad.str() + ".png";
+			if (_camera_names.size() > 0) {
+				outFileName = outpathd + "/" +  _camera_names[i] + ".png";
+				std::cerr << "Saving Camera " << outFileName << std::endl;
+			}
+			else
+				outFileName = outpathd + "/" +  ssZeroPad.str() + ".png";
 			outFrame->readBack(*outImage);
 			outImage->save(outFileName, false);
 		}

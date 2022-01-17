@@ -203,6 +203,16 @@ namespace sibr
 		*/
 		float & speed() { return _speed; }
 
+
+		/**
+		 * set with/height for offline rendering
+		 */
+		void set_oWH(int w, int h) { _ow = w, _oh = h; }
+
+		/*
+		 * list of camera names for test set
+		 */
+		void cameraNames(std::vector<std::string> cn) { _camera_names = cn;  }
 	private:
 		uint					_pos; ///< Current camera ID for replay.
 		std::vector<Camera>		_cameras; ///< List of recorded cameras.
@@ -216,6 +226,7 @@ namespace sibr
 		float					_interp; ///< Current interpoaltion factor.
 		bool					_playNoInterp; ///< Just play the cameras, make sure focal is preserved
 		int						_ow, _oh; ///< offline output path resolution
+		std::vector<std::string> _camera_names;
 	};
 
 	///// DEFINITIONS /////
