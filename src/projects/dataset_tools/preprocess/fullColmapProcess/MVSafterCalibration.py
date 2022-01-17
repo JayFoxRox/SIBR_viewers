@@ -165,8 +165,6 @@ def main():
                 shutil.move(os.path.join(imagedir,fname), os.path.join(dstpath,fname))
                 print('moving ', os.path.join(imagedir,fname), " to " , os.path.join(dstpath,fname))
 
-    exit()
-
     programs = {
         "colmap": {
             "path": getColmap(args["colmapPath"])

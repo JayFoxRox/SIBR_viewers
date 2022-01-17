@@ -54,7 +54,8 @@ if __name__=="__main__":
     for filename in os.listdir(args.pathIn):
       with open(os.path.join(args.pathIn, filename), 'r') as f:
           print("Extracting Video from File: ", f.name)
-          fileNames  = fileNames + extractImages(f.name, args.pathOut, "Video%d" % cnt, maxNumFrames=30, resize=True)
+#          fileNames  = fileNames + extractImages(f.name, args.pathOut, "Video%d" % cnt, maxNumFrames=30, resize=True)
+          fileNames  = fileNames + extractImages(f.name, args.pathOut, "Video%d" % cnt, resize=True)
 #          extractImages(f.name, args.pathOut, videoName="Video%d" % cnt)
           cnt = cnt+1
 
