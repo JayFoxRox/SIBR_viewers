@@ -7,36 +7,37 @@ import cv2
 print(cv2.__version__)
 
 def extract_images(pathIn, pathOut, videoName, maxNumFrames = -1, resize=False):
+    EVERY_NTH = 2
     count = 0
     vidcap = cv2.VideoCapture(pathIn)
     fps = round(vidcap.get(cv2.CAP_PROP_FPS))
-    total_frames = vidcap.get(7)
+    total_frames = vidcap.get(7)/EVERY_NTH
     print("FPS = ", fps)
     success,image = vidcap.read()
     success = True
-    print("Extracting ", total_frames/2, " Frames" )
+    print("Extracting ", total_frames, " Frames" )
     fileNames = []
     newFolder = pathOut + "\\%s" % (videoName)
     if not os.path.exists(newFolder):
       print( "Creating: ", newFolder)
       os.makedirs(newFolder, exist_ok=True)
 
-    for frame in range(round(total_frames/2)):
-        # every 2nd frame
-        vidcap.set(cv2.CAP_PROP_POS_MSEC,(frame*2))
+    for frame in range(round(total_frames)):
+        # every Nth frame
+        vidcap.set(cv2.CAP_PROP_POS_FRAMES,(EVERY_NTH*frame))
         success,image = vidcap.read()
         if not success:
            break
         resized = image
         if resize :
-            print('Original Dimensions : ',image.shape)
+            #print('Original Dimensions : ',image.shape)
             scale_percent = 52 # percent of original size
             width = int(image.shape[1] * scale_percent / 100)
             height = int(image.shape[0] * scale_percent / 100)
             dim = (width, height)
             resized = cv2.resize(image, dim, interpolation = cv2.INTER_AREA)
 
-        print( "Writing: ", pathOut + "\\%s\\frame%04d.png" % (videoName, count))     
+        print( "Writing: frame # ", EVERY_NTH*frame, " " , pathOut + "\\%s\\frame%04d.png" % (videoName, count))     
         fileNames.append(pathOut + "\\%s\\frame%04d.png" % (videoName, count))     
         cv2.imwrite( pathOut + "\\%s\\frame%04d.png" % (videoName, count), resized)     # save frame as PNG file
  
@@ -44,6 +45,7 @@ def extract_images(pathIn, pathOut, videoName, maxNumFrames = -1, resize=False):
            break;
 
         count = count + 1
+
     return fileNames
 
 
