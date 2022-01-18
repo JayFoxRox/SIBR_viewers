@@ -65,22 +65,43 @@
                 "--output_type", "TXT"
             ]
         },
-        {
-            "name": "colmap_model_converter",
-            "app": "colmap",
-            "command_args": [
-                "model_converter",
-                "--input_path", "${path}/colmap/sparse/",
-                "--output_path", "${path}/text/",
-                "--output_type", "TXT"
-            ]
-        },
 		{	
 			"name": "fix_cameras",
 			"function": "colmap_for_refl.fix_cameras",
 			"function_args": {
 				"path": "${path}"
 			}
-		}
+		},
+		{
+            "name": "colmap_model_converter",
+            "app": "colmap",
+            "command_args": [
+                "model_converter",
+                "--input_path", "${path}/colmap/sparse/",
+                "--output_path", "${path}/colmap/sparse/0",
+                "--output_type", "BIN"
+            ]
+        },
+        {
+            "name": "colmap_image_undistorter_colmap",
+            "app": "colmap",
+            "command_args": [
+                "image_undistorter",
+                "--image_path", "${path}/images/",
+                "--input_path", "${path}/colmap/sparse/",
+                "--output_path", "${path}/colmap/stereo",
+                "--output_type", "COLMAP"
+            ]
+        },
+        {
+            "name": "colmap_model_converter",
+            "app": "colmap",
+            "command_args": [
+                "model_converter",
+                "--input_path", "${path}/colmap/sparse/0",
+                "--output_path", "${path}/text/",
+                "--output_type", "TXT"
+            ]
+        }
     ]
 }

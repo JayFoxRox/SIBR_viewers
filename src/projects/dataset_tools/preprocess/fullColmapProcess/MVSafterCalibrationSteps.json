@@ -18,48 +18,13 @@
                 "--image_names_path", "${path}/videos/Video_frames.txt"
             ]
         },
-		{
-            "name": "colmap_model_converter",
-            "app": "colmap",
-            "command_args": [
-                "model_converter",
-                "--input_path", "${path}/colmap/sparse/",
-                "--output_path", "${path}/colmap/sparse/",
-                "--output_type", "TXT"
-            ]
-        },
-		{
-            "name": "colmap_model_converter",
-            "app": "colmap",
-            "command_args": [
-                "model_converter",
-                "--input_path", "${path}/colmap/sparse/",
-                "--output_path", "${path}/colmap/sparse/0/",
-                "--output_type", "TXT"
-            ]
-        },
-        {
-            "name": "colmap_image_undistorter_colmap",
-            "app": "colmap",
-            "command_args": [
-                "image_undistorter",
-                "--image_path", "${path}/images/",
-                "--input_path", "${path}/colmap/sparse/0/",
-                "--output_path", "${path}/colmap/stereo/",
-                "--output_type", "COLMAP"
-            ]
-        },
-        {
-            "name": "colmap_image_undistorter_capreal",
-            "app": "colmap",
-            "command_args": [
-                "image_undistorter",
-                "--image_path", "${path}/images/",
-                "--input_path", "${path}/colmap/sparse/0/",
-                "--output_path", "${path}/capreal/undistorted/",
-                "--output_type", "CMP-MVS"
-            ]
-        },
+		{ 
+			"name": "remove_video_images",
+			"function": "colmap_for_refl.remove_video_images",
+			"function_args": {
+				"path": "${path}"
+			}
+		},
         {
             "name": "colmap_patch_match_stereo",
             "app": "colmap",

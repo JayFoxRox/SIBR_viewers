@@ -12,7 +12,7 @@
 #! -*- encoding: utf-8 -*-
 
 """ @package dataset_tools_preprocess
-This script runs a pipeline to create Colmap reconstruction data assuming that calibrateOnly.py was run before and that a colmap  directory exists
+This script runs a pipeline to create Colmap reconstruction data
 
 Parameters: -h help,
             -path <path to your dataset folder>,
@@ -20,7 +20,7 @@ Parameters: -h help,
             -colmapPath <colmap path directory which contains colmap.bat / colmap.bin>,
             -quality <quality of the reconstruction : 'low', 'medium', 'high', 'extreme'>,
 
-Usage: python MVSafterCalibration.py -path <path to your dataset folder>
+Usage: python calibrateOnly.py -path <path to your dataset folder>
                                    -sibrBinariesPath <binaries directory of SIBR>
                                    -colmapPath <colmap path directory which contains colmap.bat / colmap.bin>
                                    -quality <quality of the reconstruction : 'low', 'medium', 'high', 'extreme'>
@@ -33,7 +33,6 @@ import argparse
 from utils.paths import getBinariesPath, getColmapPath, getMeshlabPath
 from utils.commands import  getProcess, getColmap
 from utils.TaskPipeline import TaskPipeline
-
 
 def main():
     parser = argparse.ArgumentParser()
@@ -52,6 +51,24 @@ def main():
     
     #colmap performance arguments
     parser.add_argument("--numGPUs", type=int, default=2, help="number of GPUs allocated to Colmap")
+
+    # Feature extractor 
+    parser.add_argument("--SiftExtraction.max_image_size", type=int, dest="siftExtraction_ImageSize")
+    parser.add_argument("--SiftExtraction.estimate_affine_shape", type=int, dest="siftExtraction_EstimateAffineShape") 
+    parser.add_argument("--SiftExtraction.domain_size_pooling", type=int, dest="siftExtraction_DomainSizePooling")
+    parser.add_argument("--SiftExtraction.max_num_features", type=int, dest="siftExtraction_MaxNumFeatures")
+    parser.add_argument("--ImageReader.single_camera", type=int, dest="imageReader_SingleCamera")
+
+    # Exhaustive matcher
+    parser.add_argument("--ExhaustiveMatching.block_size", type=int, dest="exhaustiveMatcher_ExhaustiveMatchingBlockSize")
+
+    # Mapper
+    parser.add_argument("--Mapper.ba_local_max_num_iterations", type=int, dest="mapper_MapperDotbaLocalMaxNumIterations")
+    parser.add_argument("--Mapper.ba_global_max_num_iterations", type=int, dest="mapper_MapperDotbaGlobalMaxNumIterations")
+    parser.add_argument("--Mapper.ba_global_images_ratio", type=float, dest="mapper_MapperDotbaGlobalImagesRatio")
+    parser.add_argument("--Mapper.ba_global_points_ratio", type=float, dest="mapper_MapperDotbaGlobalPointsRatio")
+    parser.add_argument("--Mapper.ba_global_max_refinements", type=int, dest="mapper_MapperDotbaGlobalMaxRefinements")
+    parser.add_argument("--Mapper.ba_local_max_refinements", type=int, dest="mapper_MapperDotbaLocalMaxRefinements")
 
     # Patch match stereo
     parser.add_argument("--PatchMatchStereo.max_image_size", type=int, dest="patchMatchStereo_PatchMatchStereoDotMaxImageSize")
@@ -76,9 +93,8 @@ def main():
                 args[key] = qualityParams[key][args["quality"]] if args["quality"] in qualityParams[key] else qualityParams[key]["default"]
 
     # Get process steps
-    with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), "MVSafterCalibrationSteps.json"), "r") as processStepsFile:
+    with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), "CalibrateThenMVSSteps.json"), "r") as processStepsFile:
         steps = json.load(processStepsFile)["steps"]
-
 
     # Fixing path values
     args["path"] = os.path.abspath(args["path"])
@@ -90,62 +106,6 @@ def main():
     print("Creating folder %s..." % new_folder)
     os.makedirs(new_folder, exist_ok=True)
 
-    src = os.path.abspath(os.path.join(args["path"], "colmap"))
-    dst = os.path.abspath(os.path.join(args["path"], "colmap_sfmonly"))
-
-    if os.path.exists(dst):
-       print("WARNING removing sfmonly !")
-       # make 1 copy 
-       if not os.path.exists(dst+"_1"):
-         print("WARNING copying ! ", dst, " to " , dst+"_1")
-         shutil.copytree(src, dst+"_1")
-       shutil.rmtree(dst)
-
-    # copy calibration only recon to colmap_sfmonly; will keep all registered images
-    shutil.copytree(src, dst)
-
-    # create path camera data for each video
-    src = os.path.abspath(os.path.join(args["path"], "colmap\\sparse\\")) + "\\images.txt"
-    with open(src, 'r') as sourcefile:
-        source = sourcefile.read().splitlines()
-
-    src = os.path.abspath(os.path.join(args["path"], "videos\\")) + "\\Video_frames.txt"
-    with open(src, 'r') as keyfile:
-        keys = keyfile.read().split()
-
-    # write out camera data
-    videodir = os.path.abspath(os.path.join(args["path"], "videos"))
-    cnt = 0 
-
-    camerasfile = os.path.abspath(os.path.join(args["path"], "colmap\\sparse\\")) + "\\cameras.txt"
-    for filename in os.listdir(videodir):
-        # find and loop over videos
-        if "MP4" in filename:
-           currentVideo = "Video%d" % cnt
-           dstpath = os.path.join(os.path.abspath(os.path.join(args["path"], "videos\\")) ,  currentVideo )
-
-           print("Creating video camera data ", dstpath)
-           os.makedirs(dstpath, exist_ok=True)
-           dst = dstpath + "\\images.txt"
-           with open(dst, 'w') as outfile:
-              for line in source:
-                 if line.split():
-                    if line.split()[-1] in keys:
-#                      print("Writing ", line, " to " , outfile )
-                      outfile.write(line + "\n")
-           outfile.close()
-           shutil.copyfile(camerasfile, dstpath +"\\cameras.txt")
-        cnt = cnt + 1
-
-    # remove video images before pipeline
-    videodir = os.path.abspath(os.path.join(args["path"], "images\\"))
-
-    for filename in os.listdir(videodir):
-        # find and loop over videos
-        if os.path.isdir(filename) and ("Video" in filename):
-            print("Removing ", filename)
-            shutil.rmtree(filename)
-
     programs = {
         "colmap": {
             "path": getColmap(args["colmapPath"])
@@ -155,9 +115,8 @@ def main():
     pipeline = TaskPipeline(args, steps, programs)
 
     pipeline.runProcessSteps()
-
     
-    print("MVSafterCalibration has finished successfully.")
+    print("calibrateOnly has finished successfully.")
     sys.exit(0)
 
 if __name__ == "__main__":
