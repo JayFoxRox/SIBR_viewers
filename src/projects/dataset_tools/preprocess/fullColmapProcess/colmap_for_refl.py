@@ -54,14 +54,13 @@ def extract_images(pathIn, pathOut, videoName, maxNumFrames = -1, resize=False):
     return fileNames
 
 def extract_images_with_name(imageName, images_data, new_images_data):
-   cnt = 0
    add_next = False
    new_images_data.append(images_data[0])
    new_images_data.append(images_data[1])
    new_images_data.append(images_data[2])
 
-   # create list with photo-only images
    img_cnt = 0
+   # create list with photo-only images
    for line in images_data:
        if line.split():
            if imageName in line.split()[-1]:
@@ -71,7 +70,10 @@ def extract_images_with_name(imageName, images_data, new_images_data):
            elif add_next:
               new_images_data.append(line)
               add_next = False
-   return new_images_data
+           else:
+              add_next = False
+
+   return new_images_data, img_cnt
 
 
 
@@ -110,10 +112,9 @@ def remove_video_images(path, photoName="MG_"):
           videoDirList.append(filename)
 
    new_images_data = []
-   new_images_data = extract_images_with_name(photoName, images_data, new_images_data)
+   new_images_data, img_cnt = extract_images_with_name(photoName, images_data, new_images_data)
 
    # remaining images
-   img_cnt = len(new_images_data)
    print("Remaining images ", img_cnt)
    
    new_images_data[2] = ' '.join(images_data[2].split()[0:4]) + " " + str(img_cnt) +" " +  ' '.join(images_data[2].split()[5:-1] )
@@ -171,7 +172,8 @@ def remove_video_images(path, photoName="MG_"):
       shutil.move(imagespath, curr_GTpath_dir + "\\images")
 
       video_images_list = []
-      video_images_list = extract_images_with_name(currVideoName, images_data, video_images_list)
+      video_images_list, img_cnt = extract_images_with_name(currVideoName, images_data, video_images_list)
+      video_images_list[2] = ' '.join(images_data[2].split()[0:4]) + " " + str(img_cnt) +" " +  ' '.join(images_data[2].split()[5:-1] )
 
       # create colmap data
       dstpath = os.path.abspath(os.path.join(curr_GTpath_dir, "text"))
