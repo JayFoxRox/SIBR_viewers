@@ -128,6 +128,149 @@
 			"path": "${path}"
 		}
 	},
+	{
+            "name": "colmap_model_converter",
+            "app": "colmap",
+            "command_args": [
+                "model_converter",
+                "--input_path", "${path}/colmap/sparse/",
+                "--input_path", "${path}/colmap/stereo/sparse/",
+                "--output_type", "TXT"
+	},
+	{
+            "name": "colmap_model_converter",
+            "app": "colmap",
+            "command_args": [
+                "model_converter",
+                "--input_path", "${path}/colmap/sparse/",
+                "--input_path", "${path}/colmap/stereo/sparse/",
+                "--output_type", "BIN"
+	},
+        {
+            "name": "colmap_model_converter",
+            "app": "colmap",
+            "command_args": [
+                "model_converter",
+                "--input_path", "${path}/colmap/sparse/",
+                "--input_path", "${path}/colmap/sparse/0",
+                "--output_type", "BIN"
+	},
+        {
+            "name": "colmap_model_converter",
+            "app": "colmap",
+            "command_args": [
+                "model_converter",
+                "--input_path", "${path}/colmap/sparse/",
+                "--input_path", "${path}/colmap/stereo/sparse/",
+                "--output_type", "BIN"
+	},
+        {
+            "name": "colmap_patch_match_stereo",
+            "app": "colmap",
+            "command_args": [
+                "patch_match_stereo",
+                "--workspace_path", "${path}/colmap/stereo",
+                "--workspace_format", "COLMAP",
+                "--PatchMatchStereo.max_image_size", "${patchMatchStereo_PatchMatchStereoDotMaxImageSize}",
+                "--PatchMatchStereo.window_radius", "${patchMatchStereo_PatchMatchStereoDotWindowRadius}",
+                "--PatchMatchStereo.window_step", "${patchMatchStereo_PatchMatchStereoDotWindowStep}",
+                "--PatchMatchStereo.num_samples", "${patchMatchStereo_PatchMatchStereoDotNumSamples}",
+                "--PatchMatchStereo.num_iterations", "${patchMatchStereo_PatchMatchStereoDotNumIterations}",
+                "--PatchMatchStereo.geom_consistency", "${patchMatchStereo_PatchMatchStereoDotGeomConsistency}",
+                "--PatchMatchStereo.gpu_index", "${gpusIndices}"
+            ]
+        },
+        {
+            "name": "colmap_stereo_fusion",
+            "app": "colmap",
+            "command_args": [
+                "stereo_fusion",
+                "--workspace_path", "${path}/colmap/stereo/",
+                "--workspace_format", "COLMAP",
+                "--input_type", "geometric",
+                "--output_path", "${path}/colmap/stereo/fused.ply",
+                "--StereoFusion.max_image_size", "${stereoFusion_MaxImageSize}",
+                "--StereoFusion.check_num_images", "${stereoFusion_CheckNumImages}"
+            ]
+        },
+        {
+            "name": "colmap_delaunay_mesher",
+            "app": "colmap",
+            "command_args": [
+                "delaunay_mesher",
+                "--input_path", "${path}/colmap/stereo/",
+                "--output_path", "${path}/colmap/stereo/meshed-delaunay.ply",
+                "--input_type", "dense"
+            ]
+        },
+        {
+            "name": "colmap_model_converter",
+            "app": "colmap",
+            "command_args": [
+                "model_converter",
+                "--input_path", "${path}/colmap/stereo/sparse/",
+                "--output_path", "${path}/colmap/stereo/sparse/",
+                "--output_type", "TXT"
+            ]
+        },
+        {
+            "name": "fix_mesh_eol",
+            "function": "utils.convert.fixMeshEol",
+            "function_args": {
+                "meshPath" : "${path}/colmap/stereo/meshed-delaunay.ply",
+                "newMeshPath" : "${path}/colmap/stereo/unix-meshed-delaunay.ply"
+            }
+        },
+        {
+            "if": "${with_texture}",
+            "name": "simplify_mesh",
+            "function": "simplify_mesh.simplifyMesh",
+            "function_args": {
+                "inputMesh" : "${path}/colmap/stereo/unix-meshed-delaunay.ply",
+                "outputMesh" : "${path}/colmap/stereo/unix-meshed-delaunay-simplified.ply",
+                "meshlabPath" : "${meshlabPath}",
+		"meshsize" : "${meshsize}"
+            }
+        },
+        {
+            "if": "${with_texture}",
+            "name": "unwrap_mesh",
+            "app": "unwrapMesh",
+            "command_args": [
+                "--path", "${path}/colmap/stereo/unix-meshed-delaunay-simplified.ply",
+                "--output", "${path}/capreal/mesh.ply",
+                "--texture-name", "texture.png"
+            ]
+        },
+        {
+            "if": "${with_texture}",
+            "name": "texture_mesh",
+            "app": "textureMesh",
+            "command_args": [
+                "--path", "${path}",
+                "--output", "${path}/capreal/texture.png",
+                "--size", "8192",
+                "--flood"
+            ]
+        },
+        {
+            "name": "move_eol_dirty_mesh",
+            "function": "shutil.copy",
+            "function_args": {
+                "src" : "${path}/colmap/stereo/meshed-delaunay.ply",
+                "dst" : "${path}/colmap/stereo/meshed-delaunay-eolpb.ply"
+            }
+        },
+        {
+            "name": "use_eol_fixed_mesh",
+            "function": "shutil.copy",
+            "function_args": {
+                "src" : "${path}/colmap/stereo/unix-meshed-delaunay.ply",
+                "dst" : "${path}/colmap/stereo/meshed-delaunay.ply"
+            }
+        }
+    ]
+},
         {
             "name": "colmap_model_converter",
             "app": "colmap",
