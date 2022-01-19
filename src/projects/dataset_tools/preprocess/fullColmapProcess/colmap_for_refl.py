@@ -231,6 +231,12 @@ def fix_cameras(path, photoName="MG_"):
     if not os.path.exists(dstpath):
        os.makedirs(dstpath, exist_ok=True)
 
+    # make backups of original files
+    if not os.path.exists(dstpath+"\\images.txt"):
+       shutil.copyfile(images_fname, dstpath +"\\images.txt")
+    if not os.path.exists(dstpath+"\\cameras.txt"):
+       shutil.copyfile(cameras_fname, dstpath +"\\cameras.txt")
+
     dbfile = os.path.abspath(os.path.join(dstpath,"dataset.db"))
     oldb = os.path.abspath(os.path.join(path, "colmap\\dataset.db" )) # will be modified
     print("Old ", oldb, " new ", dbfile, " path ", path)
@@ -304,13 +310,6 @@ def fix_cameras(path, photoName="MG_"):
             outfile.write(line + "\n")
     outfile.close()
 
-    # make backups of original files
-    dstpath = os.path.join(path, "backups\\orig\\")
-
-    if not os.path.exists(dstpath+"\\images.txt"):
-       shutil.copyfile(images_fname, dstpath +"\\images.txt")
-    if not os.path.exists(dstpath+"\\cameras.txt"):
-       shutil.copyfile(cameras_fname, dstpath +"\\cameras.txt")
 
     dstpath = os.path.abspath(os.path.join(path, "colmap\\sparse\\"))
 
