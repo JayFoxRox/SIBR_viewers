@@ -76,6 +76,26 @@ def extract_images_with_name(imageName, images_data, new_images_data):
 
    return new_images_data, img_cnt
 
+def remove_lines_from_file(fname, match, nextDel=False):
+    newdata = []
+    prevMatch = False
+    with open(fname, 'r') as imagesfile:
+        data = imagesfile.read().splitlines()
+    for line in data:
+        if match in line:
+           if nextDel:
+              prevMatch = True
+        elif (not match in line) and (not prevMatch):
+           newdata.append(line)
+           prevMatch = False
+        else:
+           prevMatch = False
+
+    # overwrite
+    with open(fname, 'w') as outfile:
+         for line in newdata:
+            outfile.write(line + "\n")
+    
 
 
 def remove_video_images(path, photoName="MG_"):
@@ -191,7 +211,13 @@ def remove_video_images(path, photoName="MG_"):
 
       points_fname = os.path.abspath(os.path.join(path, "colmap\\sparse\\")) + "\\points3D.txt"
       shutil.copyfile(points_fname, dstpath+"\\points3D.txt")
+
+      fname = os.path.abspath(os.path.join(path, "colmap\\stereo\\stereo\\fusion.cfg")) 
+      remove_lines_from_file(fname, "Video", True)
+      fname = os.path.abspath(os.path.join(path, "colmap\\stereo\\stereo\\patch-match.cfg")) 
+      remove_lines_from_file(fname, "Video", True)
       # all done
+
 
 def fix_cameras(path, photoName="MG_"):
     # Read images.txt
@@ -310,13 +336,15 @@ def fix_cameras(path, photoName="MG_"):
             outfile.write(line + "\n")
     outfile.close()
 
+    # replace files
+    dstpath = os.path.abspath(os.path.join(path, "colmap\\sparse\\"))
+    shutil.move(dstpath + "\\images_two.txt", images_fname)
+    shutil.move(dstpath + "\\cameras_two.txt", cameras_fname)
 
     dstpath = os.path.abspath(os.path.join(path, "colmap\\sparse\\"))
-
+    print("Writing cam/im binary ", dstpath + "\\cameras.bin")
     cams = rwm.read_cameras_text(dstpath + "\\cameras.txt")
     ims = rwm.read_images_text(dstpath + "\\images.txt")
-
-    print("Writing cam binary ", dstpath + "\\cameras.bin")
     rwm.write_cameras_binary(cams, dstpath + "\\cameras.bin")
     rwm.write_images_binary(ims, dstpath + "\\images.bin")
 
@@ -325,12 +353,13 @@ def fix_cameras(path, photoName="MG_"):
     if os.path.exists(ptsbin):
        shutil.copyfile(ptsbin, dstpath+"\\points3D.bin")
 
-
-    # replace files
-    dstpath = os.path.abspath(os.path.join(path, "colmap\\sparse\\"))
-
-    shutil.move(dstpath + "\\images_two.txt", images_fname)
-    shutil.move(dstpath + "\\cameras_two.txt", cameras_fname)
+    # overwrite 0 as well
+    dstpath = os.path.abspath(os.path.join(path, "colmap\\sparse\\0\\"))
+    print("Writing cam/im binary ", dstpath + "\\cameras.bin")
+    rwm.write_cameras_binary(cams, dstpath + "\\cameras.bin")
+    rwm.write_images_binary(ims, dstpath + "\\images.bin")
+    rwm.write_cameras_text(cams, dstpath + "\\cameras.txt")
+    rwm.write_images_text(ims, dstpath + "\\images.txt")
 
     return True
 
@@ -341,7 +370,7 @@ def extract_video_frames(pathIn, pathOut):
       if ("MP4" in filename) or ("mp4" in filename):
         with open(os.path.join(pathIn, filename), 'r') as f:
           print("Extracting Video from File: ", f.name)
-#          fileNames  = fileNames + extract_images(f.name, pathOut, "Video%d" % cnt, maxNumFrames=30, resize=True)
+#          fileNames  = fileNames + extract_images(f.name, pathOut, "Video%d" % cnt, maxNumFrames=3, resize=True)
           fileNames  = fileNames + extract_images(f.name, pathOut, "Video%d" % cnt, resize=True)
 #          extract_images(f.name, pathOut, videoName="Video%d" % cnt)
           cnt = cnt+1
