@@ -53,47 +53,140 @@ def extract_images(pathIn, pathOut, videoName, maxNumFrames = -1, resize=False):
 
     return fileNames
 
-def remove_video_images(path, photoName="MG_"):
-   # Read images.txt
-   images_fname = os.path.abspath(os.path.join(path, "colmap\\sparse\\")) + "\\images.txt"
-   with open(images_fname, 'r') as imagesfile:
-       images_data = imagesfile.read().splitlines()
-
+def extract_images_with_name(imageName, images_data, new_images_data):
    cnt = 0
    add_next = False
-   new_images_data = []
    new_images_data.append(images_data[0])
    new_images_data.append(images_data[1])
    new_images_data.append(images_data[2])
 
+   # create list with photo-only images
    img_cnt = 0
    for line in images_data:
        if line.split():
-           if photoName in line.split()[-1]:
-              print(line)
+           if imageName in line.split()[-1]:
               new_images_data.append(line)
               img_cnt = img_cnt+1
               add_next = True
            elif add_next:
               new_images_data.append(line)
               add_next = False
+   return new_images_data
+
+
+
+def remove_video_images(path, photoName="MG_"):
+   # make backups
+   oldb = os.path.abspath(os.path.join(path, "colmap\\dataset.db" )) # will be modified
+   backuppath = dstpath = os.path.join(path, "backups\\two_cams_all_images\\")
+   if not os.path.exists(dstpath):
+      os.makedirs(dstpath, exist_ok=True)
+
+   dbfile = os.path.abspath(os.path.join(dstpath,"dataset.db"))
+   oldb = os.path.abspath(os.path.join(path, "colmap\\dataset.db" )) # will be modified
+   if not os.path.exists(dbfile):
+       shutil.copyfile(oldb, dbfile)
+
+
+   # Read images.txt & cameras.txt
+   backup_images = os.path.abspath(os.path.join(dstpath,"images.txt"))
+   images_fname = os.path.abspath(os.path.join(path, "colmap\\sparse\\")) + "\\images.txt"
+   if not os.path.exists(backup_images):
+       shutil.copyfile(images_fname, backup_images)
+
+   backup_cameras = os.path.abspath(os.path.join(dstpath,"cameras.txt"))
+   cameras_fname = os.path.abspath(os.path.join(path, "colmap\\sparse\\")) + "\\cameras.txt"
+   if not os.path.exists(backup_cameras):
+       shutil.copyfile(cameras_fname, backup_cameras)
+
+   # extract photos only for images.txt
+   with open(images_fname, 'r') as imagesfile:
+       images_data = imagesfile.read().splitlines()
+
+   videoDirList = []
+   imagespath = os.path.abspath(os.path.join(path, "images"))
+   for filename in os.listdir(imagespath):
+       if "Video" in filename:
+          videoDirList.append(filename)
+
+   new_images_data = []
+   new_images_data = extract_images_with_name(photoName, images_data, new_images_data)
 
    # remaining images
+   img_cnt = len(new_images_data)
    print("Remaining images ", img_cnt)
    
    new_images_data[2] = ' '.join(images_data[2].split()[0:4]) + " " + str(img_cnt) +" " +  ' '.join(images_data[2].split()[5:-1] )
 
-   # overwrite
+   # overwrite current calibration
    dstpath = os.path.abspath(os.path.join(path, "colmap\\sparse"))
    with open(dstpath+"\\images.txt", 'w') as outfile:
      for line in new_images_data:
-       print("L ", str(line))
        outfile.write(str(line) + "\n")
 
    outfile.close()
+   print("Writing fixed images ", dstpath + "\\images.txt")
    ims = rwm.read_images_text(dstpath + "\\images.txt")
    rwm.write_images_binary(ims, dstpath + "\\images.bin")
 
+   # fix the database
+
+   # open the database
+   db = sqlite3.connect(dbfile)
+   cursor = db.cursor()
+   cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+   tables = cursor.fetchall()
+   # debug
+   delImagesQuery = """DELETE from images WHERE name LIKE 'Video'"""
+   db.commit()
+
+   # write out database 
+   db.close()
+
+   # create GT path directories
+   dstpath = os.path.abspath(os.path.join(path, "paths_GT"))
+
+   if not os.path.exists(dstpath):
+      print("Creating ", dstpath)
+      os.makedirs(dstpath)
+
+
+   # backup original (distorted) video images & move undistorted images to special directories
+   # then create the colmap data for each
+
+   for currVideoName in videoDirList:
+      # move the original videos to backup
+      imagespath = os.path.abspath(os.path.join(path, "images"))
+      dstpath = os.path.abspath(os.path.join(path, "paths_GT"))
+      shutil.move(imagespath + "\\" + currVideoName, backuppath+ "\\" + currVideoName)
+
+      # create GT_path dir
+      curr_GTpath_dir = dstpath + "\\" + currVideoName
+      print("Creating ", curr_GTpath_dir)
+      os.makedirs(curr_GTpath_dir)
+      os.makedirs(curr_GTpath_dir+"\\images")
+
+      # move undistorted mages to GT_path dir
+      imagespath = path +  "\\colmap\\stereo\\images\\"+ currVideoName
+      shutil.move(imagespath, curr_GTpath_dir + "\\images")
+
+      video_images_list = []
+      video_images_list = extract_images_with_name(currVideoName, images_data, video_images_list)
+
+      # create colmap data
+      dstpath = os.path.abspath(os.path.join(curr_GTpath_dir, "text"))
+      os.makedirs(dstpath)
+
+      with open(dstpath+"\\images.txt", 'w') as outfile:
+         for line in video_images_list:
+           outfile.write(str(line) + "\n")
+
+      cameras_fname = os.path.abspath(os.path.join(path, "colmap\\sparse\\")) + "\\cameras.txt"
+      shutil.copyfile(cameras_fname, dstpath+"\\cameras.txt")
+
+      points_fname = os.path.abspath(os.path.join(path, "colmap\\sparse\\")) + "\\points3D.txt"
+      shutil.copyfile(points_fname, dstpath+"\\points3D.txt")
+      # all done
 
 def fix_cameras(path, photoName="MG_"):
     # Read images.txt
@@ -128,9 +221,13 @@ def fix_cameras(path, photoName="MG_"):
     dstpath = os.path.join(path, "backups\\")
     if not os.path.exists(dstpath):
        os.makedirs(dstpath, exist_ok=True)
+    # 
+    dstpath = os.path.join(path, "backups\\orig\\")
+    if not os.path.exists(dstpath):
+       os.makedirs(dstpath, exist_ok=True)
 
     dbfile = os.path.abspath(os.path.join(dstpath,"dataset.db"))
-    oldb = os.path.abspath(os.path.join(path, "colmap\\dataset.db" )) # remove
+    oldb = os.path.abspath(os.path.join(path, "colmap\\dataset.db" )) # will be modified
     print("Old ", oldb, " new ", dbfile, " path ", path)
     if not os.path.exists(dbfile):
        shutil.copyfile(oldb, dbfile)
@@ -203,7 +300,7 @@ def fix_cameras(path, photoName="MG_"):
     outfile.close()
 
     # make backups of original files
-    dstpath = os.path.join(path, "backups\\")
+    dstpath = os.path.join(path, "backups\\orig\\")
 
     if not os.path.exists(dstpath+"\\images.txt"):
        shutil.copyfile(images_fname, dstpath +"\\images.txt")

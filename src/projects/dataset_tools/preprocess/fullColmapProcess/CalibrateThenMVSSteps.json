@@ -65,14 +65,14 @@
                 "--output_type", "TXT"
             ]
         },
-		{	
-			"name": "fix_cameras",
-			"function": "colmap_for_refl.fix_cameras",
-			"function_args": {
-				"path": "${path}"
-			}
-		},
-		{
+	{	
+		"name": "fix_cameras",
+		"function": "colmap_for_refl.fix_cameras",
+		"function_args": {
+			"path": "${path}"
+		}
+	},
+	{
             "name": "colmap_model_converter",
             "app": "colmap",
             "command_args": [
@@ -121,13 +121,13 @@
                 "--image_names_path", "${path}/videos/Video_frames.txt"
             ]
         },
-		{ 
-			"name": "remove_video_images",
-			"function": "colmap_for_refl.remove_video_images",
-			"function_args": {
-				"path": "${path}"
-			}
-		},
+	{ 
+		"name": "remove_video_images",
+		"function": "colmap_for_refl.remove_video_images",
+		"function_args": {
+			"path": "${path}"
+		}
+	},
         {
             "name": "colmap_patch_match_stereo",
             "app": "colmap",
