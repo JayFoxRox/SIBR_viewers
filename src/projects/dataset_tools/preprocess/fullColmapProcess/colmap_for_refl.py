@@ -110,7 +110,7 @@ def fix_cameras(path, photoName="MG_"):
     photoCamIndex = -1
     for line in images_data:
         if line.split():
-            if photoName in line.split()[-1]:
+            if (photoName in line.split()[-1])  and (int(line.split()[0]) > 2):
               photoCamIndex = line.split()[0]
               print("Found Photo Camera Index ", photoCamIndex, " for camera ", line.split()[-1])
               break
@@ -119,7 +119,7 @@ def fix_cameras(path, photoName="MG_"):
     videoCamIndex = -1
     for line in images_data:
         if line.split():
-            if "Video" in line.split()[-1]:
+            if ("Video" in line.split()[-1]) and ( int(line.split()[0]) > 2):
               videoCamIndex = line.split()[0]
               print("Found Video Camera Index ", videoCamIndex, " for camera ", line.split()[-1])
               break
@@ -136,7 +136,7 @@ def fix_cameras(path, photoName="MG_"):
        shutil.copyfile(oldb, dbfile)
 
     # open the database
-    db = sqlite3.connect('database.db')
+    db = sqlite3.connect(dbfile)
     cursor = db.cursor()
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
     tables = cursor.fetchall()
@@ -237,7 +237,7 @@ def extract_video_frames(pathIn, pathOut):
     cnt = 0
     fileNames = []
     for filename in os.listdir(pathIn):
-      if "MP4" in filename:
+      if ("MP4" in filename) or ("mp4" in filename):
         with open(os.path.join(pathIn, filename), 'r') as f:
           print("Extracting Video from File: ", f.name)
 #          fileNames  = fileNames + extract_images(f.name, pathOut, "Video%d" % cnt, maxNumFrames=30, resize=True)
