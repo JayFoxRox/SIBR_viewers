@@ -132,7 +132,7 @@ def remove_video_images(path, photoName="MG_"):
    # fix the database
 
    # open the database
-   db = sqlite3.connect(dbfile)
+   db = sqlite3.connect(oldb)
    cursor = db.cursor()
    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
    tables = cursor.fetchall()
@@ -233,7 +233,7 @@ def fix_cameras(path, photoName="MG_"):
        shutil.copyfile(oldb, dbfile)
 
     # open the database
-    db = sqlite3.connect(dbfile)
+    db = sqlite3.connect(oldb)
     cursor = db.cursor()
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
     tables = cursor.fetchall()
