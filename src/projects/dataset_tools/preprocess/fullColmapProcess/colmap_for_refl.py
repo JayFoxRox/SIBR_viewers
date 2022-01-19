@@ -58,6 +58,7 @@ def extract_images_with_name(imageName, images_data, new_images_data):
    new_images_data.append(images_data[0])
    new_images_data.append(images_data[1])
    new_images_data.append(images_data[2])
+   new_images_data.append(images_data[3])
 
    img_cnt = 0
    # create list with photo-only images
@@ -117,7 +118,7 @@ def remove_video_images(path, photoName="MG_"):
    # remaining images
    print("Remaining images ", img_cnt)
    
-   new_images_data[2] = ' '.join(images_data[2].split()[0:4]) + " " + str(img_cnt) +" " +  ' '.join(images_data[2].split()[5:-1] )
+   new_images_data[3] = ' '.join(images_data[3].split()[0:4]) + " " + str(img_cnt) +" " +  ' '.join(images_data[3].split()[5:-1] )
 
    # overwrite current calibration
    dstpath = os.path.abspath(os.path.join(path, "colmap\\sparse"))
@@ -138,7 +139,9 @@ def remove_video_images(path, photoName="MG_"):
    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
    tables = cursor.fetchall()
    # debug
-   delImagesQuery = """DELETE from images WHERE name LIKE 'Video'"""
+   delImagesQuery = """DELETE from images WHERE name LIKE '%Video%'"""
+   cursor.execute(delImagesQuery)
+
    db.commit()
 
    # write out database 

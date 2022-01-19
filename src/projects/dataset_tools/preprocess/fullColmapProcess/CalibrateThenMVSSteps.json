@@ -129,6 +129,33 @@
 		}
 	},
         {
+            "name": "colmap_model_converter",
+            "app": "colmap",
+            "command_args": [
+                "model_converter",
+                "--input_path", "${path}/colmap/sparse/",
+                "--input_path", "${path}/colmap/sparse/0",
+                "--output_type", "TXT"
+	},
+        {
+            "name": "colmap_model_converter",
+            "app": "colmap",
+            "command_args": [
+                "model_converter",
+                "--input_path", "${path}/colmap/sparse/",
+                "--input_path", "${path}/colmap/sparse/0",
+                "--output_type", "BIN"
+	},
+        {
+            "name": "colmap_model_converter",
+            "app": "colmap",
+            "command_args": [
+                "model_converter",
+                "--input_path", "${path}/colmap/sparse/",
+                "--input_path", "${path}/colmap/stereo/sparse/",
+                "--output_type", "BIN"
+	},
+        {
             "name": "colmap_patch_match_stereo",
             "app": "colmap",
             "command_args": [
