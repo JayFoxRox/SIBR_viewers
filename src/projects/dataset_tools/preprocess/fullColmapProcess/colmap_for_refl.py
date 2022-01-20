@@ -213,7 +213,7 @@ def remove_video_images(path, photoName="MG_"):
       shutil.copyfile(points_fname, dstpath+"\\points3D.txt")
 
       fname = os.path.abspath(os.path.join(path, "colmap\\stereo\\stereo\\fusion.cfg")) 
-      remove_lines_from_file(fname, "Video", True)
+      remove_lines_from_file(fname, "Video", False)
       fname = os.path.abspath(os.path.join(path, "colmap\\stereo\\stereo\\patch-match.cfg")) 
       remove_lines_from_file(fname, "Video", True)
       # all done
