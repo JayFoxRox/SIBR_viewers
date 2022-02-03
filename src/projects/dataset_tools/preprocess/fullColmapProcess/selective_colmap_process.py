@@ -181,10 +181,10 @@ def remove_video_images(path, photoName="MG_"):
    for currVideoName in videoDirList:
       # move the original videos to backup
       imagespath = os.path.abspath(os.path.join(path, "images"))
-      dstpath = os.path.abspath(os.path.join(path, "paths_GT"))
       shutil.move(imagespath + "\\" + currVideoName, backuppath+ "\\" + currVideoName)
 
       # create GT_path dir
+      dstpath = os.path.abspath(os.path.join(path, "paths_GT"))
       curr_GTpath_dir = dstpath + "\\" + currVideoName
       print("Creating ", curr_GTpath_dir)
       os.makedirs(curr_GTpath_dir)
