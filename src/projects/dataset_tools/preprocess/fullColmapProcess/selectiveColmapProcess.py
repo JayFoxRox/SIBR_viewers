@@ -57,6 +57,8 @@ def main():
     parser.add_argument("--calibrate_only", action='store_true', help="Do calibration only (from dataset_build_structure to before colmap_path_match_stereo with no special test frame processing")
     parser.add_argument("--calibrate_only_process_test", action='store_true', help="Do calibration only (from dataset_build_structure to before colmap_path_match_stereo with test frame processing")
     parser.add_argument("--mvs_only", action='store_true', help="Do mvs only (from colmap_path_match_stereo onwards without test frame processing")
+    parser.add_argument("--fix_cameras", action='store_true', help="Do fix camera step only")
+    parser.add_argument("--fix_cameras_stereo", action='store_true', help="Do fix camera step only for stereo/sparse")
     
     #colmap performance arguments
     parser.add_argument("--numGPUs", type=int, default=2, help="number of GPUs allocated to Colmap")
@@ -115,6 +117,18 @@ def main():
     to_step = args["to_step"]
 
     # treat pre-defined cases
+    if( args["fix_cameras"] or args["fix_cameras_stereo"]):
+        new_steps = []
+        for s in steps:
+            if( s['name'] == "fix_cameras" ):
+                print(s)
+                (s['function_args'])['photoName'] = "00"
+                if args["fix_cameras_stereo"]:
+                    (s['function_args'])['sparse_subdir'] = os.path.join(os.path.join("colmap", "stereo"), "sparse"))
+                new_steps.append(s)
+                break
+        steps = new_steps
+
     if( args["calibrate_only"] or args["calibrate_only_process_test"] ):
         from_step = "build_dataset_structure" 
         to_step = "colmap_patch_match_stereo" 

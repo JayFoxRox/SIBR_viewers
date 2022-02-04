@@ -219,14 +219,19 @@ def remove_video_images(path, photoName="MG_"):
       # all done
 
 
-def fix_cameras(path, photoName="MG_"):
+def fix_cameras(path, photoName="MG_", sparseSubdir=""):
+    if sparseSubdir == "":
+        sparse_subdir = os.path.join("colmap", "sparse")
+    else
+        sparse_subdir = sparseSubdir
+
     # Read images.txt
-    images_fname = os.path.abspath(os.path.join(path, "colmap\\sparse\\")) + "\\images.txt"
+    images_fname = os.path.abspath(os.path.join(path, sparse_subdir)) + "\\images.txt"
     with open(images_fname, 'r') as imagesfile:
         images_data = imagesfile.read().splitlines()
 
     # Read cameras.txt
-    cameras_fname = os.path.abspath(os.path.join(path, "colmap\\sparse\\")) + "\\cameras.txt"
+    cameras_fname = os.path.abspath(os.path.join(path, sparse_subdir)) + "\\cameras.txt"
     with open(cameras_fname, 'r') as camerasfile:
         cameras_data = camerasfile.read().splitlines()
 
@@ -265,41 +270,42 @@ def fix_cameras(path, photoName="MG_"):
 
     dbfile = os.path.abspath(os.path.join(dstpath,"dataset.db"))
     oldb = os.path.abspath(os.path.join(path, "colmap\\dataset.db" )) # will be modified
-    print("Old ", oldb, " new ", dbfile, " path ", path)
-    if not os.path.exists(dbfile):
-       shutil.copyfile(oldb, dbfile)
+    if os.path.exists(oldb): # only do DB processing if it exists
+        print("Old ", oldb, " new ", dbfile, " path ", path)
+        if not os.path.exists(dbfile):
+           shutil.copyfile(oldb, dbfile)
 
-    # open the database
-    db = sqlite3.connect(oldb)
-    cursor = db.cursor()
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    tables = cursor.fetchall()
-    # debug
-    #  table = pd.read_sql_query("SELECT * from %s" % 'images', db)
+        # open the database
+        db = sqlite3.connect(oldb)
+        cursor = db.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = cursor.fetchall()
+        # debug
+        #  table = pd.read_sql_query("SELECT * from %s" % 'images', db)
 
-    # delete all cameras except videoCamEntry and photoCamEntry from database
-    delCamQuery = """DELETE from cameras WHERE camera_id != '%s' and camera_id != '%s'""" % (videoCamIndex, photoCamIndex)
-    cursor.execute(delCamQuery )
+        # delete all cameras except videoCamEntry and photoCamEntry from database
+        delCamQuery = """DELETE from cameras WHERE camera_id != '%s' and camera_id != '%s'""" % (videoCamIndex, photoCamIndex)
+        cursor.execute(delCamQuery )
 
-    # change photo cam id to 1 and video cam id to 2
-    setQuery = "UPDATE cameras SET camera_id = '%s' WHERE  camera_id = '%s'" % ("1", photoCamIndex)
-    cursor.execute(setQuery)
+        # change photo cam id to 1 and video cam id to 2
+        setQuery = "UPDATE cameras SET camera_id = '%s' WHERE  camera_id = '%s'" % ("1", photoCamIndex)
+        cursor.execute(setQuery)
 
-    setQuery = "UPDATE cameras SET camera_id = '%s' WHERE  camera_id = '%s'" % ("2", videoCamIndex)
-    cursor.execute(setQuery)
+        setQuery = "UPDATE cameras SET camera_id = '%s' WHERE  camera_id = '%s'" % ("2", videoCamIndex)
+        cursor.execute(setQuery)
 
-    # change photo cam id to 1 for all images of photos
-    setQuery = "UPDATE images SET camera_id = '1' WHERE name LIKE '%MG_%'"
-    cursor.execute(setQuery)
+        # change photo cam id to 1 for all images of photos
+        setQuery = "UPDATE images SET camera_id = '1' WHERE name LIKE '%MG_%'"
+        cursor.execute(setQuery)
 
-    # change video cam id to 2 for all images
-    setQuery = "UPDATE images SET camera_id = '2' WHERE name LIKE '%Video%'"
-    cursor.execute(setQuery)
+        # change video cam id to 2 for all images
+        setQuery = "UPDATE images SET camera_id = '2' WHERE name LIKE '%Video%'"
+        cursor.execute(setQuery)
 
-    db.commit()
+        db.commit()
 
-    # write out database ; next step re-exports the result to TXT and BIN
-    db.close()
+        # write out database ; next step re-exports the result to TXT and BIN
+        db.close()
       
     # replace all camera indices in images.txt
     new_images_data = images_data
@@ -314,6 +320,7 @@ def fix_cameras(path, photoName="MG_"):
 
         cnt = cnt + 1
 
+    videoCamEntry = ""
     for line in cameras_data:
         if line.split():
             if photoCamIndex == line.split()[0]:
@@ -325,8 +332,9 @@ def fix_cameras(path, photoName="MG_"):
     dstpath = os.path.abspath(os.path.join(path, "colmap\\sparse\\"))
     dst = dstpath + "\\cameras_two.txt"
     with open(dst, 'w') as outfile:
-       outfile.write(photoCamEntry + "\n")
-       outfile.write(videoCamEntry + "\n")
+        outfile.write(photoCamEntry + "\n")
+        if( videoCamEntry != "" ):
+            outfile.write(videoCamEntry + "\n")
     outfile.close()
 
     # write out new file
