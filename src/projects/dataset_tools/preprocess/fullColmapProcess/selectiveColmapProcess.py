@@ -124,7 +124,7 @@ def main():
                 print(s)
                 (s['function_args'])['photoName'] = "00"
                 if args["fix_cameras_stereo"]:
-                    (s['function_args'])['sparse_subdir'] = os.path.join(os.path.join("colmap", "stereo"), "sparse"))
+                    (s['function_args'])['sparse_subdir'] = os.path.join(os.path.join("colmap", "stereo"), "sparse")
                 new_steps.append(s)
                 break
         steps = new_steps

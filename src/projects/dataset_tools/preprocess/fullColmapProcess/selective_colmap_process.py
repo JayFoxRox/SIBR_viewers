@@ -222,7 +222,7 @@ def remove_video_images(path, photoName="MG_"):
 def fix_cameras(path, photoName="MG_", sparseSubdir=""):
     if sparseSubdir == "":
         sparse_subdir = os.path.join("colmap", "sparse")
-    else
+    else:
         sparse_subdir = sparseSubdir
 
     # Read images.txt
