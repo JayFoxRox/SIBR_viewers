@@ -1,13 +1,23 @@
 #
-# Convert RealityCapture export to colmap
+# RealityCapture tools
 #
+import os
+import os.path
+import sys
+import argparse
+import shutil
+import sqlite3
+import read_write_model as rwm
+
+
+import cv2
+print(cv2.__version__)
+
 
 """ @package dataset_tools_preprocess
-This script runs a pipeline to create Colmap reconstruction data from RealityCApture output
+Library for RealityCapture treatment
 
-Parameters: -h help,
 
-Usage: python rc_to_colmap.py  (see help)
 """
 
 import bundle
@@ -18,29 +28,83 @@ import scipy
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
-
 from utils.paths import getBinariesPath, getColmapPath, getMeshlabPath
 from utils.commands import  getProcess, getColmap
 
-def main():
-    parser = argparse.ArgumentParser()
-    # common arguments
-    parser.add_argument("--rc_path", type=str, required=True, help="path to rc dataset, containing bundle.out and images")
-    parser.add_argument("--out_path", type=str, required=True, help = "output path ")
-    parser.add_argument("--create_colmap", action='store_true', help="create colmap hierarchy")
+def preprocess_for_rc(path, videoName=""):
+    # create train/test split
+    imagespath = os.path.abspath(os.path.join(path, "images"))
+    videopath = os.path.abspath(os.path.join(path, "videos"))
+    testpath = os.path.abspath(os.path.join(path, "test"))
+    trainpath = os.path.abspath(os.path.join(path, "test"))
+    gtvideo_path = os.path.abspath(os.path.join(path, "video_path"))
 
+    cnt = 0
+    train_path =os.path.join(path, "train")
+    if not os.path.exists(train_path):
+        os.makedirs(train_path)
+    test_path = os.path.join(path, "test")
+    if not os.path.exists(test_path):
+        os.makedirs(test_path)
 
-    args = vars(parser.parse_args())
+    print("Test/Train ", test_path,  "\n", train_path)
 
-    input_bundle = bundle.Bundle(os.path.join(args["rc_path"] , "bundle.out"))
-    input_bundle.generate_list_of_images_file (os.path.join(args["rc_path"] , "list_images.txt"))
+    for filename in os.listdir(imagespath):
+        ext = os.path.splitext(filename)[1]
+        if ext == ".JPG" or ext == ".jpg" or ext == ".PNG" or ext == ".jpg" :
+            image = os.path.join(imagespath, filename) 
+            print("IM ", image)
+            if not(cnt % 5):
+                filename = "test_"+filename
+                fname = os.path.join(test_path, filename)
+                print("Copying ", image, " to ", fname , " in test")
+                shutil.copyfile(image, fname)
+            else:
+                filename = "train_"+filename
+                fname = os.path.join(test_path, filename)
+                fname = os.path.join(train_path, filename)
+                print("Copying ", image, " to ", fname , " in train")
+                shutil.copyfile(image, fname)
 
-    dst_image_path = os.path.join(args["out_path"], "images")
+        cnt = cnt + 1
+
+    # extract video name -- if not given, take first
+    if videoName == "":
+        for filename in os.listdir(videopath):
+            if ("MP4" in filename) or ("mp4" in filename):
+                videoName = filename
+
+    # Write out SetVariables file
+    fname = os.path.join(path, "SetVariables.bat")
+    with open(fname, 'w') as outfile:
+        outfile.write("::CapturingReality\n")
+        outfile.write(":: switch off console output\n")
+        outfile.write("::@echo off\n\n")
+
+        outfile.write(":: path to RealityCapture application\n")
+        outfile.write("set RealityCaptureExe=\"C:\Program Files\Capturing Reality\RealityCapture\RealityCapture.exe\"\n\n")
+
+        outfile.write(":: root path to work folders where the dataset is stored \n")
+        outfile.write("set RootFolder="+path+"\\\n")
+        outfile.write("set ConfigFolder=E:\\Users\\gdrett\\src\\sibr_core\\src\\projects\\dataset_tools\\preprocess\\realityCaptureTools\\\n\n")
+
+        if videoName != "":
+            outfile.write("set Video=\"%RootFolder%\\videos\\"+videoName+"\"\n")
+            outfile.write("set FPS=0.2\n")
+
+        outfile.close()                
+
+def rc_to_colmap(rc_path, out_path, create_colmap=False):
+
+    input_bundle = bundle.Bundle(os.path.join(rc_path , "bundle.out"))
+    input_bundle.generate_list_of_images_file (os.path.join(rc_path , "list_images.txt"))
+
+    dst_image_path = os.path.join(out_path, "images")
 
     # create entire colmap structure
     #
-    if args["create_colmap"]:
-        dir_name = os.path.join(args["out_path"], "stereo")
+    if create_colmap:
+        dir_name = os.path.join(out_path, "stereo")
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
 
@@ -50,7 +114,7 @@ def main():
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
     else:
-        sparse_stereo_dir = args["out_path"]
+        sparse_stereo_dir = out_path
 
     if not os.path.exists(dst_image_path):
         os.makedirs(dst_image_path)
@@ -110,16 +174,16 @@ def main():
 # create points3D.txt
 #
     # copy images
-    for fname in os.listdir(args["rc_path"]):
+    for fname in os.listdir(rc_path):
         if fname.endswith(".jpg") or fname.endswith(".JPG") or fname.endswith(".png") or fname.endswith(".PNG") :
-            print("Copying ", os.path.join(args["rc_path"], fname), "to ", os.path.join(dst_image_path, os.path.basename(fname)))
-            shutil.copyfile(os.path.join(args["rc_path"], fname), os.path.join(dst_image_path, os.path.basename(fname)))
+            print("Copying ", os.path.join(rc_path, fname), "to ", os.path.join(dst_image_path, os.path.basename(fname)))
+            shutil.copyfile(os.path.join(rc_path, fname), os.path.join(dst_image_path, os.path.basename(fname)))
 
     # copy mesh; fake it
-    if args["create_colmap"]:
+    if create_colmap:
         # assume meshes above
-        rc_mesh_dir = os.path.join(os.path.abspath(os.path.join(args["rc_path"], os.pardir)), "meshes")
-        out_mesh_dir = os.path.join(os.path.abspath(os.path.join(args["out_path"], os.pardir)), "capreal")
+        rc_mesh_dir = os.path.join(os.path.abspath(os.path.join(rc_path, os.pardir)), "meshes")
+        out_mesh_dir = os.path.join(os.path.abspath(os.path.join(out_path, os.pardir)), "capreal")
         print("RC mesh dir: ", rc_mesh_dir)
         print("Out mesh dir: ", out_mesh_dir)
         mesh = os.path.join(rc_mesh_dir, "mesh.obj")
@@ -134,5 +198,3 @@ def main():
             shutil.copyfile(texture, os.path.join(out_mesh_dir, "texture.png"))
    
 
-if __name__ == "__main__":
-    main()
