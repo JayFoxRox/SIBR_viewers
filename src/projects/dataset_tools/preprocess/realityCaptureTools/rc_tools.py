@@ -32,7 +32,9 @@ from utils.paths import getBinariesPath, getColmapPath, getMeshlabPath
 from utils.commands import  getProcess, getColmap
 
 def preprocess_for_rc(path, videoName=""):
-    # create train/test split
+    # create train/test split (every 10 images for now)
+    TEST_SKIP = 10
+
     imagespath = os.path.abspath(os.path.join(path, "images"))
     videopath = os.path.abspath(os.path.join(path, "videos"))
     testpath = os.path.abspath(os.path.join(path, "test"))
@@ -47,6 +49,7 @@ def preprocess_for_rc(path, videoName=""):
     if not os.path.exists(test_path):
         os.makedirs(test_path)
 
+
     print("Test/Train ", test_path,  "\n", train_path)
 
     for filename in os.listdir(imagespath):
@@ -54,7 +57,7 @@ def preprocess_for_rc(path, videoName=""):
         if ext == ".JPG" or ext == ".jpg" or ext == ".PNG" or ext == ".jpg" :
             image = os.path.join(imagespath, filename) 
             print("IM ", image)
-            if not(cnt % 5):
+            if not(cnt % TEST_SKIP ):
                 filename = "test_"+filename
                 fname = os.path.join(test_path, filename)
                 print("Copying ", image, " to ", fname , " in test")
@@ -81,7 +84,7 @@ def preprocess_for_rc(path, videoName=""):
         shutil.copyfile(vname, os.path.join(videopath, "video.mp4"))
 
 
-def rc_to_colmap(rc_path, out_path, create_colmap=False):
+def rc_to_colmap(rc_path, out_path, create_colmap=False, target_width=-1):
 
     input_bundle = bundle.Bundle(os.path.join(rc_path , "bundle.out"))
     input_bundle.generate_list_of_images_file (os.path.join(rc_path , "list_images.txt"))
@@ -119,11 +122,21 @@ def rc_to_colmap(rc_path, out_path, create_colmap=False):
         outfile.write("#   CAMERA_ID, MODEL, WIDTH, HEIGHT, PARAMS[]\n")
         outfile.write("# Number of cameras: {}\n".format(numcams))
         for im in input_bundle.list_of_input_images:
-           width = im.resolution[0]
-           height = im.resolution[1]
-           focal_length = input_bundle.list_of_cameras[camera_id-1].focal_length
-           outfile.write("{} PINHOLE {} {} {} {} {} {}\n".format(camera_id, width, height, focal_length, focal_length, width/2.0, height/2.0))
-           camera_id = camera_id + 1
+            width = im.resolution[0]
+            height = im.resolution[1]
+            focal_length = input_bundle.list_of_cameras[camera_id-1].focal_length
+
+            # resize images if required
+            if target_width != -1:
+                orig_width = width
+                width = float(target_width)
+                scale = float(target_width) / orig_width 
+                aspect = height / orig_width
+                height = width * aspect
+                focal_length = scale * focal_length
+               
+            outfile.write("{} PINHOLE {} {} {} {} {} {}\n".format(camera_id, int(width), int(height), focal_length, focal_length, width/2.0, height/2.0))
+            camera_id = camera_id + 1
         outfile.close()
 
     #
@@ -163,8 +176,24 @@ def rc_to_colmap(rc_path, out_path, create_colmap=False):
     # copy images
     for fname in os.listdir(rc_path):
         if fname.endswith(".jpg") or fname.endswith(".JPG") or fname.endswith(".png") or fname.endswith(".PNG") :
-            print("Copying ", os.path.join(rc_path, fname), "to ", os.path.join(dst_image_path, os.path.basename(fname)))
-            shutil.copyfile(os.path.join(rc_path, fname), os.path.join(dst_image_path, os.path.basename(fname)))
+            src_image_fname = os.path.join(rc_path, fname)
+            dst_image_fname = os.path.join(dst_image_path, os.path.basename(fname))
+            print("Copying ", src_image_fname, "to ", dst_image_fname)
+
+            # resize if necessary
+            if target_width != -1:
+                im = cv2.imread(src_image_fname, cv2.IMREAD_UNCHANGED)
+                orig_width = im.shape[1]
+                orig_height = im.shape[0]
+                width = float(target_width)
+                scale = float(target_width)/ orig_width 
+                aspect = orig_height / orig_width
+                height = width * aspect
+                dim = (int(width), int(height))
+                im = cv2.resize(im, dim, interpolation = cv2.INTER_AREA)
+                cv2.imwrite(dst_image_fname, im)
+            else:
+                shutil.copyfile(src_image_fname, dst_image_fname)
 
     # copy mesh; fake it
     if create_colmap:

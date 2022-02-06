@@ -21,8 +21,8 @@ set PathImages="%RootFolder%\train"
 set ModelName="RCTest"
 
 :: set the path, where model is going to be saved, and its name
-set ModelObj="%RootFolder%\meshes\mesh.obj"
-set ModelXYZ="%RootFolder%\meshes\point_cloud.xyz"
+set ModelObj="%RootFolder%\rcScene\meshes\mesh.obj"
+set ModelXYZ="%RootFolder%\rcScene\meshes\point_cloud.xyz"
 
 :: variable storing path to images for texturing model
 set Project="%RootFolder%\rcproj\mesh.rcproj"
@@ -42,17 +42,17 @@ echo %@Images%
         -enableAlignment false ^
         -selectImage *test_* ^
         -enableAlignment true ^
-        -exportRegistration %RootFolder%\test_cameras\bundle.out %ConfigFolder%\registrationConfig.xml ^
+        -exportRegistration %RootFolder%\rcScene\test_cameras\bundle.out %ConfigFolder%\registrationConfig.xml ^
         -selectAllImages ^
         -enableAlignment false ^
         -selectImage *frame* ^
         -enableAlignment true ^
-        -exportRegistration %RootFolder%\path_cameras\bundle.out %ConfigFolder%\registrationConfig.xml ^
+        -exportRegistration %RootFolder%\rcScene\path_cameras\bundle.out %ConfigFolder%\registrationConfig.xml ^
         -selectAllImages ^
         -enableAlignment false ^
         -selectImage *train_* ^
         -enableAlignment true ^
-        -exportRegistration %RootFolder%\cameras\bundle.out %ConfigFolder%\registrationConfig.xml ^
+        -exportRegistration %RootFolder%\rcScene\cameras\bundle.out %ConfigFolder%\registrationConfig.xml ^
         -setReconstructionRegionAuto ^
         -scaleReconstructionRegion 1.4 1.4 2.5 center factor ^
         -calculateNormalModel ^
