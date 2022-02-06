@@ -1,0 +1,12 @@
+{
+    "steps" : [
+        {
+            "name": "preprocess_for_rc",
+            "function": "rc_tools.preprocess_for_rc",
+            "function_args": {
+                "path": "${path}"
+            }
+        }
+
+    ]
+}
