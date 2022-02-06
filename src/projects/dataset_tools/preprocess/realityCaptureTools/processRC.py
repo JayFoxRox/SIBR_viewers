@@ -44,12 +44,15 @@ def main():
     # Get process steps
     with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), "processRCSteps.json"), "r") as processStepsFile:
         steps = json.load(processStepsFile)["steps"]
-        print("LOADING STEP ", steps)
 
     # Fixing path values
     args["path"] = os.path.abspath(args["path"])
 
-    programs = {}
+    programs = {
+        "runRC": {
+            "path": ".\\runRC.bat"
+        }
+    }
 
     print("STEPS " , steps)
     pipeline = TaskPipeline(args, steps, programs)

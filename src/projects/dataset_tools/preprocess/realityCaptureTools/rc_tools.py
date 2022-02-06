@@ -74,25 +74,12 @@ def preprocess_for_rc(path, videoName=""):
             if ("MP4" in filename) or ("mp4" in filename):
                 videoName = filename
 
-    # Write out SetVariables file
-    fname = os.path.join(path, "SetVariables.bat")
-    with open(fname, 'w') as outfile:
-        outfile.write("::CapturingReality\n")
-        outfile.write(":: switch off console output\n")
-        outfile.write("::@echo off\n\n")
+    # copy to "video.mp4"
+    vname = os.path.join(videopath, videoName)
+    if os.path.exists(vname):
+        print("Copying video ", vname, " to ",  os.path.join(videopath, "video.mp4"))
+        shutil.copyfile(vname, os.path.join(videopath, "video.mp4"))
 
-        outfile.write(":: path to RealityCapture application\n")
-        outfile.write("set RealityCaptureExe=\"C:\Program Files\Capturing Reality\RealityCapture\RealityCapture.exe\"\n\n")
-
-        outfile.write(":: root path to work folders where the dataset is stored \n")
-        outfile.write("set RootFolder="+path+"\\\n")
-        outfile.write("set ConfigFolder=E:\\Users\\gdrett\\src\\sibr_core\\src\\projects\\dataset_tools\\preprocess\\realityCaptureTools\\\n\n")
-
-        if videoName != "":
-            outfile.write("set Video=\"%RootFolder%\\videos\\"+videoName+"\"\n")
-            outfile.write("set FPS=0.2\n")
-
-        outfile.close()                
 
 def rc_to_colmap(rc_path, out_path, create_colmap=False):
 

@@ -3,8 +3,13 @@
 :: switch off console output
 ::@echo off
 @echo on
+set RootFolder=%1
+set Video="%RootFolder%\videos\video.mp4"
+set FPS=%2
 
-call SetVariables.bat
+set ConfigFolder=E:\Users\gdrett\src\sibr_core\install\scripts
+:: path to RealityCapture application
+set RealityCaptureExe="C:\Program Files\Capturing Reality\RealityCapture\RealityCapture.exe"
 
 :: variable storing path to images for creating model
 set Images="%RootFolder%\images"
