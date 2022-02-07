@@ -8,6 +8,7 @@ import argparse
 import shutil
 import sqlite3
 import read_write_model as rwm
+import pymeshlab
 
 
 import cv2
@@ -83,6 +84,17 @@ def preprocess_for_rc(path, videoName=""):
         print("Copying video ", vname, " to ",  os.path.join(videopath, "video.mp4"))
         shutil.copyfile(vname, os.path.join(videopath, "video.mp4"))
 
+def densify_mesh(mesh_path):
+    ms = pymeshlab.MeshSet()
+    subdiv_threshold = pymeshlab.Percentage(0.09)
+    ms.load_new_mesh(mesh_path)
+    print("Loaded mesh ", mesh_path, " Subdividing (this can take some time)...")
+    ms.subdivision_surfaces_butterfly_subdivision(threshold=subdiv_threshold)
+    path_split = os.path.split(mesh_path)
+    dense_mesh_fname = "dense_" + path_split[1]
+    dense_mesh_path = os.path.join(path_split[0], dense_mesh_fname)
+    print("Writing dense mesh ", dense_mesh_path)
+    ms.save_current_mesh(dense_mesh_path)
 
 def rc_to_colmap(rc_path, out_path, create_colmap=False, target_width=-1):
 

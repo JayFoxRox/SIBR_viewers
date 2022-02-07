@@ -13,7 +13,7 @@
 
 import subprocess
 import os, sys
-from utils.paths import getBinariesPath, getColmapPath
+from utils.paths import getBinariesPath, getColmapPath, getRCPath
 
 def getProcess(programName, binaryPath = getBinariesPath()):
     suffixes = [ '', '_msr', '_rwdi', '_d']
@@ -24,6 +24,15 @@ def getProcess(programName, binaryPath = getBinariesPath()):
         if os.path.isfile(binary):
             print("Program '%s' found in '%s'." % (programName, binary))
             return binary
+
+def getRCprocess(binaryPath = getRCPath()):
+    programName = "RealityCapture"
+    binary = os.path.join(binaryPath, programName + ".exe")
+
+    if os.path.isfile(binary):
+        print("Program '%s' found in '%s'." % (programName, binary))
+        return binary
+
 
 def runCommand(binary, command_args):
     print("Running process '%s'" % (' '.join([binary, *command_args])))

@@ -16,6 +16,25 @@
             ]
         },
         {
+            "name": "densify_mesh",
+            "function": "rc_tools.densify_mesh",
+            "function_args": {
+                "mesh_path": "${path}/rcScene/meshes/mesh.obj"
+            }
+        },
+        {
+            "name": "dense_mesh",
+            "app": "RC",
+            "command_args": [
+                "-load", "${path}/rcproj/mesh.rcproj",
+                "-selectMaximalComponent",
+                "-importModel" , "${path}/rcScene/meshes/dense_mesh.obj",
+                "-renameSelectedModel",  "RCTest",
+                "-exportModel",  "RCTest",  "${path}/rcScene/meshes/dense_point_cloud.xyz",
+                "-quit"
+            ]
+        },
+        {
             "name": "rc_to_colmap_cameras",
             "function": "rc_tools.rc_to_colmap",
             "function_args": {

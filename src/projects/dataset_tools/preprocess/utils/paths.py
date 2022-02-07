@@ -18,6 +18,9 @@ def getBinariesPath():
 
 def getColmapPath():
     return os.environ['COLMAP_PATH'] if 'COLMAP_PATH' in os.environ else "C:\\Program Files\\Colmap"
+
+def getRCPath():
+    return os.environ['RC_PATH'] if 'RC_PATH' in os.environ else "C:\\Program Files\\Capturing Reality\\RealityCapture\\"
     
 def getMeshlabPath():
     return os.environ['MESHLAB_PATH'] if 'MESHLAB_PATH' in os.environ else "C:\\Program Files\\VCG\\Meshlab"
