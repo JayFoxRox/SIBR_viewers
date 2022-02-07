@@ -28,9 +28,8 @@ import argparse
 import scipy
 import numpy as np
 from scipy.spatial.transform import Rotation as R
-
 from utils.paths import getBinariesPath, getColmapPath, getMeshlabPath
-from utils.commands import  getProcess, getColmap
+from utils.commands import  getProcess, getColmap, getRCprocess, runCommand
 
 def preprocess_for_rc(path, videoName=""):
     # create train/test split (every 10 images for now)
@@ -225,4 +224,79 @@ def rc_to_colmap(rc_path, out_path, create_colmap=False, target_width=-1):
             shutil.copyfile(texture, os.path.join(out_mesh_dir, "mesh_u1_v1.png"))
             shutil.copyfile(texture, os.path.join(out_mesh_dir, "texture.png"))
    
+
+# taken from ibr_preprocess_rc_to_sibr
+# TODO: pretty ugly needs rethink and cleanup
+def crop_images(path_data, path_dest):
+    # open calibration data
+    input_bundle = bundle.Bundle(os.path.join(path_data , "bundle.out"))
+    # query current average resolution of these cameras
+    avg_resolution = input_bundle.get_avg_resolution()
+    print("AVG resolution ", avg_resolution)
+
+    # special case: test_cameras take size/crop data from train cameras so they are all the same
+    if "test_" not in path_data:
+
+        # generate resolutions.txt and put it in the current dataset folder
+        resolutions_txt_path = os.path.join(path_data, "resolutions.txt")
+        input_bundle.generate_list_of_images_file(resolutions_txt_path)
+
+        # setup avg_resolution parameters for distordCrop
+        print("Command: run distordCrop ARGS: ", "--path", path_data, "--ratio",  "0.3", "--avg_width", str(avg_resolution[0]), "--avg_height", str(avg_resolution[1]), ")")
+        retcode = runCommand(getProcess("distordCrop"), [ "--path", path_data, "--ratio",  "0.3", "--avg_width", str(avg_resolution[0]), "--avg_height", str(avg_resolution[1]) ])
+        if retcode.returncode != 0:
+            print("Command: distordCrop failed, exiting (ARGS: ", "--path", path_data, "--ratio",  "0.3", "--avg_width", str(avg_resolution[0]), "--avg_height", str(avg_resolution[1]), ")")
+            #exit(1)
+
+        # read new proposed resolution and check if images were discarded
+        exclude = []
+        path_to_exclude_images_txt = os.path.join(path_data, "exclude_images.txt")
+        if (os.path.exists(path_to_exclude_images_txt)):
+            # list of excluded cameras (one line having all the camera ids to exclude)
+            exclusion_file = open(path_to_exclude_images_txt, "r")
+            line = exclusion_file.readline()
+            tokens = line.split()
+
+            for cam_id in tokens:
+                exclude.append(int(cam_id))
+            exclusion_file.close()
+
+        # exclude cams from bundle file
+        if len(exclude) > 0:
+            print("Excluding ", exclude)
+            input_bundle.exclude_cams (exclude)
+
+        # read proposed cropped resolution
+        path_to_crop_new_size_txt = os.path.join(path_data, "cropNewSize.txt")
+    else:
+        train_path_data = str.replace(path_data, "test_", "")
+        path_to_crop_new_size_txt = os.path.join(train_path_data, "cropNewSize.txt")
+        print("Reading crop size from ", path_to_crop_new_size_txt )
+
+    with open(path_to_crop_new_size_txt) as crop_size_file:
+        line = crop_size_file.readline()
+        tokens = line.split()
+        new_width   = int(tokens[0])
+        new_height  = int(tokens[1])
+        proposed_res = [new_width, new_height]
+
+    print("Crop size found:", proposed_res)
+    # generate file with list of current selected images to process
+
+    path_to_transform_list_txt = os.path.join (path_data, "toTransform.txt")
+    input_bundle.generate_list_of_images_file(path_to_transform_list_txt)
+
+    if not os.path.exists(path_dest):
+        os.makedirs(path_dest)
+
+    # write bundle file in output cameras folder
+    path_to_output_bundle = os.path.join (path_dest, "bundle.out")
+    input_bundle.save(path_to_output_bundle)
+
+    # setup avg_resolution and proposed_resolution parameters for distordCrop
+    print("Command: run cropFromCenter ARGS:", "--inputFile", path_to_transform_list_txt, "--outputPath", path_dest, "--avgResolution", str(avg_resolution[0]), str(avg_resolution[1]), "--cropResolution", str(proposed_res[0]), str(proposed_res[1]))
+    retcode = runCommand(getProcess("cropFromCenter"), [ "--inputFile", path_to_transform_list_txt, "--outputPath", path_dest, "--avgResolution", str(avg_resolution[0]), str(avg_resolution[1]), "--cropResolution", str(proposed_res[0]), str(proposed_res[1]) ])
+    if retcode.returncode != 0:
+        print("Command: cropFromCenter failed, exiting (ARGS:", "--inputFile", path_to_transform_list_txt, "--outputPath", path_dest, "--avgResolution", str(avg_resolution[0]), str(avg_resolution[1]), "--cropResolution", str(proposed_res[0]), str(proposed_res[1]))
+        exit(1)
 

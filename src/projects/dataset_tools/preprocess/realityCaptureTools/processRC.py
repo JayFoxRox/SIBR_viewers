@@ -73,8 +73,8 @@ def main():
             for s in steps:
                 if( s['name'] == from_step ):
                     adding_steps = True
-                # special case for last step that should be added
-                if( s['name'] == to_step and s['name'] != "rc_to_colmap_path_cameras" ):
+                # special case for last step that should be added TODO: extract this automatically
+                if( s['name'] == to_step and s['name'] != "rc_to_colmap_cropped_path_cameras" ):
                     break
                 if adding_steps :
                     newsteps.append(s)
