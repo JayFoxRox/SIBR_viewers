@@ -60,13 +60,13 @@ def preprocess_for_rc(path, videoName=""):
             if not(cnt % TEST_SKIP ):
                 filename = "test_"+filename
                 fname = os.path.join(test_path, filename)
-                print("Copying ", image, " to ", fname , " in test")
+#                print("Copying ", image, " to ", fname , " in test")
                 shutil.copyfile(image, fname)
             else:
                 filename = "train_"+filename
                 fname = os.path.join(test_path, filename)
                 fname = os.path.join(train_path, filename)
-                print("Copying ", image, " to ", fname , " in train")
+#                print("Copying ", image, " to ", fname , " in train")
                 shutil.copyfile(image, fname)
 
         cnt = cnt + 1
@@ -238,7 +238,7 @@ def rc_to_colmap(rc_path, out_path, create_colmap=False, target_width=-1):
         if fname.endswith(".jpg") or fname.endswith(".JPG") or fname.endswith(".png") or fname.endswith(".PNG") :
             src_image_fname = os.path.join(rc_path, fname)
             dst_image_fname = os.path.join(dst_image_path, os.path.basename(fname))
-            print("Copying ", src_image_fname, "to ", dst_image_fname)
+#            print("Copying ", src_image_fname, "to ", dst_image_fname)
 
             if create_colmap:
                   outfile_fusion.write(fname+"\n")
