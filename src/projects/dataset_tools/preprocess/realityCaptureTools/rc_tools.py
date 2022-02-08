@@ -103,7 +103,6 @@ def rc_to_colmap(rc_path, out_path, create_colmap=False, target_width=-1):
     dst_image_path = os.path.join(out_path, "images")
 
     # create entire colmap structure
-    #
     if create_colmap:
         dir_name = os.path.join(out_path, "stereo")
         if not os.path.exists(dir_name):
@@ -121,8 +120,6 @@ def rc_to_colmap(rc_path, out_path, create_colmap=False, target_width=-1):
         os.makedirs(dst_image_path)
 
     # create cameras.txt
-    #
-
     fname = os.path.join(sparse_stereo_dir, "cameras.txt")
     print("Creating ", fname)
     numcams = len(input_bundle.list_of_input_images)
@@ -150,40 +147,64 @@ def rc_to_colmap(rc_path, out_path, create_colmap=False, target_width=-1):
             camera_id = camera_id + 1
         outfile.close()
 
-    #
     # create images.txt
-    #
     fname = os.path.join(sparse_stereo_dir, "images.txt")
 
     print("Creating ", fname)
     camera_id = 1
     with open(fname, 'w') as outfile:
-      outfile.write( "# Image list with two lines of data per image:\n" )
-      outfile.write( "#   IMAGE_ID, QW, QX, QY, QZ, TX, TY, TZ, CAMERA_ID, NAME\n" )
-      outfile.write( "#   POINTS2D[] as (X, Y, POINT3D_ID)\n" )
-      for cam in input_bundle.list_of_cameras:
-         name = os.path.basename(input_bundle.list_of_input_images[camera_id-1].path)
-         # to sibr internal
+        outfile.write( "# Image list with two lines of data per image:\n" )
+        outfile.write( "#   IMAGE_ID, QW, QX, QY, QZ, TX, TY, TZ, CAMERA_ID, NAME\n" )
+        outfile.write( "#   POINTS2D[] as (X, Y, POINT3D_ID)\n" )
+        point2d_index = 0
+        for cam in input_bundle.list_of_cameras:
+            name = os.path.basename(input_bundle.list_of_input_images[camera_id-1].path)
+            im = cv2.imread(name, cv2.IMREAD_UNCHANGED)
+            w = im.shape[1]
+            h = im.shape[0]
+
+            # to sibr internal
+            br = np.matrix(cam.rotation).transpose()
+            t = -np.matmul(br , np.matrix([cam.translation[0], cam.translation[1], cam.translation[2]]).transpose())
          
-         br = np.matrix(cam.rotation).transpose()
-         t = -np.matmul(br , np.matrix([cam.translation[0], cam.translation[1], cam.translation[2]]).transpose())
-         
-         # sibr save to colmap
-         br = np.matmul(br, np.matrix([[1, 0, 0], [0, -1, 0], [0, 0, -1]]))
-         br = br.transpose()
+            # sibr save to colmap
+            br = np.matmul(br, np.matrix([[1, 0, 0], [0, -1, 0], [0, 0, -1]]))
+            br = br.transpose()
 
-         sci_rot = R.from_matrix(br)
-         sci_quat = sci_rot.as_quat()
+            sci_rot = R.from_matrix(br)
+            sci_quat = sci_rot.as_quat()
 
-         t = -np.matmul(br, t)
+            t = -np.matmul(br, t)
 
-         outfile.write("{} {} {} {} {} {} {} {} {} {}\n\n".format(camera_id, -sci_quat[3], -sci_quat[0], -sci_quat[1], -sci_quat[2], t[0,0], t[1,0], t[2,0], camera_id, name))
+            outfile.write("{} {} {} {} {} {} {} {} {} {}\n\n".format(camera_id, -sci_quat[3], -sci_quat[0], -sci_quat[1], -sci_quat[2], t[0,0], t[1,0], t[2,0], camera_id, name))
+            # write out points
+            for p in cam.list_of_feature_points:
+                for v in p.view_list:
+                    outfile.write( 2.*v.x_pos+w, " ", 2*v.y_pos+h, " -1 " ) # TODO: not sure about this, seems to be -1 in all existing files
+                    p.point2d_index[v.cam_id] = point2d_index
+                    point2d_index = point2d_index + 1
+            outfile.write("\n")
+
          camera_id = camera_id + 1
       outfile.close()
 
-#
-# create points3D.txt
-#
+    # create points3D.txt
+    fname = os.path.join(sparse_stereo_dir, "points3D.txt")
+
+    print("Creating ", fname)
+    camera_id = 1
+    with open(fname, 'w') as outfile:
+        num_points = len(input_bundle.list_of_feature_points)
+#  FIX mean_track_length = sum((len(pt.image_ids) for _, pt in points3D.items()))/len(points3D)
+        outfile.write("# 3D point list with one line of data per point:\n" )
+        outfile.write("#   POINT3D_ID, X, Y, Z, R, G, B, ERROR, TRACK[] as (IMAGE_ID, POINT2D_IDX)\n")
+        outfile.write("# Number of points: {}, mean track length: {}\n".format(num_points, mean_track_length))
+        for p in input_bundle.list_of_feature_points:
+            # error set to 0.1 for all
+            outfile.write(p.id, " ", p.position, " " , p.color, " ", 0.1, " ")
+            for v in p.view_list:
+                outfile.write(v.cam_id, " ", p.point2d_index[v.cam_id])
+
     # copy images
     for fname in os.listdir(rc_path):
         if fname.endswith(".jpg") or fname.endswith(".JPG") or fname.endswith(".png") or fname.endswith(".PNG") :
