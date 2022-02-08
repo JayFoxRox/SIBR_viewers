@@ -81,7 +81,11 @@ def preprocess_for_rc(path, videoName=""):
     vname = os.path.join(videopath, videoName)
     if os.path.exists(vname):
         print("Copying video ", vname, " to ",  os.path.join(videopath, "video.mp4"))
-        shutil.copyfile(vname, os.path.join(videopath, "video.mp4"))
+        outname = os.path.join(videopath, "video.mp4")
+        if not os.path.exists(outname):
+            shutil.copyfile(vname, outname)
+        else:
+            print("WARNING: ", outname, " exists not overwriting")
 
 def densify_mesh(mesh_path):
     ms = pymeshlab.MeshSet()
@@ -158,8 +162,9 @@ def rc_to_colmap(rc_path, out_path, create_colmap=False, target_width=-1):
         outfile.write( "#   POINTS2D[] as (X, Y, POINT3D_ID)\n" )
         point2d_index = 0
         for cam in input_bundle.list_of_cameras:
-            name = os.path.basename(input_bundle.list_of_input_images[camera_id-1].path)
-            im = cv2.imread(name, cv2.IMREAD_UNCHANGED)
+            imname = input_bundle.list_of_input_images[camera_id-1].path
+            name = os.path.basename(imname)
+            im = cv2.imread(imname, cv2.IMREAD_UNCHANGED)
             w = im.shape[1]
             h = im.shape[0]
 
@@ -176,17 +181,18 @@ def rc_to_colmap(rc_path, out_path, create_colmap=False, target_width=-1):
 
             t = -np.matmul(br, t)
 
-            outfile.write("{} {} {} {} {} {} {} {} {} {}\n\n".format(camera_id, -sci_quat[3], -sci_quat[0], -sci_quat[1], -sci_quat[2], t[0,0], t[1,0], t[2,0], camera_id, name))
+            outfile.write("{} {} {} {} {} {} {} {} {} {}\n".format(camera_id, -sci_quat[3], -sci_quat[0], -sci_quat[1], -sci_quat[2], t[0,0], t[1,0], t[2,0], camera_id, name))
             # write out points
             for p in cam.list_of_feature_points:
                 for v in p.view_list:
-                    outfile.write( 2.*v.x_pos+w, " ", 2*v.y_pos+h, " -1 " ) # TODO: not sure about this, seems to be -1 in all existing files
-                    p.point2d_index[v.cam_id] = point2d_index
-                    point2d_index = point2d_index + 1
-            outfile.write("\n")
+                    if v[0] == camera_id-1:
+                        outfile.write( str(2.*v[2]+w) + " " + str(2.*v[3]+h)+ " -1 " ) # TODO: not sure about this, seems to be -1 in all existing files
+                        p.point2d_index[v[0]] = point2d_index
+                        point2d_index = point2d_index + 1
 
-         camera_id = camera_id + 1
-      outfile.close()
+            outfile.write("\n")
+            camera_id = camera_id + 1
+    outfile.close()
 
     # create points3D.txt
     fname = os.path.join(sparse_stereo_dir, "points3D.txt")
@@ -196,14 +202,17 @@ def rc_to_colmap(rc_path, out_path, create_colmap=False, target_width=-1):
     with open(fname, 'w') as outfile:
         num_points = len(input_bundle.list_of_feature_points)
 #  FIX mean_track_length = sum((len(pt.image_ids) for _, pt in points3D.items()))/len(points3D)
+        mean_track_length = 10
         outfile.write("# 3D point list with one line of data per point:\n" )
         outfile.write("#   POINT3D_ID, X, Y, Z, R, G, B, ERROR, TRACK[] as (IMAGE_ID, POINT2D_IDX)\n")
         outfile.write("# Number of points: {}, mean track length: {}\n".format(num_points, mean_track_length))
         for p in input_bundle.list_of_feature_points:
             # error set to 0.1 for all
-            outfile.write(p.id, " ", p.position, " " , p.color, " ", 0.1, " ")
+            outfile.write(str(p.id)+ " " + str(p.position[0]) + " " + str(p.position[1]) + " " + str(p.position[2]) + " " + str( p.color[0])+  " " + str( p.color[1])+  " " + str( p.color[2])+ " 0.1 ")
             for v in p.view_list:
-                outfile.write(v.cam_id, " ", p.point2d_index[v.cam_id])
+#                print("Cam id ", v[0], " P= ", p.id , " p2dind " , p.point2d_index )
+                outfile.write(" " + str(v[0])+ " " + str(p.point2d_index[v[0]])  )
+            outfile.write("\n")
 
     # copy images
     for fname in os.listdir(rc_path):

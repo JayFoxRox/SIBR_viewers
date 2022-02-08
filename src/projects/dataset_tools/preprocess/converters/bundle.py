@@ -164,6 +164,10 @@ class Bundle:
 
                     # add feature point to the list of feature points contained in the bundle
                     feature_point = BundleFeaturePoint(feature_point_id, feature_point_position, feature_point_color, list_of_view_info)
+                    
+                    # for colmap conversion
+                    for v in list_of_view_info:
+                        self.list_of_cameras[v[0]].list_of_feature_points.append(feature_point)
 
                     feature_point_id = feature_point_id + 1
 
