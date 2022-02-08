@@ -66,6 +66,8 @@ namespace sibr {
 		/** \return a reference to the occlusion threshold */
 		float & epsilonOcclusion() { return _epsilonOcclusion; }
 
+		float& setSoftVisibilityThreshold() { return _soft_visibility_threshold; }
+
 		/** Are the mask smooth values or binary.
 		 *\param val true if they are binary
 		 */

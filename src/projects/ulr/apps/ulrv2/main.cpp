@@ -220,10 +220,10 @@ int legacyV2main(ULRAppArgs & myArgs)
 
 				sibr::InputCamera cam = *scene->cameras()->inputCameras()[imId];
 				sibr::Vector3f camPos = cam.position();
-				int w = cam.w();
-				int h = cam.h();
+				int w = sceneResWidth;
+				int h = sceneResHeight;
 
-				sibr::DepthRenderer rendererDepth(cam.w(), cam.h());
+				sibr::DepthRenderer rendererDepth(sceneResWidth, sceneResHeight);
 
 				sibr::ImageL32F depthMapSIBR(w, h);
 
@@ -232,6 +232,7 @@ int legacyV2main(ULRAppArgs & myArgs)
 
 				depths3D[imId] = sibr::ImageL32F(w, h, 0);
 
+#pragma omp parallel for
 				for (int i = 0; i < w; i++) {
 					for (int j = 0; j < h; j++) {
 						sibr::Vector2i pixelPos(i, j);
@@ -277,9 +278,11 @@ int legacyV2main(ULRAppArgs & myArgs)
 				sibr::ImageRGBA tempVisibility;
 				ulrView->computeVisibilityMap(depths3D[imId], tempVisibility);
 				softVisibilities[imId] = std::move(sibr::convertRGBAtoL32F(tempVisibility));
-				cv::Mat temp;
+				cv::Mat temp, temp1;
 				cv::resize(softVisibilities[imId].toOpenCV(), temp, cv::Size(wSoft, hSoft), 0, 0, cv::INTER_NEAREST);
-				softVisibilities[imId].fromOpenCV(temp);
+				cv::normalize(temp,temp1, 1.0, 0.0, cv::NormTypes::NORM_MINMAX);
+				softVisibilities[imId].fromOpenCV(temp1);
+				softVisibilities[imId].saveHDR(myArgs.dataset_path.get() + "/softVisibility/soft_map_camID" + std::to_string(imId) + ".exr", false);
 			}
 
 			soft_visibility_textures.createFromImages(softVisibilities, SIBR_GPU_LINEAR_SAMPLING | SIBR_FLIP_TEXTURE);

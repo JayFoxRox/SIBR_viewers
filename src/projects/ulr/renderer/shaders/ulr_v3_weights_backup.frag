@@ -49,7 +49,7 @@ uniform bool discard_black_pixels = true;
 uniform bool doMasking = false;
 uniform bool flipRGBs = false;
 uniform bool showWeights = false;
-uniform float epsilonOcclusion = 1e-5;
+uniform float epsilonOcclusion = 1e-2;
 uniform bool winner_takes_all = false;
 uniform int selectedCam;
 
@@ -96,36 +96,6 @@ layout(binding=3) uniform sampler2DArray input_masks;
 layout(binding=5) uniform sampler2D normals;
 layout(binding=6) uniform sampler2D normalsCam;
 
-struct CostIndex
-{
-	float cost;
-	vec3 color;
-	float dist;
-};
-
-CostIndex bin_list[NUM_CAMS];
-
-void bubbleSort(int fullSize, int sortSize, float maxDist)
-{
-	CostIndex temp;
-	for (int i = 0; i < sortSize; i++)
-	{
-		bool sorted = true;
-		for (int j = fullSize - 1; j > 0; j--)
-		{
-			if (bin_list[j].cost + (bin_list[j].dist/maxDist) < bin_list[j-1].cost + (bin_list[j-1].dist/maxDist))
-			{
-				temp = bin_list[j];
-				bin_list[j] = bin_list[j-1];
-				bin_list[j-1] = temp;
-				sorted = false;
-			}
-		}
-		if (sorted) return;
-	}
-}
-
-
 vec4 getRGBD(vec3 xy_camid){
 	if(flipRGBs){
 		xy_camid.y = 1.0 - xy_camid.y;
@@ -170,21 +140,16 @@ void main(void){
   vec4 normalW = texture(normals, vertex_coord);	// [-1, 1]
   vec4 normalC = texture(normalsCam, vertex_coord);	// [-1, 1]
   float depth = point.w;
-  if ( point.w >= 1.0) {
-	discard;
-  }
-  vec4  color0 = vec4(0.0,0.0,0.0,INFTY_W);
-  vec4  color1 = vec4(0.0,0.0,0.0,INFTY_W);
-  vec4  color2 = vec4(0.0,0.0,0.0,INFTY_W);
-  vec4  color3 = vec4(0.0,0.0,0.0,INFTY_W);
-  bool atLeastOneValid = false;
   
-  vec3 norms, view_dir;
-  int counter = 0;
-  float maxDist = -1.0;
+
+  vec4  color0 = vec4(0.0,0.0,0.0,INFTY_W);
+  
+  vec3 norm, view_dir;
   for(int i = 0; i < NUM_CAMS; i++){
 	
-	
+	if(selectedCam != i){
+		continue;
+	}
 	if(cameras[i].selected == 0){
 		continue;
 	}
@@ -200,27 +165,6 @@ void main(void){
 		vec3 xy_camid = vec3(uvd.xy,i);
 		vec4 color = getRGBD(xy_camid);
 
-		if(doMasking){        
-			float masked = getMask(xy_camid);
-             
-            if( invert_mask ){
-                masked = 1.0 - masked;
-            }
-            
-            if( is_binary_mask && camsCount != i ){
-                if( masked <= 0.05) {
-                    continue;
-                }
-			} 
-			
-		}
-
-
-		if (occ_test){
-			if(abs(uvd.z-color.w) >= epsilonOcclusion) {	  
-				continue;
-			}
-		}
 		float penaltyValue = 0;
 
 		// compute ang deviation, ulr weights
@@ -232,81 +176,22 @@ void main(void){
 		float penalty_ang = float(occ_test) * max(0.0001, acos(dot(v1,v2)/(dist_i2p*dist_n2p)));
 		float penalty_res = max(0.0001, (dist_i2p - dist_n2p)/dist_i2p );
 		 
+		penaltyValue = penalty_ang + BETA*penalty_res;
 		view_dir = normalize(-v1); //project(-v1, cameras[i].vp);
-		norms =  normalize(normalW.xyz); //project(normalW.xyz, cameras[i].vp);
-		//penaltyValue = penalty_ang + BETA*penalty_res;
-		if (maxDist < dist_i2p){
-			maxDist = dist_i2p;
-		}
-
-		penaltyValue = (1.0 - dot(view_dir, norms));
-
-		if(showWeights){
-			
-			//normalC =  project(normalW.xyz, cameras[camsCount].vp);
-			color.xyz = vec3(dot(view_dir, norms));
-		}
-		atLeastOneValid = true;
-		bin_list[counter] = CostIndex(penaltyValue, color.xyz, dist_i2p);
-		counter++;
-        //color.w = penaltyValue;  
-		//color0=color;
-		// compare with best four candiates and insert at the
-		// appropriate rank
-//		if (color.w<color3.w) {    // better than fourth best candidate
-//			if (color.w<color2.w) {    // better than third best candidate
-//				color3 = color2;
-//				if (color.w<color1.w) {    // better than second best candidate
-//					color2 = color1;
-//					if (color.w<color0.w) {    // better than best candidate
-//						color1 = color0;
-//						color0 = color;
-//					} else {
-//						color1 = color;
-//					}
-//				} else {
-//					color2 = color;
-//				}
-//			} else {
-//				color3 = color;
-//			}
-//		}
-	  }  
-    }
-	bubbleSort(counter, 20, maxDist);
+		norm =  normalize(normalW.xyz); //project(normalW.xyz, cameras[i].vp);
+		//normalC =  project(normalW.xyz, cameras[camsCount].vp);
+		color.xyz = vec3(dot(view_dir, norm));
+		
+        color.w = penaltyValue;  
+		color0=color;
+	 }  
+   }
    
-    if(!atLeastOneValid){
-         discard;
-    }
-//	float thresh = 1.0000001 * color3.w;
-//    color0.w = max(0, 1.0 - color0.w/thresh);
-//    color1.w = max(0, 1.0 - color1.w/thresh);
-//    color2.w = max(0, 1.0 - color2.w/thresh);
-//    color3.w = 1.0 - 1.0/1.0000001;
-//
-//    // ignore any candidate which is uninit
-//	if (color0.w == INFTY_W) color0.w = 0;
-//    if (color1.w == INFTY_W) color1.w = 0;
-//    if (color2.w == INFTY_W) color2.w = 0;
+  
    
     // output weights
-	out_color = (selectedCam < counter) ? vec4(bin_list[selectedCam].color, 1.0) : vec4(0.0);
-//	if(selectedCam == 0){
-//		out_color.xyz = color0.xyz;
-//	}
-//	else if(selectedCam == 1){
-//		out_color.xyz = color1.xyz;
-//	}
-//	else if(selectedCam == 2){
-//		out_color.xyz = color2.xyz;
-//	}
-//	else if(selectedCam == 3){
-//		out_color.xyz = color3.xyz;
-//	}
-//	else{
-//		out_color.xyz = vec3(0.0);
-//	}
-	//out_color.w = 1.0;
+	out_color.xyz = color0.xyz;
+	out_color.w = 1.0;
 	out_depth.xyz = vec3(pow(depth, 1));
 	out_depth.w = 1.0;
 	out_normal.xyz = normalC.xyz;

@@ -60,7 +60,7 @@ namespace sibr {
 		* \param cameras the cameras poses
 		* \param images the images to reproject
 		*/
-		void reproject(const std::vector<InputCamera::Ptr> & cameras, const std::vector<sibr::ImageRGB::Ptr> & images, const float sampleRatio = 1.0);
+		void reproject(const std::vector<InputCamera::Ptr> & cameras, const std::vector<sibr::ImageRGB::Ptr> & images, const float sampleRatio = 1.0, const std::vector<sibr::ImageL8>& masks = std::vector<sibr::ImageL8>());
 
 
 		/** Reproject a set of images into the texture map, using the associated cameras.
@@ -69,11 +69,17 @@ namespace sibr {
 		*/
 		float computeMedian(const std::vector<MeshTexturing::SampleInfos> samples, const int channel);
 
+		/** Reproject a set of images into the texture map, using the associated cameras.
+		* \param cameras the cameras poses
+		* \param images the images to reproject
+		*/
+		float computeMaxMin(const std::vector<MeshTexturing::SampleInfos> samples, const int channel, const bool min=false);
+
 		/** Compute the variance of the samples for a set of images and reproject them into the texture map.
 		* \param cameras the cameras poses
 		* \param images the images to reproject
 		*/
-		void reproject_stats(const std::vector<InputCamera::Ptr>& cameras, const std::vector<sibr::ImageRGB::Ptr>& images, const std::string& stat="mean", const float sampleRatio = 1.0);
+		void reproject_stats(const std::vector<InputCamera::Ptr>& cameras, const std::vector<sibr::ImageRGB::Ptr>& images, const std::string& stat="mean", const float sampleRatio = 1.0, const std::vector<sibr::ImageL8>& masks = std::vector<sibr::ImageL8>());
 
 		
 		/** Get the final result. 

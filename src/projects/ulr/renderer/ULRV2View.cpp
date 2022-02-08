@@ -136,6 +136,7 @@ void ULRV2View::onGUI() {
 			ImGui::Checkbox("Poisson fix", &_poisson->enableFix());
 
 			ImGui::PushScaledItemWidth(120);
+			ImGui::InputFloat("Soft Visibility Threshold", &_ulr->setSoftVisibilityThreshold(), 1.00f, 10.0f);
 			ImGui::InputFloat("Epsilon occlusion", &_ulr->epsilonOcclusion(), 0.001f, 0.01f);
 			ImGui::Combo("Rendering mode", (int*)(&_renderMode), "Standard\0One image\0Leave one out\0\0");
 			if (ImGui::InputInt("Selected image", &_singleCamId, 1, 10)) {

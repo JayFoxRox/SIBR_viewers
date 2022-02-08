@@ -74,15 +74,29 @@ namespace sibr {
 		normal = (wCoord * normals[tri[0]] + uCoord * normals[tri[1]] + vCoord * normals[tri[2]]).normalized();
 	}
 
-	void MeshTexturing::reproject(const std::vector<InputCamera::Ptr> & cameras, const std::vector<sibr::ImageRGB::Ptr> & images, const float sampleRatio) {
+	void MeshTexturing::reproject(const std::vector<InputCamera::Ptr> & cameras, const std::vector<sibr::ImageRGB::Ptr> & images, 
+		const float sampleRatio, const std::vector<sibr::ImageL8>& masks) {
 		// We need a mesh for reprojection.
 		if (!_mesh) {
 			SIBR_WRG << "[Texturing] No mesh available." << std::endl;
 			return;
 		}
 
+		bool useMasks = false;
+		if (masks.size() == cameras.size()) {
+			useMasks = true;
+		}
+
 		const int w = _accum.w();
 		const int h = _accum.h();
+
+		int k = 12;
+		float ratio = sampleRatio;
+		if (sampleRatio > 1.0) {
+			k = int(ceil(sampleRatio));
+			ratio = 1.0;
+			SIBR_LOG << "[Texturing] Using top-" << k << " samples!!" << std::endl;
+		}
 
 		sibr::LoadingProgress			progress(h, "[Texturing] Gathering color samples from cameras" );
 		SIBR_LOG << "[Texturing] Gathering color samples from " << cameras.size() << " cameras ..." << std::endl;
@@ -110,7 +124,7 @@ namespace sibr {
 
 				for (int cid = 0; cid < cameras.size(); ++cid) {
 					const auto & cam = cameras[cid];
-					if (!cam->frustumTest(vertex)) {
+					if (!cam->frustumTest(vertex) || !cam->isActive()) {
 						continue;
 					}
 
@@ -128,6 +142,13 @@ namespace sibr {
 					// Reproject, read color.
 					const sibr::Vector2f pos = cam->projectImgSpaceInvertY(vertex).xy();
 					const sibr::Vector3f col = images[cid]->bilinear(pos).cast<float>().xyz();
+					if (useMasks) {
+						const float valid = masks[cid].bilinear(pos).cast<float>().x() / 255.0;
+						//std::cout << valid << std::endl;
+						if (valid <= 0.05) {
+							continue;
+						}
+					}
 					// Angle-based weight for now.
 					const float angleWeight = std::max(-occDir.dot(normal), 0.0f);
 					const float weight = angleWeight;
@@ -148,7 +169,7 @@ namespace sibr {
 
 				// Re-weight and accumulate the samples.
 				// The code is written this way to support 'best sampleRatio of all samples' approaches.
-				for(int i = 0; i < sampleRatio * samples.size(); ++i) {
+				for(int i = 0; i < ratio * samples.size() && i < k; ++i) {
 					float w = samples[i].weight;
 					w = w * w;
 					totalWeight += w;
@@ -186,7 +207,26 @@ namespace sibr {
 		}
 	}
 
-	void MeshTexturing::reproject_stats(const std::vector<InputCamera::Ptr>& cameras, const std::vector<sibr::ImageRGB::Ptr>& images, const std::string& stat, const float sampleRatio)
+	float MeshTexturing::computeMaxMin(const std::vector<MeshTexturing::SampleInfos> samples, const int channel, const bool min)
+	{
+		std::vector<float> values;
+		for (int i = 0; i < samples.size(); ++i) {
+			values.push_back(samples[i].color[channel]);
+		}
+
+		sort(values.begin(), values.end());
+
+		if (min) {
+			return values[0];
+		}
+		else {
+			return values[samples.size() - 1];
+		}
+		
+	}
+
+	void MeshTexturing::reproject_stats(const std::vector<InputCamera::Ptr>& cameras, const std::vector<sibr::ImageRGB::Ptr>& images, 
+		const std::string& stat, const float sampleRatio, const std::vector<sibr::ImageL8>& masks)
 	{
 		// We need a mesh for reprojection.
 		if (!_mesh) {
@@ -194,8 +234,16 @@ namespace sibr {
 			return;
 		}
 
+		if (stat == "angular") {
+			reproject(cameras, images, sampleRatio, masks);
+			return;
+		}
 
 
+		bool useMasks = false;
+		if (masks.size() == cameras.size()) {
+			useMasks = true;
+		}
 
 		const int w = _accum.w();
 		const int h = _accum.h();
@@ -226,7 +274,7 @@ namespace sibr {
 
 				for (int cid = 0; cid < cameras.size(); ++cid) {
 					const auto& cam = cameras[cid];
-					if (!cam->frustumTest(vertex)) {
+					if (!cam->frustumTest(vertex) || !cam->isActive()) {
 						continue;
 					}
 
@@ -244,6 +292,12 @@ namespace sibr {
 					// Reproject, read color.
 					const sibr::Vector2f pos = cam->projectImgSpaceInvertY(vertex).xy();
 					const sibr::Vector3f col = images[cid]->bilinear(pos).cast<float>().xyz();
+					if (useMasks) {
+						const float valid = masks[cid].bilinear(pos).cast<float>().x() / 255.0;
+						if (valid <= 0.05) {
+							continue;
+						}
+					}
 					// Angle-based weight for now.
 					/*const float angleWeight = std::max(-occDir.dot(normal), 0.0f);
 					const float weight = angleWeight;*/
@@ -291,6 +345,24 @@ namespace sibr {
 						_mask(px, py)[0] = 255;
 					}
 				}
+				else if (stat == "max") {
+					float colorR = computeMaxMin(samples, 0);
+					float colorG = computeMaxMin(samples, 1);
+					float colorB = computeMaxMin(samples, 2);
+					if (totalWeight > 0.0f) {
+						_accum(px, py) = Vector3f(colorR, colorG, colorB);
+						_mask(px, py)[0] = 255;
+					}
+				}
+				else if (stat == "min") {
+					float colorR = computeMaxMin(samples, 0, true);
+					float colorG = computeMaxMin(samples, 1, true);
+					float colorB = computeMaxMin(samples, 2, true);
+					if (totalWeight > 0.0f) {
+						_accum(px, py) = Vector3f(colorR, colorG, colorB);
+						_mask(px, py)[0] = 255;
+					}
+				}
 				else if(stat == "variance"){
 					for (int i = 0; i < samples.size(); ++i) {
 						sibr::Vector3f diff = samples[i].color - avgColor;
@@ -303,6 +375,9 @@ namespace sibr {
 						_accum(px, py) = Vector3f(totVar, totVar, totVar);
 						_mask(px, py)[0] = 255;
 					}
+				}
+				else {
+					SIBR_ERR << "Unidentified option for reprojection filter!!" << std::endl;
 				}
 			}
 			if ((py % 1000) == 0)
