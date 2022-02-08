@@ -112,11 +112,17 @@ def rc_to_colmap(rc_path, out_path, create_colmap=False, target_width=-1):
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
 
+        stereo_stereo_dir = os.path.join(dir_name, "stereo")
+        if not os.path.exists(stereo_stereo_dir):
+            os.makedirs(stereo_stereo_dir)
+
         dst_image_path = os.path.join(dir_name, "images")
 
         sparse_stereo_dir = dir_name = os.path.join(dir_name, "sparse")
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
+
+
     else:
         sparse_stereo_dir = out_path
 
@@ -183,10 +189,16 @@ def rc_to_colmap(rc_path, out_path, create_colmap=False, target_width=-1):
 
             outfile.write("{} {} {} {} {} {} {} {} {} {}\n".format(camera_id, -sci_quat[3], -sci_quat[0], -sci_quat[1], -sci_quat[2], t[0,0], t[1,0], t[2,0], camera_id, name))
             # write out points
+            first = False
             for p in cam.list_of_feature_points:
                 for v in p.view_list:
                     if v[0] == camera_id-1:
-                        outfile.write( str(2.*v[2]+w) + " " + str(2.*v[3]+h)+ " -1 " ) # TODO: not sure about this, seems to be -1 in all existing files
+                        outfile.write( str(2.*v[2]+w) + " " + str(2.*v[3]+h)+ " -1" ) # TODO: not sure about this, seems to be -1 in all existing files
+                        if not first:
+                            outfile.write(" ")
+                        else:
+                            first = False
+
                         p.point2d_index[v[0]] = point2d_index
                         point2d_index = point2d_index + 1
 
@@ -202,17 +214,24 @@ def rc_to_colmap(rc_path, out_path, create_colmap=False, target_width=-1):
     with open(fname, 'w') as outfile:
         num_points = len(input_bundle.list_of_feature_points)
 #  FIX mean_track_length = sum((len(pt.image_ids) for _, pt in points3D.items()))/len(points3D)
-        mean_track_length = 10
+        mean_track_length = 10 # 10 is a placeholder value
         outfile.write("# 3D point list with one line of data per point:\n" )
         outfile.write("#   POINT3D_ID, X, Y, Z, R, G, B, ERROR, TRACK[] as (IMAGE_ID, POINT2D_IDX)\n")
         outfile.write("# Number of points: {}, mean track length: {}\n".format(num_points, mean_track_length))
         for p in input_bundle.list_of_feature_points:
             # error set to 0.1 for all
-            outfile.write(str(p.id)+ " " + str(p.position[0]) + " " + str(p.position[1]) + " " + str(p.position[2]) + " " + str( p.color[0])+  " " + str( p.color[1])+  " " + str( p.color[2])+ " 0.1 ")
+            outfile.write(str(p.id+1)+ " " + str(p.position[0]) + " " + str(p.position[1]) + " " + str(p.position[2]) + " " + str( p.color[0])+  " " + str( p.color[1])+  " " + str( p.color[2])+ " 0.1")
             for v in p.view_list:
-#                print("Cam id ", v[0], " P= ", p.id , " p2dind " , p.point2d_index )
-                outfile.write(" " + str(v[0])+ " " + str(p.point2d_index[v[0]])  )
+#                print("Cam id ", v[0], " P= ", p.id+1 , " p2dind " , p.point2d_index )
+                outfile.write(" " + str(v[0]+1)+ " " + str(p.point2d_index[v[0]])  )
             outfile.write("\n")
+
+
+    if create_colmap:
+        fname = os.path.join(stereo_stereo_dir, "fusion.cfg")
+        outfile_fusion = open(fname, 'w') 
+        fname = os.path.join(stereo_stereo_dir, "patch-match.cfg")
+        outfile_patchmatch = open(fname, 'w') 
 
     # copy images
     for fname in os.listdir(rc_path):
@@ -220,6 +239,11 @@ def rc_to_colmap(rc_path, out_path, create_colmap=False, target_width=-1):
             src_image_fname = os.path.join(rc_path, fname)
             dst_image_fname = os.path.join(dst_image_path, os.path.basename(fname))
             print("Copying ", src_image_fname, "to ", dst_image_fname)
+
+            if create_colmap:
+                  outfile_fusion.write(fname+"\n")
+                  outfile_patchmatch.write(fname+"\n")
+                  outfile_patchmatch.write("__auto__, 20\n")
 
             # resize if necessary
             if target_width != -1:
@@ -238,6 +262,8 @@ def rc_to_colmap(rc_path, out_path, create_colmap=False, target_width=-1):
 
     # copy mesh; fake it
     if create_colmap:
+        outfile_patchmatch.close()
+        outfile_fusion.close()
         # assume meshes above
         rc_mesh_dir = os.path.join(os.path.abspath(os.path.join(rc_path, os.pardir)), "meshes")
         out_mesh_dir = os.path.join(os.path.abspath(os.path.join(out_path, os.pardir)), "capreal")
@@ -253,6 +279,7 @@ def rc_to_colmap(rc_path, out_path, create_colmap=False, target_width=-1):
             shutil.copyfile(mtl, os.path.join(out_mesh_dir, "mesh.mtl"))
             shutil.copyfile(texture, os.path.join(out_mesh_dir, "mesh_u1_v1.png"))
             shutil.copyfile(texture, os.path.join(out_mesh_dir, "texture.png"))
+
    
 
 # taken from ibr_preprocess_rc_to_sibr
