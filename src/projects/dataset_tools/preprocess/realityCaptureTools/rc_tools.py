@@ -232,6 +232,15 @@ def rc_to_colmap(rc_path, out_path, create_colmap=False, target_width=-1):
         outfile_fusion = open(fname, 'w') 
         fname = os.path.join(stereo_stereo_dir, "patch-match.cfg")
         outfile_patchmatch = open(fname, 'w') 
+        outdir = os.path.join(stereo_stereo_dir, "normal_maps")
+        if not os.path.exists(outdir):
+            os.makedirs(outdir)
+        outdir = os.path.join(stereo_stereo_dir, "depth_maps")
+        if not os.path.exists(outdir):
+            os.makedirs(outdir)
+        outdir = os.path.join(stereo_stereo_dir, "consistency_graphs")
+        if not os.path.exists(outdir):
+            os.makedirs(outdir)
 
     # copy images
     for fname in os.listdir(rc_path):
