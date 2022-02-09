@@ -135,6 +135,7 @@ def rc_to_colmap(rc_path, out_path, create_colmap=False, target_width=-1):
     numcams = len(input_bundle.list_of_input_images)
 
     camera_id = 1
+    scale = 1.
     with open(fname, 'w') as outfile:
         outfile.write("# Camera list with one line of data per camera:\n")
         outfile.write("#   CAMERA_ID, MODEL, WIDTH, HEIGHT, PARAMS[]\n")
@@ -168,7 +169,8 @@ def rc_to_colmap(rc_path, out_path, create_colmap=False, target_width=-1):
         outfile.write( "#   POINTS2D[] as (X, Y, POINT3D_ID)\n" )
         point2d_index = 0
         for cam in input_bundle.list_of_cameras:
-            imname = input_bundle.list_of_input_images[camera_id-1].path
+            in_im = input_bundle.list_of_input_images[camera_id-1]
+            imname = in_im.path
             name = os.path.basename(imname)
             im = cv2.imread(imname, cv2.IMREAD_UNCHANGED)
             w = im.shape[1]
@@ -190,10 +192,13 @@ def rc_to_colmap(rc_path, out_path, create_colmap=False, target_width=-1):
             outfile.write("{} {} {} {} {} {} {} {} {} {}\n".format(camera_id, -sci_quat[3], -sci_quat[0], -sci_quat[1], -sci_quat[2], t[0,0], t[1,0], t[2,0], camera_id, name))
             # write out points
             first = False
+            scale = 1.0
+            if target_width !=1 :
+                scale = float(target_width) / float(in_im.resolution[0])
             for p in cam.list_of_feature_points:
                 for v in p.view_list:
                     if v[0] == camera_id-1:
-                        outfile.write( str(2.*v[2]+w) + " " + str(2.*v[3]+h)+ " -1" ) # TODO: not sure about this, seems to be -1 in all existing files
+                        outfile.write( str(scale*(2.*v[2]+w)) + " " + str(scale*(2.*v[3]+h))+ " -1" ) # TODO: not sure about this, seems to be -1 in all existing files
                         if not first:
                             outfile.write(" ")
                         else:
@@ -355,9 +360,11 @@ def crop_images(path_data, path_dest):
     if not os.path.exists(path_dest):
         os.makedirs(path_dest)
 
-    # write bundle file in output cameras folder
+    
     path_to_output_bundle = os.path.join (path_dest, "bundle.out")
-    input_bundle.save(path_to_output_bundle)
+    # write bundle file in output cameras folder
+    new_width = None
+    input_bundle.save(path_to_output_bundle, proposed_res)
 
     # setup avg_resolution and proposed_resolution parameters for distordCrop
     print("Command: run cropFromCenter ARGS:", "--inputFile", path_to_transform_list_txt, "--outputPath", path_dest, "--avgResolution", str(avg_resolution[0]), str(avg_resolution[1]), "--cropResolution", str(proposed_res[0]), str(proposed_res[1]))

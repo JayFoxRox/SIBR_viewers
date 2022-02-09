@@ -39,7 +39,7 @@ def main():
     parser.add_argument("--rc_path", type=str, required=False, help="path to rc dataset, containing bundle.out and images")
     parser.add_argument("--out_path", type=str, required=False, help = "output path ")
     parser.add_argument("--create_colmap", action='store_true', help="create colmap hierarchy")
-    parser.add_argument("--from_step", type=str, default='default', help="Run from this step to --to_step")
+    parser.add_argument("--from_step", type=str, default='default', help="Run from this step to --to_step (or end if no to_step")
     parser.add_argument("--to_step", type=str, default='default', help="up to but *excluding* this step (from --from_step); must be unique steps")
 
     args = vars(parser.parse_args())
@@ -66,21 +66,18 @@ def main():
     # TODO: move to generic taskpipeline code; 
     if( from_step != 'default' ):
         # check if to_step exists
-        if( to_step != 'default' ):
-            # select steps
-            newsteps = []
-            adding_steps = False
-            for s in steps:
-                if( s['name'] == from_step ):
-                    adding_steps = True
-                # special case for last step that should be added TODO: extract this automatically
-                if( s['name'] == to_step and s['name'] != "rc_to_colmap_cropped_path_cameras" ):
-                    break
-                if adding_steps :
-                    newsteps.append(s)
-            steps = newsteps
-        else:
-            print("--from_step given without --to_step; ignoring")
+        # select steps
+        newsteps = []
+        adding_steps = False
+        for s in steps:
+            if s['name'] == from_step :
+                adding_steps = True
+            if s['name'] == to_step :
+                break
+            if adding_steps :
+                newsteps.append(s)
+
+        steps = newsteps
 
     pipeline = TaskPipeline(args, steps, programs)
 
