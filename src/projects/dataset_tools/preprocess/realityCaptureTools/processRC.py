@@ -29,23 +29,65 @@ from utils.paths import getBinariesPath, getColmapPath, getMeshlabPath
 from utils.commands import  getProcess, getColmap, getRCprocess
 from utils.TaskPipeline import TaskPipeline
 import rc_tools
+import selective_colmap_process
 
 def main():
     parser = argparse.ArgumentParser()
 
     # common arguments
+    parser.add_argument("--sibrBinariesPath", type=str, default=getBinariesPath(), help="binaries directory of SIBR")
+    parser.add_argument("--colmapPath", type=str, default=getColmapPath(), help="path to directory colmap.bat / colmap.bin directory")
+    parser.add_argument("--quality", type=str, default='default', choices=['default', 'low', 'medium', 'average', 'high', 'extreme'],
+        help="quality of the reconstruction")
     parser.add_argument("--path", type=str, required=True, help="path to your dataset folder")
     parser.add_argument("--dry_run", action='store_true', help="run without calling commands")
     parser.add_argument("--rc_path", type=str, required=False, help="path to rc dataset, containing bundle.out and images")
     parser.add_argument("--out_path", type=str, required=False, help = "output path ")
+    parser.add_argument("--video_name", type=str, default='default', required=False, help = "name of video file to load")
     parser.add_argument("--create_colmap", action='store_true', help="create colmap hierarchy")
     parser.add_argument("--from_step", type=str, default='default', help="Run from this step to --to_step (or end if no to_step")
     parser.add_argument("--to_step", type=str, default='default', help="up to but *excluding* this step (from --from_step); must be unique steps")
+
+    # RC arguments
+    parser.add_argument("--config_folder", type=str, default='default', help="folder containing configuration files; usually cwd")
+    parser.add_argument("--model_name", type=str, default='default', help="Internal name of RC model")
+    parser.add_argument("--one_over_fps", type=str, default='default', help="Sampling rate for the video")
+
+    # needed to avoid parsing issue for passing arguments to next command (TODO)
+    parser.add_argument("--video_filename", type=str, default='default', help="full path of video file (internal argument; do not set)")
+    parser.add_argument("--mesh_obj_filename", type=str, default='default', help="full path of obj mesh file (internal argument; do not set)")
+    parser.add_argument("--mesh_xyz_filename", type=str, default='default', help="full path of xyz point cloud file (internal argument; do not set)")
+    parser.add_argument("--mesh_ply_filename", type=str, default='default', help="full path of ply mesh file (internal argument; do not set)")
+
+    # colmap
+    #colmap performance arguments
+    parser.add_argument("--numGPUs", type=int, default=2, help="number of GPUs allocated to Colmap")
+
+    # Patch match stereo
+    parser.add_argument("--PatchMatchStereo.max_image_size", type=int, dest="patchMatchStereo_PatchMatchStereoDotMaxImageSize")
+    parser.add_argument("--PatchMatchStereo.window_radius", type=int, dest="patchMatchStereo_PatchMatchStereoDotWindowRadius")
+    parser.add_argument("--PatchMatchStereo.window_step", type=int, dest="patchMatchStereo_PatchMatchStereoDotWindowStep")
+    parser.add_argument("--PatchMatchStereo.num_samples", type=int, dest="patchMatchStereo_PatchMatchStereoDotNumSamples")
+    parser.add_argument("--PatchMatchStereo.num_iterations", type=int, dest="patchMatchStereo_PatchMatchStereoDotNumIterations")
+    parser.add_argument("--PatchMatchStereo.geom_consistency", type=int, dest="patchMatchStereo_PatchMatchStereoDotGeomConsistency")
+
+    # Stereo fusion
+    parser.add_argument("--StereoFusion.check_num_images", type=int, dest="stereoFusion_CheckNumImages")
+    parser.add_argument("--StereoFusion.max_image_size", type=int, dest="stereoFusion_MaxImageSize")
+
 
     args = vars(parser.parse_args())
 
     from_step = args["from_step"]
     to_step = args["to_step"]
+
+    # Update args with quality values
+    with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), "ColmapQualityParameters.json"), "r") as qualityParamsFile:
+        qualityParams = json.load(qualityParamsFile)
+
+        for key, value in qualityParams.items():
+            if not key in args or args[key] is None:
+                args[key] = qualityParams[key][args["quality"]] if args["quality"] in qualityParams[key] else qualityParams[key]["default"]
 
     # Get process steps
     with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), "processRCSteps.json"), "r") as processStepsFile:
@@ -53,10 +95,24 @@ def main():
 
     # Fixing path values
     args["path"] = os.path.abspath(args["path"])
+    args["sibrBinariesPath"] = os.path.abspath(args["sibrBinariesPath"])
+    args["colmapPath"] = os.path.abspath(args["colmapPath"])
+    args["gpusIndices"] = ','.join([str(i) for i in range(args["numGPUs"])])
+
+    args["mesh_obj_filename"] = os.path.join(args["path"], os.path.join("rcScene", os.path.join("meshes", "mesh.obj")))
+    args["mesh_xyz_filename"] = os.path.join(args["path"], os.path.join("rcScene", os.path.join("meshes", "point_cloud.xyz")))
+    args["mesh_ply_filename"] = os.path.join(args["path"], os.path.join("sibr", os.path.join("capreal", "mesh.ply")))
+    # fixed in preprocess
+    args["video_filename"] = os.path.join(args["path"], os.path.join("raw", os.path.join("videos", "XXX.mp4")))
+    if args["config_folder"] == 'default':
+        args["config_folder"] = "."
+    if args["one_over_fps"] == 'default':
+        args["one_over_fps"] = "0.02"
+
 
     programs = {
-        "runRC": {
-            "path": ".\\runRC.bat"
+        "colmap": {
+            "path": getColmap(args["colmapPath"])
         },
         "RC": {
             "path": getRCprocess()

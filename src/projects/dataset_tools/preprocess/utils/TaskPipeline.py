@@ -33,6 +33,7 @@ class TaskPipeline:
 
     def runProcessSteps(self):
         for step in self.steps:
+#            print("RUN STEP ", step)
             if "if" in step and not self.isExpressionValid(step["if"]):
                 print("Nothing to do on step %s. Skipping." % (step["name"]))
                 continue
@@ -44,7 +45,13 @@ class TaskPipeline:
 
                     success = True
                 else:
-                    completedProcess = runCommand(self.programs[step["app"]]["path"], [updateStringFromDict(command_arg, self.args) for command_arg in step["command_args"]])
+#                    print("Parsing command args...")
+                    command_args = []
+                    for command_arg in step["command_args"]:
+#                        print("Parsing... ", command_arg, " ", updateStringFromDict(command_arg, self.args))
+                        command_args.append(updateStringFromDict(command_arg, self.args))
+
+                    completedProcess = runCommand(self.programs[step["app"]]["path"], command_args)
 
                     success = completedProcess.returncode == 0
 
@@ -62,10 +69,13 @@ class TaskPipeline:
                                                                                                  updateStringFromDict(val, self.args)))
                                                                                                     for key, val in step["function_args"].items()])))
                 else:
-                    currentFunction(**{ key: ([updateStringFromDict(item, self.args) for item in val]
+                    ret = currentFunction(**{ key: ([updateStringFromDict(item, self.args) for item in val]
                                                 if type(val) is list else
                                                 updateStringFromDict(val, self.args))
                                                     for key, val in step["function_args"].items() })
+                    if ret != None:
+                        self.args[ret[0]] = ret[1]
+                        print ("After step {}: Setting args[{}]={}".format( step["function"], ret[0] , ret[1], ret[0], self.args[ret[0]]))
 
                 success = True
             else:
