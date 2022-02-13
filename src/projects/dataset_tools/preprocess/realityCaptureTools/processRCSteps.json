@@ -13,6 +13,7 @@
             "app": "RC",
             "command_args": [
                 "-addFolder", "${path}/input/train/" ,
+                "-addFolder", "${path}/input/validation/" ,
                 "-importVideo", "${video_filename}", "${path}/input/test_video_frames/", "${one_over_fps}" ,
                 "-align" ,
                 "-selectMaximalComponent" ,

@@ -87,6 +87,17 @@ class BundleFeaturePoint:
             if (self.view_list[index][0] == cam_id):
                 del self.view_list[index]
                 break
+        # fix all subsequent indices
+        newlist = []
+        for vl_item in self.view_list:
+            newitem = list(vl_item)
+            if (vl_item[0] > cam_id):
+                newitem[0] = cam_id-1
+                newlist.append(tuple(newitem))
+            else:
+                newlist.append(newitem)
+        self.view_list = newlist
+            
 
 
     def __str__(self):
@@ -167,7 +178,10 @@ class Bundle:
                     
                     # for colmap conversion
                     for v in list_of_view_info:
-                        self.list_of_cameras[v[0]].list_of_feature_points.append(feature_point)
+                        if v[0] >= len(self.list_of_cameras):
+                            print("ERROR ", v[0], "  ", len(self.list_of_cameras))
+                        else:
+                            self.list_of_cameras[v[0]].list_of_feature_points.append(feature_point)
 
                     feature_point_id = feature_point_id + 1
 
@@ -261,18 +275,19 @@ class Bundle:
             for cam in self.list_of_cameras:
                 output_file.write(str(cam) + '\n')
         else:
-            indx = 0
+            # not needed TODO: verify
+            #indx = 0
             for cam in self.list_of_cameras:
-                im = self.list_of_input_images[indx]
-                old_w = im.resolution[0]
-                old_h = im.resolution[1]
-                new_focal = cam.focal_length*(min(old_h/new_res[1], old_w/new_res[0]))
-                print("Old : ", cam.focal_length, " New : " , new_focal)
+                #im = self.list_of_input_images[indx]
+                #old_w = im.resolution[0]
+                #old_h = im.resolution[1]
+                #new_focal = cam.focal_length*(min(old_h/new_res[1], old_w/new_res[0]))
+                #print("Old : ", cam.focal_length, " New : " , new_focal)
                 #cam.focal_length = new_focal
                 output_file.write(str(cam) + '\n')
-                indx = indx + 1
+                #indx = indx + 1
             
-
         for feature_point in self.list_of_feature_points:
-            output_file.write(str(feature_point) + '\n')
+            if len(feature_point.view_list)> 0:
+                output_file.write(str(feature_point) + '\n')
 
