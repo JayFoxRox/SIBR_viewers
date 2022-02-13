@@ -88,17 +88,24 @@ class BundleFeaturePoint:
                 del self.view_list[index]
                 break
         # fix all subsequent indices
+
         newlist = []
+        nr1 = len(self.view_list)
+        change = False
         for vl_item in self.view_list:
             newitem = list(vl_item)
             if (vl_item[0] > cam_id):
-                newitem[0] = cam_id-1
+#                change = True
+                newitem[0] = newitem[0]-1
                 newlist.append(tuple(newitem))
             else:
-                newlist.append(newitem)
-        self.view_list = newlist
-            
+                newlist.append(vl_item)
 
+        if change:
+            print("NEW : {}\n".format( newlist ))
+            print("OLD : {}\n".format( self.view_list ))
+
+        self.view_list = newlist
 
     def __str__(self):
         first_line      = "{0:g} {1:g} {2:g}\n".format(self.position[0], self.position[1], self.position[2])
