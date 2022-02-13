@@ -35,7 +35,7 @@ def getRCprocess(binaryPath = getRCPath()):
 
 
 def runCommand(binary, command_args):
-    print("Running process '%s'" % (' '.join([binary, *command_args])))
+#    print("Running process '%s'" % (' '.join([binary, *command_args])))
     sys.stdout.flush()
     completedProcess = subprocess.run([binary, *command_args])
 

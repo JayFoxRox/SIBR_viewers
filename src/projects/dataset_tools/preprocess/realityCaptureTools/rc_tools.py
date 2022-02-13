@@ -92,7 +92,7 @@ def preprocess_for_rc(path, video_name='default'):
         ext = os.path.splitext(filename)[1]
         if ext == ".JPG" or ext == ".jpg" or ext == ".PNG" or ext == ".jpg" :
             image = os.path.join(imagespath, filename) 
-            print("IM ", image)
+#            print("IM ", image)
             if not(cnt % TEST_SKIP ):
                 filename = "validation_"+filename
                 fname = os.path.join(validation_path, filename)
@@ -108,10 +108,9 @@ def preprocess_for_rc(path, video_name='default'):
         cnt = cnt + 1
 
     # extract video name -- if not given, take first
-    print("VN {} == default = {} ".format(video_name, video_name=='default'))
     if video_name == 'default':
         for filename in os.listdir(videopath):
-            print("Checking ", filename)
+#            print("Checking ", filename)
             if ("MP4" in filename) or ("mp4" in filename):
                 video_name = filename
 
