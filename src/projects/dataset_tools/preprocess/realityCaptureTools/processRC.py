@@ -47,6 +47,8 @@ def main():
     parser.add_argument("--create_colmap", action='store_true', help="create colmap hierarchy")
     parser.add_argument("--from_step", type=str, default='default', help="Run from this step to --to_step (or end if no to_step")
     parser.add_argument("--to_step", type=str, default='default', help="up to but *excluding* this step (from --from_step); must be unique steps")
+    parser.add_argument("--no_video", action='store_true', help="No video")
+    parser.add_argument("--has_video", action='store_true', help="Has video")
 
     # RC arguments
     parser.add_argument("--config_folder", type=str, default='default', help="folder containing configuration files; usually cwd")
@@ -98,6 +100,11 @@ def main():
     args["sibrBinariesPath"] = os.path.abspath(args["sibrBinariesPath"])
     args["colmapPath"] = os.path.abspath(args["colmapPath"])
     args["gpusIndices"] = ','.join([str(i) for i in range(args["numGPUs"])])
+    if args["no_video"]:
+        args["has_video"] = False
+    else:
+        # on by default
+        args["has_video"] = True
 
     args["mesh_obj_filename"] = os.path.join(args["path"], os.path.join("rcScene", os.path.join("meshes", "mesh.obj")))
     args["mesh_xyz_filename"] = os.path.join(args["path"], os.path.join("rcScene", os.path.join("meshes", "point_cloud.xyz")))

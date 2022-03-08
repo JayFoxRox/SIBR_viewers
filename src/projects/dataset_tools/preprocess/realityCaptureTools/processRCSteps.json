@@ -9,6 +9,46 @@
             }
         },
         {
+            "if": "${no_video}",
+            "name": "run_rc",
+            "app": "RC",
+            "command_args": [
+                "-addFolder", "${path}/input/train/" ,
+                "-addFolder", "${path}/input/validation/" ,
+                "-align" ,
+                "-selectMaximalComponent" ,
+                "-selectAllImages" ,
+                "-enableAlignment", "false" ,
+                "-selectImage", "*validation_*" ,
+                "-enableAlignment", "true" ,
+                "-exportRegistration", "${path}/rcScene/validation_cameras/bundle.out", "${config_folder}/registrationConfig.xml" ,
+                "-selectAllImages" ,
+                "-enableAlignment", "false" ,
+                "-selectImage", "*frame*" ,
+                "-enableAlignment", "true" ,
+                "-exportRegistration", "${path}/rcScene/test_path_cameras/bundle.out", "${config_folder}/registrationConfig.xml" ,
+                "-selectAllImages" ,
+                "-enableAlignment", "false" ,
+                "-selectImage", "*train_*" ,
+                "-enableAlignment", "true" ,
+                "-exportRegistration", "${path}/rcScene/train_cameras/bundle.out", "${config_folder}/registrationConfig.xml" ,
+                "-setReconstructionRegionAuto" ,
+                "-scaleReconstructionRegion", "1.4", "1.4", "2.5", "center", "factor" ,
+                "-calculateNormalModel" ,
+                "-calculateTexture" ,
+                "-selectMarginalTriangles" ,
+                "-removeSelectedTriangles" ,
+                "-save", "${path}/rcProj/RCproject.rcproj" ,
+                "-renameSelectedModel", "${model_name}" ,
+                "-exportModel", "${model_name}", "${mesh_obj_filename}",
+                "-exportModel", "${model_name}", "${mesh_xyz_filename}",
+                "-deselectModelTriangles" ,
+                "-exportModel", "${model_name}", "${mesh_ply_filename}",
+                "-quit"
+            ]
+        },
+        {
+            "if": "${has_video}",
             "name": "run_rc",
             "app": "RC",
             "command_args": [
@@ -63,6 +103,7 @@
                 "-importModel" , "${path}/rcScene/meshes/dense_mesh.obj",
                 "-renameSelectedModel",  "RCTest",
                 "-exportModel",  "RCTest",  "${path}/rcScene/meshes/dense_point_cloud.xyz",
+                "-save", "${path}/rcProj/RCproject.rcproj" ,
                 "-quit"
             ]
         },
