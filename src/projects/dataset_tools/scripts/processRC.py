@@ -74,6 +74,7 @@ def main():
     parser.add_argument("--do_test", action='store_true', help="use test folder (stills path)")
     parser.add_argument("--config_folder", type=str, default='default', help="folder containing configuration files; usually cwd")
     parser.add_argument("--model_name", type=str, default='default', help="Internal name of RC model")
+    parser.add_argument("--path_prefix", type=str, default='default', help="Internal prefix of path images")
     parser.add_argument("--one_over_fps", type=str, default='default', help="Sampling rate for the video")
     # "presets"
     parser.add_argument("--images_only", action='store_false', help="just process images: no validation, no test")
@@ -132,6 +133,8 @@ def main():
     args["mesh_xyz_filename"] = os.path.join(args["path"], os.path.join("rcScene", os.path.join("meshes", "point_cloud.xyz")))
     args["mesh_ply_filename"] = os.path.join(args["path"], os.path.join("sibr", os.path.join("capreal", "mesh.ply")))
 
+    args["path_prefix"] = "test_"
+
     # fixed in preprocess
     args["video_filename"] = os.path.join(args["path"], os.path.join("raw", os.path.join("videos", "XXX.mp4")))
     if args["config_folder"] == 'default':
@@ -148,19 +151,30 @@ def main():
     else:
         args["do_validation_split"] = True
 
+    print("DO VALID SPLIT ", args["do_validation_split"])
+
 
     # presets
+
     exclude_steps = []
     if args["calib_only"]:
         to_step = "colmap_patch_match_stereo"
         args["do_mvs"] = False
         exclude_steps = [ "densify_mesh", "dense_mesh" ] 
 
+    # either do video or do_test
+    if args["do_video"]:
+        args["path_prefix"] = "frame"       
+
     if args["video_only"]:
         args["do_train"] = False
         args["do_validation"] = False
-        args["do_path"] = False
+        args["do_test"] = False
         args["do_video"] = True
+
+    if args["do_test"]:
+        args["path_prefix"] = "test_"       
+        args["do_video"] = False
 
 
     if args["video_only"] and args["calib_only"]:

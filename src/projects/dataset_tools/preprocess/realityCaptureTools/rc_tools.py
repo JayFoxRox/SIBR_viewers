@@ -41,7 +41,11 @@ def preprocess_for_rc(path, video_name='default', do_validation_split=True):
         os.makedirs(os.path.join(path, "raw"))
 
     imagespath = os.path.abspath(os.path.join(rawpath, "images"))
+    testpath = os.path.abspath(os.path.join(rawpath, "test"))
     videopath = os.path.abspath(os.path.join(rawpath, "videos"))
+    do_test = False
+    inputpath = os.path.join(path, "input")
+
     # If not, move around
     if not os.path.exists(imagespath):
         if os.path.exists(os.path.join(path, "images")):
@@ -52,20 +56,28 @@ def preprocess_for_rc(path, video_name='default', do_validation_split=True):
         # videos are optional
         if os.path.exists(os.path.join(path, "videos")):
             shutil.move(os.path.join(path, "videos"), videopath)
+        # test images (stills for path)
+        test_orig = os.path.join(path, "test")
+        print("TEST ", test_orig, " " , os.path.exists(test_orig) , " > ", testpath)
+        if os.path.exists(test_orig):
+            do_test = True
+            shutil.move(test_orig, testpath)
     else:
         print("Found images {}".format(imagespath))
         if os.path.exists(videopath):
             print("Found video {}".format(videopath))
 
-    inputpath = os.path.join(path, "input")
-    validation_path = os.path.abspath(os.path.join(inputpath, "validation"))
-    train_path = os.path.abspath(os.path.join(inputpath, "train"))
 
     cnt = 0
+    validation_path = os.path.abspath(os.path.join(inputpath, "validation"))
+    train_path = os.path.abspath(os.path.join(inputpath, "train"))
     if not os.path.exists(train_path):
         os.makedirs(train_path)
     if not os.path.exists(validation_path):
         os.makedirs(validation_path)
+    input_test_path = os.path.abspath(os.path.join(inputpath, "test"))
+    if not os.path.exists(input_test_path):
+        os.makedirs(input_test_path)
 
     # rcScene -- will contain full bundle files from RC
     rcscenepath = os.path.join(path, "rcScene")
@@ -85,8 +97,8 @@ def preprocess_for_rc(path, video_name='default', do_validation_split=True):
         caprealpath = os.path.join(sibrpath, "capreal")
         os.makedirs(caprealpath)
 
-    print("DO VALID 2 " , do_validation_split)
-    if do_validation_split == True :
+    print("DO VALID IN TOOLS ", do_validation_split)
+    if do_validation_split:
         print("Train/Validation", train_path , " : ", validation_path)
         for filename in os.listdir(imagespath):
             ext = os.path.splitext(filename)[1]
@@ -100,12 +112,21 @@ def preprocess_for_rc(path, video_name='default', do_validation_split=True):
                     shutil.copyfile(image, fname)
                 else:
                     filename = "train_"+filename
-                    fname = os.path.join(validation_path, filename)
                     fname = os.path.join(train_path, filename)
 #                print("Copying ", image, " to ", fname , " in train")
                     shutil.copyfile(image, fname)
 
             cnt = cnt + 1
+
+    if do_test:
+        for filename in os.listdir(testpath):
+            ext = os.path.splitext(filename)[1]
+            if ext == ".JPG" or ext == ".jpg" or ext == ".PNG" or ext == ".jpg" :
+                image = os.path.join(testpath, filename) 
+                filename = "test_"+filename
+                fname = os.path.join(input_test_path, filename)
+#                print("Copying ", image, " to ", fname , " in test")
+                shutil.copyfile(image, fname)
 
     # extract video name -- if not given, take first
     if video_name == 'default':
