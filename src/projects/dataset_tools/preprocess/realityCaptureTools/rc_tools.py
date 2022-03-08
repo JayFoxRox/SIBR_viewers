@@ -409,11 +409,11 @@ def crop_images(path_data, path_dest):
 def fix_video_only(path):
     # TODO: currently only works for video_only + calib_only; doesnt do video only with MVS
     # verify that train is actually empty
-    train_dir = os.path.join(path, "rcScene/train_cameras")
-    test_dir = os.path.join(path, "rcScene/test_path_cameras")
+    train_dir = os.path.join(path, os.path.join("rcScene", "train_cameras"))
+    test_dir = os.path.join(path, os.path.join("rcScene", "test_path_cameras"))
     files = os.listdir(train_dir)
     if len(files) == 1: # empty bundle file
-        os.remove(train_dir)
+        shutil.move(train_dir, train_dir+"_save")
         print("MOVING {} to {}".format(test_dir, train_dir))
         shutil.move(test_dir, train_dir)
     else:
