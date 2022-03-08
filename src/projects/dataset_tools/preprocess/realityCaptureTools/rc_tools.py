@@ -38,7 +38,7 @@ def preprocess_for_rc(path, video_name='default'):
     # Should exist
     rawpath = os.path.join(path, "raw")
     if not os.path.exists(rawpath):
-        os.path.makedirs(os.path.join(path, "raw"))
+        os.makedirs(os.path.join(path, "raw"))
 
     imagespath = os.path.abspath(os.path.join(rawpath, "images"))
     videopath = os.path.abspath(os.path.join(rawpath, "videos"))
@@ -118,6 +118,23 @@ def preprocess_for_rc(path, video_name='default'):
     print("Full video path:", video_filename)
 
     return "video_filename", video_filename
+
+def convert_sibr_mesh(path):
+    ms = pymeshlab.MeshSet()
+    mesh_path = os.path.join(os.path.join(os.path.join(path, "rcScene"), "meshes"), "mesh.obj")
+    print("Loading mesh (slow...)", mesh_path)
+    ms.load_new_mesh(mesh_path)
+    meshply_path = out_mesh_path = os.path.join(os.path.join(os.path.join(path, "sibr"), "capreal"), "mesh.ply")
+    print("Saving mesh (slow...)", out_mesh_path)
+    ms.save_current_mesh(out_mesh_path)
+    texture_path = os.path.join(os.path.join(os.path.join(path, "sibr"), "capreal"), "mesh_u1_v1.png")
+    out_texture_path = os.path.join(os.path.join(os.path.join(path, "sibr"), "capreal"), "texture.png")
+    print("Moving {} to {}".format(texture_path, out_texture_path))
+    shutil.move(texture_path, out_texture_path)
+    out_mesh_path = os.path.join(os.path.join(os.path.join(os.path.join(path, "sibr"), "colmap"), "stereo"), "meshed-delaunay.ply")
+    print("Copying {} to {}".format(mesh_ply_path, out_mesh_path))
+    shutil.copyfile(mesh_ply_path, out_mesh_path)
+
 
 def densify_mesh(mesh_path):
     ms = pymeshlab.MeshSet()

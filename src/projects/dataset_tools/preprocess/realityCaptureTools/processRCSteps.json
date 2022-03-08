@@ -100,7 +100,8 @@
             "function_args": {
                 "rc_path": "${path}/rcScene/cropped_train_cameras",
                 "out_path": "${path}/colmap_1000/colmap",
-                "create_colmap": "1"
+                "create_colmap": "1",
+                "target_width": "1000"
             }
         },
         {
