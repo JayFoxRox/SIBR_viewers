@@ -31,6 +31,11 @@ from utils.TaskPipeline import TaskPipeline
 import rc_tools
 import selective_colmap_process
 
+os.sys.path.append('../preprocess/')
+os.sys.path.append('../preprocess/realityCaptureTools')
+os.sys.path.append('../preprocess/fullColmapProcess')
+os.sys.path.append('../preprocess/converters')
+
 def main():
     parser = argparse.ArgumentParser()
 
