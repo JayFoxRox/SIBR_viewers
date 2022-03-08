@@ -18,6 +18,7 @@ from utils.paths import getBinariesPath, getColmapPath, getRCPath
 def getProcess(programName, binaryPath = getBinariesPath()):
     suffixes = [ '', '_msr', '_rwdi', '_d']
 
+    print("BINARIES ", binaryPath)
     for suffix in suffixes:
         binary = os.path.join(binaryPath, programName + suffix + ".exe")
 

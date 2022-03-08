@@ -14,7 +14,10 @@
 import os
 
 def getBinariesPath():
-    return os.path.abspath(os.path.join(os.path.dirname(__file__), "../../bin"))
+    if os.path.exists(os.path.join(os.path.dirname(__file__), "../../bin")):
+        return os.path.abspath(os.path.join(os.path.dirname(__file__), "../../bin"))
+    else: 
+        return os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../../install/bin"))
 
 def getColmapPath():
     return os.environ['COLMAP_PATH'] if 'COLMAP_PATH' in os.environ else "C:\\Program Files\\Colmap"

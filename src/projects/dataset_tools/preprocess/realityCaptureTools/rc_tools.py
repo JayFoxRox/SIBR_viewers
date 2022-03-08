@@ -31,7 +31,7 @@ from scipy.spatial.transform import Rotation as R
 from utils.paths import getBinariesPath, getColmapPath, getMeshlabPath
 from utils.commands import  getProcess, getColmap, getRCprocess, runCommand
 
-def preprocess_for_rc(path, video_name='default'):
+def preprocess_for_rc(path, video_name='default', do_validation_split=True):
     # create train/validation split (every 10 images for now)
     TEST_SKIP = 10
 
@@ -46,12 +46,12 @@ def preprocess_for_rc(path, video_name='default'):
     if not os.path.exists(imagespath):
         if os.path.exists(os.path.join(path, "images")):
             shutil.move(os.path.join(path, "images"), imagespath)
-        else:
-            print("ERROR: No images, exiting. Images should be in $path/raw/images")
+        elif not os.path.exists(os.path.join(path, "videos")) and not os.path.exists(videopath):
+            print("ERROR: No images nor video, exiting. Images should be in $path/raw/images")
             exit(-1)
         # videos are optional
         if os.path.exists(os.path.join(path, "videos")):
-            shutil.move(os.path.join(path, "videos"), videospath)
+            shutil.move(os.path.join(path, "videos"), videopath)
     else:
         print("Found images {}".format(imagespath))
         if os.path.exists(videopath):
@@ -85,27 +85,27 @@ def preprocess_for_rc(path, video_name='default'):
         caprealpath = os.path.join(sibrpath, "capreal")
         os.makedirs(caprealpath)
 
-
-    print("Train/Validation", train_path , " : ", validation_path)
-
-    for filename in os.listdir(imagespath):
-        ext = os.path.splitext(filename)[1]
-        if ext == ".JPG" or ext == ".jpg" or ext == ".PNG" or ext == ".jpg" :
-            image = os.path.join(imagespath, filename) 
+    print("DO VALID 2 " , do_validation_split)
+    if do_validation_split == True :
+        print("Train/Validation", train_path , " : ", validation_path)
+        for filename in os.listdir(imagespath):
+            ext = os.path.splitext(filename)[1]
+            if ext == ".JPG" or ext == ".jpg" or ext == ".PNG" or ext == ".jpg" :
+                image = os.path.join(imagespath, filename) 
 #            print("IM ", image)
-            if not(cnt % TEST_SKIP ):
-                filename = "validation_"+filename
-                fname = os.path.join(validation_path, filename)
+                if not(cnt % TEST_SKIP ):
+                    filename = "validation_"+filename
+                    fname = os.path.join(validation_path, filename)
 #                print("Copying ", image, " to ", fname , " in validation")
-                shutil.copyfile(image, fname)
-            else:
-                filename = "train_"+filename
-                fname = os.path.join(validation_path, filename)
-                fname = os.path.join(train_path, filename)
+                    shutil.copyfile(image, fname)
+                else:
+                    filename = "train_"+filename
+                    fname = os.path.join(validation_path, filename)
+                    fname = os.path.join(train_path, filename)
 #                print("Copying ", image, " to ", fname , " in train")
-                shutil.copyfile(image, fname)
+                    shutil.copyfile(image, fname)
 
-        cnt = cnt + 1
+            cnt = cnt + 1
 
     # extract video name -- if not given, take first
     if video_name == 'default':
@@ -405,3 +405,17 @@ def crop_images(path_data, path_dest):
         print("Command: cropFromCenter failed, exiting (ARGS:", "--inputFile", path_to_transform_list_txt, "--outputPath", path_dest, "--avgResolution", str(avg_resolution[0]), str(avg_resolution[1]), "--cropResolution", str(proposed_res[0]), str(proposed_res[1]))
         exit(1)
 
+
+def fix_video_only(path):
+    # TODO: currently only works for video_only + calib_only; doesnt do video only with MVS
+    # verify that train is actually empty
+    train_dir = os.path.join(path, "rcScene/train_cameras")
+    test_dir = os.path.join(path, "rcScene/test_path_cameras")
+    files = os.listdir(train_dir)
+    if len(files) == 1: # empty bundle file
+        os.remove(train_dir)
+        print("MOVING {} to {}".format(test_dir, train_dir))
+        shutil.move(test_dir, train_dir)
+    else:
+        print("FATAL ERROR: trying to overwrite existing train images")
+        exit(1)

@@ -5,16 +5,28 @@
             "function": "rc_tools.preprocess_for_rc",
             "function_args": {
                 "path": "${path}",
-                "video_name": "${video_name}"
+                "video_name": "${video_name}",
+                "do_validation_split": "${do_validation_split}"
             }
         },
         {
-            "if": "${no_video}",
-            "name": "run_rc",
+            "if" : "${calib_only}", 
+            "name": "calib_only",
             "app": "RC",
+            "optional_arg1": [ 
+                "${do_train}", 
+                "-addFolder", "${path}/input/train/" 
+            ],
+            "optional_arg2": [ "${do_validation}", 
+                "-addFolder", "${path}/input/validation/"
+            ],
+            "optional_arg3": [ "${do_video}", 
+                "-importVideo", "${video_filename}", "${path}/input/test_video_frames/", "${one_over_fps}" 
+            ],
+            "optional_arg4": [ "${do_test}", 
+                "-addFolder", "${path}/input/test/"
+            ],
             "command_args": [
-                "-addFolder", "${path}/input/train/" ,
-                "-addFolder", "${path}/input/validation/" ,
                 "-align" ,
                 "-selectMaximalComponent" ,
                 "-selectAllImages" ,
@@ -32,29 +44,36 @@
                 "-selectImage", "*train_*" ,
                 "-enableAlignment", "true" ,
                 "-exportRegistration", "${path}/rcScene/train_cameras/bundle.out", "${config_folder}/registrationConfig.xml" ,
-                "-setReconstructionRegionAuto" ,
-                "-scaleReconstructionRegion", "1.4", "1.4", "2.5", "center", "factor" ,
-                "-calculateNormalModel" ,
-                "-calculateTexture" ,
-                "-selectMarginalTriangles" ,
-                "-removeSelectedTriangles" ,
                 "-save", "${path}/rcProj/RCproject.rcproj" ,
-                "-renameSelectedModel", "${model_name}" ,
-                "-exportModel", "${model_name}", "${mesh_obj_filename}",
-                "-exportModel", "${model_name}", "${mesh_xyz_filename}",
-                "-deselectModelTriangles" ,
-                "-exportModel", "${model_name}", "${mesh_ply_filename}",
                 "-quit"
             ]
         },
         {
-            "if": "${has_video}",
+            "if": "${video_only}",
+            "name": "fix_video_only",
+            "function": "rc_tools.fix_video_only",
+            "function_args": {
+                "path": "${path}"
+             }
+        },
+        {
+            "if" : "${do_mvs}", 
             "name": "run_rc",
             "app": "RC",
+            "optional_arg1": [ 
+                "${do_train}", 
+                "-addFolder", "${path}/input/train/" 
+            ],
+            "optional_arg2": [ "${do_validation}", 
+                "-addFolder", "${path}/input/validation/"
+            ],
+            "optional_arg3": [ "${do_video}", 
+                "-importVideo", "${video_filename}", "${path}/input/test_video_frames/", "${one_over_fps}" 
+            ],
+            "optional_arg4": [ "${do_test}", 
+                "-addFolder", "${path}/input/test/"
+            ],
             "command_args": [
-                "-addFolder", "${path}/input/train/" ,
-                "-addFolder", "${path}/input/validation/" ,
-                "-importVideo", "${video_filename}", "${path}/input/test_video_frames/", "${one_over_fps}" ,
                 "-align" ,
                 "-selectMaximalComponent" ,
                 "-selectAllImages" ,
@@ -80,10 +99,10 @@
                 "-removeSelectedTriangles" ,
                 "-save", "${path}/rcProj/RCproject.rcproj" ,
                 "-renameSelectedModel", "${model_name}" ,
-                "-exportModel", "${model_name}", "${mesh_obj_filename}",
-                "-exportModel", "${model_name}", "${mesh_xyz_filename}",
+                "-exportModel", "${model_name}", "${mesh_obj_filename}", "${config_folder}/exportModel.xml" ,
+                "-exportModel", "${model_name}", "${mesh_xyz_filename}", "${config_folder}/exportModel.xml" ,
                 "-deselectModelTriangles" ,
-                "-exportModel", "${model_name}", "${mesh_ply_filename}",
+                "-exportModel", "${model_name}", "${mesh_ply_filename}", "${config_folder}/exportModel.xml" ,
                 "-quit"
             ]
         },
