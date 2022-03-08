@@ -109,11 +109,11 @@ def preprocess_for_rc(path, video_name='default'):
 
     # extract video name -- if not given, take first
     if video_name == 'default':
-        for filename in os.listdir(videopath):
+        if os.path.exists(videopath):
+            for filename in os.listdir(videopath):
 #            print("Checking ", filename)
-            if ("MP4" in filename) or ("mp4" in filename):
-                video_name = filename
-
+                if ("MP4" in filename) or ("mp4" in filename):
+                    video_name = filename
     video_filename = os.path.join(path, os.path.join("raw", os.path.join("videos", video_name)))
     print("Full video path:", video_filename)
 
@@ -132,8 +132,8 @@ def convert_sibr_mesh(path):
     print("Moving {} to {}".format(texture_path, out_texture_path))
     shutil.move(texture_path, out_texture_path)
     out_mesh_path = os.path.join(os.path.join(os.path.join(os.path.join(path, "sibr"), "colmap"), "stereo"), "meshed-delaunay.ply")
-    print("Copying {} to {}".format(mesh_ply_path, out_mesh_path))
-    shutil.copyfile(mesh_ply_path, out_mesh_path)
+    print("Copying {} to {}".format(meshply_path, out_mesh_path))
+    shutil.copyfile(meshply_path, out_mesh_path)
 
 
 def densify_mesh(mesh_path):
