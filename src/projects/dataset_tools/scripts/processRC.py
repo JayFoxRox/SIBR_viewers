@@ -23,6 +23,11 @@ Usage: python processRC.py -path <path to your dataset folder>
 """
 
 import os, sys, shutil
+os.sys.path.append('../preprocess/')
+os.sys.path.append('../preprocess/realityCaptureTools')
+os.sys.path.append('../preprocess/fullColmapProcess')
+os.sys.path.append('../preprocess/converters')
+
 import json
 import argparse
 from utils.paths import getBinariesPath, getColmapPath, getMeshlabPath
@@ -31,10 +36,6 @@ from utils.TaskPipeline import TaskPipeline
 import rc_tools
 import selective_colmap_process
 
-os.sys.path.append('../preprocess/')
-os.sys.path.append('../preprocess/realityCaptureTools')
-os.sys.path.append('../preprocess/fullColmapProcess')
-os.sys.path.append('../preprocess/converters')
 
 def main():
     parser = argparse.ArgumentParser()
@@ -89,7 +90,12 @@ def main():
     to_step = args["to_step"]
 
     # Update args with quality values
-    with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), "ColmapQualityParameters.json"), "r") as qualityParamsFile:
+    fname = os.path.join(os.path.abspath(os.path.dirname(__file__)), "ColmapQualityParameters.json" )
+    if not os.path.exists(fname):
+        fname = os.path.join("../preprocess/fullColmapProcess", "ColmapQualityParameters.json")
+
+    
+    with open(fname, "r") as qualityParamsFile:
         qualityParams = json.load(qualityParamsFile)
 
         for key, value in qualityParams.items():
@@ -97,7 +103,11 @@ def main():
                 args[key] = qualityParams[key][args["quality"]] if args["quality"] in qualityParams[key] else qualityParams[key]["default"]
 
     # Get process steps
-    with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), "processRCSteps.json"), "r") as processStepsFile:
+    fname = os.path.join(os.path.abspath(os.path.dirname(__file__)), "processRCSteps.json")
+    if not os.path.exists(fname):
+        fname = os.path.join("../preprocess/realityCaptureTools", "processRCSteps.json")
+
+    with open(fname, "r") as processStepsFile:
         steps = json.load(processStepsFile)["steps"]
 
     # Fixing path values
