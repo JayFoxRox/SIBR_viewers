@@ -121,7 +121,7 @@
                 "-selectMaximalComponent",
                 "-importModel" , "${path}/rcScene/meshes/dense_mesh.obj",
                 "-renameSelectedModel",  "RCTest",
-                "-exportModel",  "RCTest",  "${path}/rcScene/meshes/dense_point_cloud.xyz",
+                "-exportModel",  "RCTest",  "${path}/rcScene/meshes/dense_point_cloud.xyz", "${config_folder}/exportModel.xml" ,
                 "-save", "${path}/rcProj/RCproject.rcproj" ,
                 "-quit"
             ]
