@@ -58,7 +58,7 @@ def preprocess_for_rc(path, video_name='default', do_validation_split=True):
             shutil.move(os.path.join(path, "videos"), videopath)
         # test images (stills for path)
         test_orig = os.path.join(path, "test")
-        print("TEST ", test_orig, " " , os.path.exists(test_orig) , " > ", testpath)
+#        print("TEST ", test_orig, " " , os.path.exists(test_orig) , " > ", testpath)
         if os.path.exists(test_orig):
             do_test = True
             shutil.move(test_orig, testpath)
@@ -97,7 +97,7 @@ def preprocess_for_rc(path, video_name='default', do_validation_split=True):
         caprealpath = os.path.join(sibrpath, "capreal")
         os.makedirs(caprealpath)
 
-    print("DO VALID IN TOOLS ", do_validation_split)
+#    print("DO VALID IN TOOLS ", do_validation_split)
     if do_validation_split:
         print("Train/Validation", train_path , " : ", validation_path)
         for filename in os.listdir(imagespath):
