@@ -53,6 +53,12 @@ class TaskPipeline:
 #                    print("Parsing... ", command_arg, " ", updateStringFromDict(command_arg, self.args))
                     command_args.append(updateStringFromDict(command_arg, self.args))
 
+                # for optionally quitting
+                if "app" in step and "optional_final_arg" in step and self.isExpressionValid(step["optional_final_arg"][0]):
+                    for command_arg in step["optional_final_arg"][1:]:
+#                        print("Parsing... ", command_arg, " ", updateStringFromDict(command_arg, self.args))
+                        command_args.append(updateStringFromDict(command_arg, self.args))
+
                 if self.args["dry_run"]:
                     success = True
                 else:

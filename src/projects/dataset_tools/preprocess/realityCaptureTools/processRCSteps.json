@@ -90,9 +90,30 @@
                 "-enableAlignment", "false" ,
                 "-selectImage", "*train_*" ,
                 "-enableAlignment", "true" ,
-                "-exportRegistration", "${path}/rcScene/train_cameras/bundle.out", "${config_folder}/registrationConfig.xml" ,
+                "-exportRegistration", "${path}/rcScene/train_cameras/bundle.out", "${config_folder}/registrationConfig.xml",
                 "-setReconstructionRegionAuto" ,
                 "-scaleReconstructionRegion", "1.4", "1.4", "2.5", "center", "factor" ,
+                "-selectAllImages" ,
+                "-enableAlignment", "false" ,
+                "-selectImage", "*${path_prefix}*" ,
+                "-enableAlignment", "true" ,
+                "-save", "${path}/rcProj/RCproject.rcproj" 
+            ],
+            "optional_final_arg": [ "${auto_recon_area}",
+                "-quit"
+            ]
+        },
+        {
+            "if" : "${do_mvs}", 
+            "name": "run_rc_mvs",
+            "app": "RC",
+            "command_args": [ 
+                "-load", "${path}/rcProj/RCproject.rcproj" ,
+                "-selectMaximalComponent" ,
+                "-selectAllImages" ,
+                "-enableAlignment", "false" ,
+                "-selectImage", "*train_*" ,
+                "-enableAlignment", "true" ,
                 "-calculateNormalModel" ,
                 "-calculateTexture" ,
                 "-selectMarginalTriangles" ,
@@ -100,7 +121,6 @@
                 "-save", "${path}/rcProj/RCproject.rcproj" ,
                 "-renameSelectedModel", "${model_name}" ,
                 "-exportModel", "${model_name}", "${mesh_obj_filename}", "${config_folder}/exportModel.xml" ,
-                "-exportModel", "${model_name}", "${mesh_xyz_filename}", "${config_folder}/exportModel.xml" ,
                 "-deselectModelTriangles" ,
                 "-exportModel", "${model_name}", "${mesh_ply_filename}", "${config_folder}/exportModel.xml" ,
                 "-quit"
@@ -117,12 +137,11 @@
             "name": "dense_mesh",
             "app": "RC",
             "command_args": [
-                "-load", "${path}/rcProj/RCproject.rcproj",
+                "-load", "${path}/rcProj/RCProject.rcproj",
                 "-selectMaximalComponent",
                 "-importModel" , "${path}/rcScene/meshes/dense_mesh.obj",
                 "-renameSelectedModel",  "RCTest",
                 "-exportModel",  "RCTest",  "${path}/rcScene/meshes/dense_point_cloud.xyz", "${config_folder}/exportModel.xml" ,
-                "-save", "${path}/rcProj/RCproject.rcproj" ,
                 "-quit"
             ]
         },
@@ -171,6 +190,13 @@
                 "rc_path": "${path}/rcScene/cropped_train_cameras",
                 "out_path": "${path}/sibr/colmap",
                 "create_colmap": "1"
+            }
+        },
+        {
+            "name": "convert_sibr_mesh",
+            "function": "rc_tools.convert_sibr_mesh",
+            "function_args": {
+                "path": "${path}"
             }
         },
         {

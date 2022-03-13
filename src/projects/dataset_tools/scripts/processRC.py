@@ -72,6 +72,8 @@ def main():
     parser.add_argument("--no_validation_split", action='store_true', help="dont do validation split")
     parser.add_argument("--do_video", action='store_true', help="use video folder (mp4)")
     parser.add_argument("--do_test", action='store_true', help="use test folder (stills path)")
+    parser.add_argument("--auto_recon_area", action='store_true', help="automatically set recon area (no user intervention)")
+
     parser.add_argument("--config_folder", type=str, default='default', help="folder containing configuration files; usually cwd")
     parser.add_argument("--model_name", type=str, default='default', help="Internal name of RC model")
     parser.add_argument("--path_prefix", type=str, default='default', help="Internal prefix of path images")
@@ -150,9 +152,6 @@ def main():
         args["do_validation_split"] = False
     else:
         args["do_validation_split"] = True
-
-    print("DO VALID SPLIT ", args["do_validation_split"])
-
 
     # presets
 

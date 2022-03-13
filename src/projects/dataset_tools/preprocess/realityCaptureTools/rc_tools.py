@@ -148,10 +148,11 @@ def convert_sibr_mesh(path):
     meshply_path = out_mesh_path = os.path.join(os.path.join(os.path.join(path, "sibr"), "capreal"), "mesh.ply")
     print("Saving mesh (slow...)", out_mesh_path)
     ms.save_current_mesh(out_mesh_path)
+    print("Done saving mesh (slow...)", out_mesh_path)
     texture_path = os.path.join(os.path.join(os.path.join(path, "sibr"), "capreal"), "mesh_u1_v1.png")
     out_texture_path = os.path.join(os.path.join(os.path.join(path, "sibr"), "capreal"), "texture.png")
-    print("Moving {} to {}".format(texture_path, out_texture_path))
-    shutil.move(texture_path, out_texture_path)
+    print("Copying (to allow meshlab to work) {} to {}".format(texture_path, out_texture_path))
+    shutil.copyfile(texture_path, out_texture_path)
     out_mesh_path = os.path.join(os.path.join(os.path.join(os.path.join(path, "sibr"), "colmap"), "stereo"), "meshed-delaunay.ply")
     print("Copying {} to {}".format(meshply_path, out_mesh_path))
     shutil.copyfile(meshply_path, out_mesh_path)
@@ -165,6 +166,8 @@ def densify_mesh(mesh_path):
     ms.subdivision_surfaces_butterfly_subdivision(threshold=subdiv_threshold)
     path_split = os.path.split(mesh_path)
     dense_mesh_fname = "dense_" + path_split[1]
+    fname, fname_ext = os.path.splitext(dense_mesh_fname)
+    dense_mesh_fname = fname + ".obj"
     dense_mesh_path = os.path.join(path_split[0], dense_mesh_fname)
     print("Writing dense mesh ", dense_mesh_path)
     ms.save_current_mesh(dense_mesh_path)
