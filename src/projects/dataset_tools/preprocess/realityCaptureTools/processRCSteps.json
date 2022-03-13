@@ -193,6 +193,13 @@
             }
         },
         {
+            "name": "create_nerf",
+            "function": "colmap2nerf.createNerf",
+            "function_args": {
+                "path": "${path}"
+            }
+        },
+        {
             "name": "convert_sibr_mesh",
             "function": "rc_tools.convert_sibr_mesh",
             "function_args": {
