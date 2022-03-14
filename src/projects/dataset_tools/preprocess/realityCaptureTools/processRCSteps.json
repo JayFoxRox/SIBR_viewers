@@ -221,29 +221,6 @@
                 "--PatchMatchStereo.geom_consistency", "${patchMatchStereo_PatchMatchStereoDotGeomConsistency}",
                 "--PatchMatchStereo.gpu_index", "${gpusIndices}"
             ]
-        },
-        {
-            "name": "colmap_stereo_fusion",
-            "app": "colmap",
-            "command_args": [
-                "stereo_fusion",
-                "--workspace_path", "${path}/sibr/colmap/stereo/",
-                "--workspace_format", "COLMAP",
-                "--input_type", "geometric",
-                "--output_path", "${path}/sibr/colmap/stereo/fused.ply",
-                "--StereoFusion.max_image_size", "${stereoFusion_MaxImageSize}",
-                "--StereoFusion.check_num_images", "${stereoFusion_CheckNumImages}"
-            ]
-        },
-        {
-            "name": "colmap_delaunay_mesher",
-            "app": "colmap",
-            "command_args": [
-                "delaunay_mesher",
-                "--input_path", "${path}/sibr/colmap/stereo/",
-                "--output_path", "${path}/sibr/colmap/stereo/meshed-delaunay.ply",
-                "--input_type", "dense"
-            ]
         }
     ]
 }
