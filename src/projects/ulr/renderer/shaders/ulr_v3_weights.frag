@@ -20,6 +20,10 @@ layout(location = 0) out vec4 out_color;
 layout(location = 1) out vec4 out_depth;
 layout(location = 2) out vec4 out_normal;
 layout(location = 3) out vec4 out_weights;
+//layout(location = 4) out vec4 out_mean;
+//layout(location = 5) out vec4 out_median;
+//layout(location = 6) out vec4 out_max;
+//layout(location = 7) out vec4 out_min;
 
 // 2D proxy texture.
 layout(binding=0) uniform sampler2D proxy;
@@ -125,6 +129,45 @@ void bubbleSort(int fullSize, int sortSize, float maxDist)
 	}
 }
 
+//vec4 compute_stat(int fullSize, int mode)
+//{
+//    float max_r, max_g, max_b = -1.0;
+//	float min_r, min_g, min_b =  1.1;
+//	vec3 sum, mean, median = vec3(0.0);
+//	if (fullSize > 0)
+//	{
+//		for (int i = 0; i < fullSize; i++)
+//		{
+//			max_r = (bin_list[i].color.x > max_r)? bin_list[i].color.x : max_r;
+//			max_g = (bin_list[i].color.y > max_g)? bin_list[i].color.y : max_g;
+//			max_b = (bin_list[i].color.z > max_b)? bin_list[i].color.z : max_b;
+//
+//			min_r = (bin_list[i].color.x < min_r)? bin_list[i].color.x : min_r;
+//			min_g = (bin_list[i].color.y < min_g)? bin_list[i].color.y : min_g;
+//			min_b = (bin_list[i].color.z < min_b)? bin_list[i].color.z : min_b;
+//			
+//			sum = sum + bin_list[i].color;
+//		}	
+//		mean = sum / fullSize;
+//
+//		if(mode == 0){ //mean
+//			return vec4(mean, 1.0);
+//		}
+//		else if(mode == 1){ // median
+//		    return vec4(0.0);
+//		}
+//		else if(mode == 2){ //max
+//		    return vec4(max_r, max_g, max_b, 1.0);
+//		}
+//		else if(mode == 3){ // min
+//		    return vec4(min_r, min_g, min_b, 1.0);
+//		}
+//		else{
+//			return vec4(0.0);
+//		}
+//	}
+//    return vec4(0.0);
+//}
 
 vec4 getRGBD(vec3 xy_camid){
 	if(flipRGBs){
@@ -214,8 +257,6 @@ void main(void){
 			} 
 			
 		}
-
-
 		if (occ_test){
 			if(abs(uvd.z-color.w) >= epsilonOcclusion) {	  
 				continue;
@@ -238,75 +279,29 @@ void main(void){
 		if (maxDist < dist_i2p){
 			maxDist = dist_i2p;
 		}
-
 		penaltyValue = (1.0 - dot(view_dir, norms));
 
 		if(showWeights){
-			
-			//normalC =  project(normalW.xyz, cameras[camsCount].vp);
 			color.xyz = vec3(dot(view_dir, norms));
 		}
 		atLeastOneValid = true;
 		bin_list[counter] = CostIndex(penaltyValue, color.xyz, dist_i2p);
 		counter++;
-        //color.w = penaltyValue;  
-		//color0=color;
-		// compare with best four candiates and insert at the
-		// appropriate rank
-//		if (color.w<color3.w) {    // better than fourth best candidate
-//			if (color.w<color2.w) {    // better than third best candidate
-//				color3 = color2;
-//				if (color.w<color1.w) {    // better than second best candidate
-//					color2 = color1;
-//					if (color.w<color0.w) {    // better than best candidate
-//						color1 = color0;
-//						color0 = color;
-//					} else {
-//						color1 = color;
-//					}
-//				} else {
-//					color2 = color;
-//				}
-//			} else {
-//				color3 = color;
-//			}
-//		}
+
 	  }  
     }
-	bubbleSort(counter, 20, maxDist);
+	bubbleSort(counter, 12, maxDist);
    
     if(!atLeastOneValid){
          discard;
     }
-//	float thresh = 1.0000001 * color3.w;
-//    color0.w = max(0, 1.0 - color0.w/thresh);
-//    color1.w = max(0, 1.0 - color1.w/thresh);
-//    color2.w = max(0, 1.0 - color2.w/thresh);
-//    color3.w = 1.0 - 1.0/1.0000001;
-//
-//    // ignore any candidate which is uninit
-//	if (color0.w == INFTY_W) color0.w = 0;
-//    if (color1.w == INFTY_W) color1.w = 0;
-//    if (color2.w == INFTY_W) color2.w = 0;
-   
+
     // output weights
 	out_color = (selectedCam < counter) ? vec4(bin_list[selectedCam].color, 1.0) : vec4(0.0);
-//	if(selectedCam == 0){
-//		out_color.xyz = color0.xyz;
-//	}
-//	else if(selectedCam == 1){
-//		out_color.xyz = color1.xyz;
-//	}
-//	else if(selectedCam == 2){
-//		out_color.xyz = color2.xyz;
-//	}
-//	else if(selectedCam == 3){
-//		out_color.xyz = color3.xyz;
-//	}
-//	else{
-//		out_color.xyz = vec3(0.0);
-//	}
-	//out_color.w = 1.0;
+//	out_mean = (counter > 0) ? compute_stat(counter, 0) : vec4(0.0);
+//	out_median = (counter > 0) ? compute_stat(counter, 1) : vec4(0.0);
+//	out_max = (counter > 0) ? compute_stat(counter, 2) : vec4(0.0);
+//	out_min = (counter > 0) ? compute_stat(counter, 3) : vec4(0.0);
 	out_depth.xyz = vec3(pow(depth, 1));
 	out_depth.w = 1.0;
 	out_normal.xyz = normalC.xyz;
