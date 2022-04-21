@@ -66,7 +66,9 @@ def preprocess_for_rc(path, video_name='default', do_validation_split=True):
         print("Found images {}".format(imagespath))
         if os.path.exists(videopath):
             print("Found video {}".format(videopath))
-
+        if os.path.exists(testpath):
+            print("Found test {}".format(testpath))
+            do_test = True
 
     cnt = 0
     validation_path = os.path.abspath(os.path.join(inputpath, "validation"))
@@ -127,6 +129,9 @@ def preprocess_for_rc(path, video_name='default', do_validation_split=True):
                 fname = os.path.join(input_test_path, filename)
 #                print("Copying ", image, " to ", fname , " in test")
                 shutil.copyfile(image, fname)
+    else:
+        print ("****************** NOT DOING TEST !!!")
+
 
     # extract video name -- if not given, take first
     if video_name == 'default':
