@@ -205,22 +205,6 @@
             "function_args": {
                 "path": "${path}"
             }
-        },
-        {
-            "name": "colmap_patch_match_stereo",
-            "app": "colmap",
-            "command_args": [
-                "patch_match_stereo",
-                "--workspace_path", "${path}/sibr/colmap/stereo",
-                "--workspace_format", "COLMAP",
-                "--PatchMatchStereo.max_image_size", "${patchMatchStereo_PatchMatchStereoDotMaxImageSize}",
-                "--PatchMatchStereo.window_radius", "${patchMatchStereo_PatchMatchStereoDotWindowRadius}",
-                "--PatchMatchStereo.window_step", "${patchMatchStereo_PatchMatchStereoDotWindowStep}",
-                "--PatchMatchStereo.num_samples", "${patchMatchStereo_PatchMatchStereoDotNumSamples}",
-                "--PatchMatchStereo.num_iterations", "${patchMatchStereo_PatchMatchStereoDotNumIterations}",
-                "--PatchMatchStereo.geom_consistency", "${patchMatchStereo_PatchMatchStereoDotGeomConsistency}",
-                "--PatchMatchStereo.gpu_index", "${gpusIndices}"
-            ]
         }
     ]
 }
