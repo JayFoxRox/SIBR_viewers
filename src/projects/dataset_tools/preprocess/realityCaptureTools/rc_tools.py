@@ -99,12 +99,12 @@ def preprocess_for_rc(path, video_name='default', do_validation_split=True):
         caprealpath = os.path.join(sibrpath, "capreal")
         os.makedirs(caprealpath)
 
-#    print("DO VALID IN TOOLS ", do_validation_split)
-    if do_validation_split:
+    print("DO VALID IN TOOLS ", do_validation_split)
+    if do_validation_split == True:
         print("Train/Validation", train_path , " : ", validation_path)
         for filename in os.listdir(imagespath):
             ext = os.path.splitext(filename)[1]
-            if ext == ".JPG" or ext == ".jpg" or ext == ".PNG" or ext == ".jpg" :
+            if ext == ".JPG" or ext == ".jpg" or ext == ".PNG" or ext == ".png" :
                 image = os.path.join(imagespath, filename) 
 #            print("IM ", image)
                 if not(cnt % TEST_SKIP ):
@@ -117,6 +117,20 @@ def preprocess_for_rc(path, video_name='default', do_validation_split=True):
                     fname = os.path.join(train_path, filename)
 #                print("Copying ", image, " to ", fname , " in train")
                     shutil.copyfile(image, fname)
+
+            cnt = cnt + 1
+    else:
+        print("Not doing validation")
+        for filename in os.listdir(imagespath):
+            ext = os.path.splitext(filename)[1]
+            if ext == ".JPG" or ext == ".jpg" or ext == ".PNG" or ext == ".png" :
+                image = os.path.join(imagespath, filename) 
+#            print("IM ", image)
+          
+                filename = "train_"+filename
+                fname = os.path.join(train_path, filename)
+#                print("Copying ", image, " to ", fname , " in train")
+                shutil.copyfile(image, fname)
 
             cnt = cnt + 1
 
