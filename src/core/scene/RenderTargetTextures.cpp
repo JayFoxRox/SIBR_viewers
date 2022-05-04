@@ -17,7 +17,7 @@ namespace sibr {
 	void RTTextureSize::initSize(uint w, uint h, bool force_aspect_ratio)
 	{
 		
-		std::cerr << "RTTextureSize::initSize NEW FORCE ASPECT " << force_aspect_ratio << std::endl;
+		std::cerr << "RTTextureSize::initSize NEW FORCE ASPECT " << force_aspect_ratio << " : " << w << "x" << h << " " << std::endl;
 
 		float aspect;
 		if (_width == 0) { // use full resolution
@@ -239,6 +239,13 @@ namespace sibr {
 	{
 		_width = texture_width;
 		initRGBandDepthTextureArrays(cams, imgs, proxies, textureFlags, faceCull, force_aspect_ratio);
+	}
+
+	void RenderTargetTextures::initRGBandDepthTextureArrays(ICalibratedCameras::Ptr cams, IInputImages::Ptr imgs, IProxyMesh::Ptr proxies, int textureFlags,  unsigned int width, unsigned int height, bool faceCull)
+	{
+		initSize(width, height, true);
+		initRGBTextureArrays(imgs, textureFlags, true);
+		initDepthTextureArrays(cams, proxies, faceCull);
 	}
 
 	void RenderTargetTextures::initRGBandDepthTextureArrays(ICalibratedCameras::Ptr cams, IInputImages::Ptr imgs, IProxyMesh::Ptr proxies, int textureFlags, bool faceCull, bool force_aspect_ratio)

@@ -31,9 +31,10 @@ from scipy.spatial.transform import Rotation as R
 from utils.paths import getBinariesPath, getColmapPath, getMeshlabPath
 from utils.commands import  getProcess, getColmap, getRCprocess, runCommand
 
-def preprocess_for_rc(path, video_name='default', do_validation_split=True):
-    # create train/validation split (every 10 images for now)
-    TEST_SKIP = 10
+def preprocess_for_rc(path, video_name='default', do_validation_split=True, valid_skip='10'):
+    # create train/validation split (every 10 images by default now)
+    print("VALID SKIP ", valid_skip)
+    int_valid_skip = int(valid_skip)
 
     # Should exist
     rawpath = os.path.join(path, "raw")
@@ -107,7 +108,7 @@ def preprocess_for_rc(path, video_name='default', do_validation_split=True):
             if ext == ".JPG" or ext == ".jpg" or ext == ".PNG" or ext == ".png" :
                 image = os.path.join(imagespath, filename) 
 #            print("IM ", image)
-                if not(cnt % TEST_SKIP ):
+                if not(cnt % int_valid_skip ):
                     filename = "validation_"+filename
                     fname = os.path.join(validation_path, filename)
 #                print("Copying ", image, " to ", fname , " in validation")
