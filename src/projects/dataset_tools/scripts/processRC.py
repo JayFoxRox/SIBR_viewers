@@ -68,6 +68,7 @@ def main():
     # RC arguments
     parser.add_argument("--do_mvs", action='store_false', help="use train folder")
     parser.add_argument("--calib_only", action='store_true', help="only do calibration")
+    parser.add_argument("--car_data", action='store_true', help="pre(pre)process car camera data ")
     parser.add_argument("--do_train", action='store_false', help="use train folder")
     parser.add_argument("--do_validation", action='store_false', help="use validation folder")
     parser.add_argument("--no_validation_split", action='store_true', help="dont do validation split")
@@ -83,6 +84,8 @@ def main():
     # "presets"
     parser.add_argument("--images_only", action='store_false', help="just process images: no validation, no test")
     parser.add_argument("--video_only", action='store_true', help="just process video: no photos, no test")
+
+    parser.add_argument("--no_refl", action='store_true', help="dont densify mesh, dont convert_sibr, dont create nerf (def: false)")
 
 
     # needed to avoid parsing issue for passing arguments to next command (TODO)
@@ -161,6 +164,16 @@ def main():
     # presets
 
     exclude_steps = []
+
+    if args["no_refl"] == True:
+        exclude_steps = [ "densify_mesh", "dense_mesh", "create_nerf", "convert_sibr_mesh" ] 
+        print("No densification, no sibr, no nerf, exclude:", exclude_steps)
+
+    if args["car_data"]:
+        print("Doing car data")
+    else:
+        print("No car data")
+
     if args["calib_only"]:
         to_step = "colmap_patch_match_stereo"
         args["do_mvs"] = False
@@ -194,7 +207,7 @@ def main():
     }
 
     # TODO: move to generic taskpipeline code; 
-    if( from_step != 'default' or to_step != 'default' ):
+    if( from_step != 'default' or to_step != 'default' or exclude_steps != []):
         # check if to_step exists
         # select steps
         newsteps = []

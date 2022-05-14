@@ -1,6 +1,14 @@
 {
     "steps" : [
         {
+            "if": "${car_data}",
+            "name": "car_data_process",
+            "function": "rc_tools.car_data_process",
+            "function_args": {
+                "path": "${path}"
+            }
+        },
+        {
             "name": "preprocess_for_rc",
             "function": "rc_tools.preprocess_for_rc",
             "function_args": {

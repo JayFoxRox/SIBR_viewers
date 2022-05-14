@@ -100,8 +100,8 @@ def preprocess_for_rc(path, video_name='default', do_validation_split=True, vali
         caprealpath = os.path.join(sibrpath, "capreal")
         os.makedirs(caprealpath)
 
-    print("DO VALID IN TOOLS ", do_validation_split)
-    if do_validation_split == True:
+    # BUG: do_validation_split is a string
+    if do_validation_split != 'False':
         print("Train/Validation", train_path , " : ", validation_path)
         for filename in os.listdir(imagespath):
             ext = os.path.splitext(filename)[1]
@@ -463,3 +463,64 @@ def fix_video_only(path):
     else:
         print("FATAL ERROR: trying to overwrite existing train images")
         exit(1)
+
+def car_data_process(path):
+    # Contains: CAM_{BACK,FRONT}[_]{LEFT, RIGHT}
+    rawpath = os.path.join(path, "raw")
+    if not os.path.exists(rawpath):
+        os.makedirs(rawpath)
+
+    imagespath = os.path.abspath(os.path.join(rawpath, "images"))
+    if not os.path.exists(imagespath):
+        os.makedirs(imagespath)
+
+    # read all the sets of cameras
+
+    dirlist = [ "CAM_BACK", "CAM_BACK_LEFT", "CAM_BACK_RIGHT", "CAM_FRONT", "CAM_FRONT_LEFT", "CAM_FRONT_RIGHT" ]
+    imlists = {}
+    global_im_counter = 0
+    
+    for dirname in dirlist:
+        campath = os.path.join(path, dirname)
+        first = True
+# basic version
+        for filename in os.listdir(campath):
+            shutil.copyfile(os.path.join(campath, filename), os.path.join(imagespath, "{:06d}".format(global_im_counter)+".jpg"))
+            global_im_counter += 1
+
+"""
+# code below useless
+        for filename in os.listdir(campath):
+            ext = os.path.splitext(filename)[1]
+            if ext == ".JPG" or ext == ".jpg" or ext == ".PNG" or ext == ".png" :
+                if first:
+                    imlists[dirname] = [filename]
+                    first = False
+                else:
+                    imlists[dirname].append(filename)
+
+#                print("Adding ", filename , " to list " , dirname)
+    for i in range(len(imlists["CAM_BACK"])):
+        imname = imlists[ "CAM_BACK_LEFT"][i] 
+        shutil.copyfile(os.path.join(path, os.path.join( "CAM_BACK_LEFT", imname)), os.path.join(imagespath, "{:06d}".format(global_im_counter)+".jpg"))
+        global_im_counter += 1
+        imname = imlists[ "CAM_FRONT_LEFT"][i] 
+        shutil.copyfile(os.path.join(path, os.path.join( "CAM_FRONT_LEFT", imname)), os.path.join(imagespath, "{:06d}".format(global_im_counter)+".jpg"))
+        global_im_counter += 1
+        if i > 2:
+            imname = imlists[ "CAM_FRONT"][i-2] 
+            shutil.copyfile(os.path.join(path, os.path.join( "CAM_FRONT", imname)), os.path.join(imagespath, "{:06d}".format(global_im_counter)+".jpg"))
+            global_im_counter += 1
+
+    for i in range(len(imlists["CAM_BACK"])):
+        imname = imlists[ "CAM_FRONT_RIGHT"][i] 
+        shutil.copyfile(os.path.join(path, os.path.join( "CAM_FRONT_RIGHT", imname)), os.path.join(imagespath, "{:06d}".format(global_im_counter)+ ".jpg"))
+        global_im_counter += 1
+        imname = imlists[ "CAM_BACK_RIGHT"][i] 
+        shutil.copyfile(os.path.join(path, os.path.join( "CAM_BACK_RIGHT", imname)), os.path.join(imagespath, "{:06d}".format(global_im_counter)+ ".jpg"))
+        global_im_counter += 1
+        if i < len(imlists["CAM_BACK"])-2:
+            imname = imlists[ "CAM_BACK"][i+2] 
+            shutil.copyfile(os.path.join(path, os.path.join( "CAM_BACK", imname)), os.path.join(imagespath, "{:06d}".format(global_im_counter)+ ".jpg"))
+            global_im_counter += 1
+"""
