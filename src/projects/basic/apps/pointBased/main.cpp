@@ -13,12 +13,12 @@
 #include <fstream>
 #include <core/graphics/Window.hpp>
 #include <core/view/MultiViewManager.hpp>
-#include <projects/ulr/renderer/TexturedMeshView.hpp>
+#include <projects/basic/renderer/PointBasedView.hpp>
 #include <core/scene/BasicIBRScene.hpp>
 #include <core/raycaster/Raycaster.hpp>
 #include <core/view/SceneDebugView.hpp>
 
-#define PROGRAM_NAME "sibr_texturedMesh_app"
+#define PROGRAM_NAME "sibr_PointBased_app"
 using namespace sibr;
 
 const char* usage = ""
@@ -26,54 +26,18 @@ const char* usage = ""
 	;
 
 
-struct TexturedMeshAppArgs :
+struct PointBasedAppArgs :
 	virtual BasicIBRAppArgs {
-	Arg<std::string> textureImagePath = { "texture", "" ,"texture path"};
 	Arg<std::string> meshPath = { "mesh", "", "mesh path" };
-	Arg<bool> noScene = { "noScene" };
 };
-
-// order textured, mesh {obj} then mesh.ply
-std::string findCaprealMesh(const std::string& caprealDir)
-{
-	std::string texImgPath, meshPath, m1, m2, m3;
-	m1 = meshPath = caprealDir + "/textured.obj";
-	if (!fileExists(meshPath)) 
-		m2 = meshPath = caprealDir + "/mesh.obj";
-	if (!fileExists(meshPath)) 
-		m3 = meshPath = caprealDir + "/mesh.ply";
-	
-	if (!fileExists(meshPath))
-		SIBR_ERR << "Can't find mesh, tried: " << m1 << ":" << m2 << ":" << m3 << std::endl;
-
-	return meshPath;
-}
-
-// order texture, texture_u1_v1, textured, textured_u1_v1, mesh_u1_v1
-
-std::string findCaprealTexture(const std::string& caprealDir)
-{
-	std::string texImgPath, t1, t2, t3, t4;
-	t1 = texImgPath = caprealDir + "/texture.png";
-	if (!fileExists(texImgPath))
-		t2 = texImgPath = caprealDir + "/texture_u1_v1.png";
-	if (!fileExists(texImgPath)) 
-		t3 = texImgPath = caprealDir + "/mesh.png";
-	if (!fileExists(texImgPath)) 
-		t4 = texImgPath = caprealDir + "/mesh_u1_v1.png";
-	if (!fileExists(texImgPath))
-		SIBR_ERR << "Cant find texture, tried " << t1 << ":" << t2 << ":" << t3 << ":" << t4 << std::endl;
-	return texImgPath;
-}
 
 
 int main( int ac, char** av )
 {
 	{
-
 		// Parse Commad-line Args
 		CommandLineArgs::parseMainArgs(ac, av);
-		TexturedMeshAppArgs myArgs;
+		PointBasedAppArgs myArgs;
 
 		const bool doVSync = !myArgs.vsync;
 		// rendering size
@@ -88,59 +52,13 @@ int main( int ac, char** av )
 
 		// Setup IBR
 		BasicIBRScene::Ptr		scene;
-		std::string texImgPath, meshPath, m1, m2, m3, t1, t2;
+		std::string meshPath;
 
-		if (myArgs.noScene) {
-			scene = BasicIBRScene::Ptr(new BasicIBRScene());
-
-			if (myArgs.textureImagePath.get() != "") {
-				meshPath = myArgs.dataset_path.get();
-				texImgPath = myArgs.textureImagePath;
-			}
-		}
-		else {
-			// Specify scene initlaization options
-
-/*
-			BasicIBRScene::SceneOptions initOpts;
-			initOpts.cameras = false;
-			initOpts.images = false;
-			initOpts.mesh = false;
-			initOpts.renderTargets = false;
-*/
-
-			scene = BasicIBRScene::Ptr(new BasicIBRScene(myArgs));
-
-			// Cleanup; move the Scene ?
-			std::cerr << "Reading " << myArgs.dataset_path.get() + "/capreal" << std::endl;
-			std::string caprealDir = myArgs.dataset_path.get() + "/capreal";
-			if (!directoryExists(caprealDir))
-				caprealDir = parentDirectory(myArgs.dataset_path.get()) + "/capreal";
-
-			if (directoryExists(caprealDir)) {
-				meshPath = findCaprealMesh(caprealDir);
-				texImgPath = findCaprealTexture(caprealDir);
-			}
-		}
+		// Specify scene initlaization options
+		scene = BasicIBRScene::Ptr(new BasicIBRScene(myArgs));
 
 		// Load the texture image and provide it to the scene
 		sibr::ImageRGB inputTextureImg;
-		if (sibr::fileExists(texImgPath)) {
-			inputTextureImg.load(texImgPath);
-			scene->inputMeshTextures().reset(new sibr::Texture2DRGB(inputTextureImg, SIBR_GPU_LINEAR_SAMPLING));
-		}
-		/* HACK GD
-		else {
-			SIBR_ERR << "No mesh and texture found! Please specify path to mesh using --path and path to the mesh texture using --texture!" << std::endl;
-			return 0;
-		}
-		*/
-
-		if (myArgs.noScene) {
-			Mesh::Ptr newMesh(new Mesh(true));
-			newMesh->load(meshPath);
-			scene->proxies()->replaceProxyPtr(newMesh);
-		}
 
 		// check rendering size; if no rendering-size specified, use 1080p
 		rendering_width = (rendering_width <= 0) ? 1920 : rendering_width;
@@ -150,9 +68,7 @@ int main( int ac, char** av )
 		const unsigned int sceneResWidth = usedResolution.x();
 		const unsigned int sceneResHeight = usedResolution.y();
 
-
-		TexturedMeshView::Ptr	texturedView(new TexturedMeshView(scene, sceneResWidth, sceneResHeight));
-
+		PointBasedView::Ptr	pointbasedView(new PointBasedView(scene, sceneResWidth, sceneResHeight));
 
 		// Raycaster.
 		std::shared_ptr<sibr::Raycaster> raycaster = std::make_shared<sibr::Raycaster>();
@@ -168,8 +84,8 @@ int main( int ac, char** av )
 
 		// Add views to mvm.
 		MultiViewManager        multiViewManager(window, false);
-		multiViewManager.addIBRSubView("TM View", texturedView, usedResolution, ImGuiWindowFlags_ResizeFromAnySide);
-		multiViewManager.addCameraForView("TM View", generalCamera);
+		multiViewManager.addIBRSubView("Point-Based View", pointbasedView, usedResolution, ImGuiWindowFlags_ResizeFromAnySide);
+		multiViewManager.addCameraForView("Point-Based View", generalCamera);
 
 		// Top view
 		const std::shared_ptr<sibr::SceneDebugView>    topView(new sibr::SceneDebugView(scene, multiViewManager.getViewport(), generalCamera, myArgs));
@@ -177,7 +93,7 @@ int main( int ac, char** av )
 
 		if (myArgs.pathFile.get() !=  "" ) {
 			generalCamera->getCameraRecorder().loadPath(myArgs.pathFile.get(), usedResolution.x(), usedResolution.y());
-			generalCamera->getCameraRecorder().recordOfflinePath(myArgs.outPath, multiViewManager.getIBRSubView("TM view"), "texturedmesh");
+			generalCamera->getCameraRecorder().recordOfflinePath(myArgs.outPath, multiViewManager.getIBRSubView("TM view"), "pointbasedmesh");
 			if( !myArgs.noExit )
 				exit(0);
 		}

@@ -27,16 +27,16 @@ target_link_libraries(${PROJECT_NAME}
 	${OpenCV_LIBRARIES}
 	sibr_view
 	sibr_assets
-	sibr_ulr
+	sibr_basic
 )
-set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER "projects/ulr/apps")
+set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER "projects/basic/apps")
 
 ## High level macro to install in an homogen way all our ibr targets
 include(install_runtime)
 ibr_install_target(${PROJECT_NAME}
     INSTALL_PDB                         ## mean install also MSVC IDE *.pdb file (DEST according to target type)
 	RESOURCES  	${RESOURCES}
-	RSC_FOLDER 	"ulr"
+	RSC_FOLDER 	"basic"
     STANDALONE  ${INSTALL_STANDALONE}   ## mean call install_runtime with bundle dependencies resolution
     COMPONENT   ${PROJECT_NAME}_install ## will create custom target to install only this project
 )
