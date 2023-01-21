@@ -236,6 +236,25 @@ namespace sibr {
 
 	}
 
+	void ParseData::getParsedColmap2Data(const std::string& dataset_path, const int fovXfovY_flag, const bool capreal_flag)
+	{
+		_basePathName = dataset_path + "/sparse/0/";
+
+		_camInfos = sibr::InputCamera::loadColmapBin(_basePathName, 0.01f, 1000.0f, fovXfovY_flag);
+
+		if (_camInfos.empty()) {
+			SIBR_ERR << "Colmap camera calibration file does not exist at /" + _basePathName + "/sparse/." << std::endl;
+		}
+
+		_imgPath = dataset_path + "/images/";
+
+
+		populateFromCamInfos();
+
+		_meshPath = dataset_path + "/sparse/0/points3d.ply";
+	}
+
+
 	void ParseData::getParsedColmapData(const std::string & dataset_path, const int fovXfovY_flag, const bool capreal_flag)
 	{
 		_basePathName = dataset_path + "/colmap/stereo";
@@ -309,6 +328,7 @@ namespace sibr {
 
 		std::string bundler = myArgs.dataset_path.get() + customPath + "/cameras/bundle.out";
 		std::string colmap = myArgs.dataset_path.get() + "/colmap/stereo/sparse/images.txt";
+		std::string colmap_2 = myArgs.dataset_path.get() + "/sparse/0/images.bin";
 		std::string caprealobj = myArgs.dataset_path.get() + "/capreal/mesh.obj";
 		std::string caprealply = myArgs.dataset_path.get() + "/capreal/mesh.ply";
 		std::string nvmscene = myArgs.dataset_path.get() + customPath + "/nvm/scene.nvm";
@@ -370,6 +390,8 @@ namespace sibr {
 			else if (sibr::directoryExists(meshroom) || sibr::directoryExists(meshroom_sibr)) {
 				_datasetType = Type::MESHROOM;
 			}
+			else if (sibr::fileExists(colmap_2))
+				_datasetType = Type::COLMAP2;
 			else {
 				SIBR_ERR << "Cannot determine type of dataset at /" + myArgs.dataset_path.get() + customPath << std::endl;
 			}
@@ -379,6 +401,7 @@ namespace sibr {
 			case Type::SIBR : 			getParsedBundlerData(myArgs.dataset_path, customPath, myArgs.scene_metadata_filename); break;
 			case Type::COLMAP_CAPREAL : getParsedColmapData(myArgs.dataset_path, myArgs.colmap_fovXfovY_flag, true); break;
 			case Type::COLMAP : 		getParsedColmapData(myArgs.dataset_path, myArgs.colmap_fovXfovY_flag, false); break;
+			case Type::COLMAP2 : 		getParsedColmap2Data(myArgs.dataset_path, myArgs.colmap_fovXfovY_flag, false); break;
 			case Type::NVM : 			getParsedNVMData(myArgs.dataset_path, customPath, "/nvm/"); break;
 			case Type::MESHROOM : 		if (sibr::directoryExists(meshroom)) getParsedMeshroomData(myArgs.dataset_path.get() + "/../../");
 										else if (sibr::directoryExists(meshroom_sibr)) getParsedMeshroomData(myArgs.dataset_path); break;

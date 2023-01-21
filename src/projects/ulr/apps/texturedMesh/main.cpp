@@ -129,10 +129,12 @@ int main( int ac, char** av )
 			inputTextureImg.load(texImgPath);
 			scene->inputMeshTextures().reset(new sibr::Texture2DRGB(inputTextureImg, SIBR_GPU_LINEAR_SAMPLING));
 		}
+		/* HACK GD
 		else {
 			SIBR_ERR << "No mesh and texture found! Please specify path to mesh using --path and path to the mesh texture using --texture!" << std::endl;
 			return 0;
 		}
+		*/
 
 		if (myArgs.noScene) {
 			Mesh::Ptr newMesh(new Mesh(true));

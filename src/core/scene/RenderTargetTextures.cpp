@@ -73,6 +73,7 @@ namespace sibr {
 
 		for (uint i = 0; i < imgs->inputImages().size(); i++) {
 			if (cams->inputCameras()[i]->isActive()) {
+				std::cerr << "." ;
 				ImageRGB img = std::move(imgs->inputImages()[i]->clone());
 				img.flipH();
 
@@ -93,6 +94,7 @@ namespace sibr {
 				_inputRGBARenderTextures[i]->unbind();
 			}
 		}
+		std::cerr << std::endl; 
 	}
 
 	void RGBDInputTextures::initializeDepthRenderTargets(ICalibratedCameras::Ptr cams, IProxyMesh::Ptr proxies, bool facecull)

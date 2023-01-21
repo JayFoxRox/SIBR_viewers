@@ -309,11 +309,15 @@ def convert(AABB_SCALE, SKIP_EARLY, IMAGE_FOLDER, TEXT_FOLDER, OUT_PATH, totp=-1
 
     return totp, totw, avglen, rMat
 
-def createNerf(path):
+def createNerf(path, hires=False):
     AABB_SCALE=int(16)
     SKIP_EARLY=int(0)
     print("Path is ", path, str(path))
-    colmappath = os.path.join(os.path.join(str(path), "colmap_1000"), "colmap")
+    if hires:
+        print("DOING HIRES !!")
+        colmappath = os.path.join(os.path.join(str(path), "sibr"), "colmap")
+    else:
+        colmappath = os.path.join(os.path.join(str(path), "colmap_1000"), "colmap")
     TEXT_FOLDER=os.path.join(os.path.join(colmappath,  "stereo"), "sparse")
     IMAGE_FOLDER=os.path.join(os.path.join(colmappath,  "stereo"), "images")
     OUT_PATH= os.path.join(os.path.join(colmappath,  "stereo"), "transforms.json")

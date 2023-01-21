@@ -237,8 +237,13 @@ namespace sibr
 			guizmo.active = !guizmo.active;
 		}
 
+		MeshData & proxy = getMeshData("proxy");
+		if( proxy.meshPtr->triangles().size() == 0 )
+			// SfM Points only
+			proxy.renderMode = Mesh::RenderMode::PointRenderMode;
+
 		if (input.key().isActivated(Key::LeftControl) && input.key().isReleased(Key::Z)) {
-			MeshData & proxy = getMeshData("proxy");
+			//MeshData & proxy = getMeshData("proxy");
 			if (proxy.renderMode == Mesh::RenderMode::FillRenderMode) {
 				proxy.renderMode = Mesh::RenderMode::LineRenderMode;
 			} else {

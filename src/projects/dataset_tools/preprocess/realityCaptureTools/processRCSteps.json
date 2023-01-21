@@ -161,7 +161,7 @@
                 "rc_path": "${path}/rcScene/validation_cameras",
                 "out_path": "${path}/colmap_1000/validation_colmap",
                 "create_colmap": "0",
-                "target_width": "1000"
+                "target_width": "${target_width}"
             }
         },
         {
@@ -171,7 +171,7 @@
                 "rc_path": "${path}/rcScene/test_path_cameras",
                 "out_path": "${path}/colmap_1000/test_path_colmap",
                 "create_colmap": "0",
-                "target_width": "1000"
+                "target_width": "${target_width}"
             }
         },
         {
@@ -189,7 +189,7 @@
                 "rc_path": "${path}/rcScene/cropped_train_cameras",
                 "out_path": "${path}/colmap_1000/colmap",
                 "create_colmap": "1",
-                "target_width": "1000"
+                "target_width": "${target_width}"
             }
         },
         {
@@ -206,6 +206,15 @@
             "function": "colmap2nerf.createNerf",
             "function_args": {
                 "path": "${path}"
+            }
+        },
+        {
+            "if": "${hires_nerf}",
+            "name": "create_hi_nerf",
+            "function": "colmap2nerf.createNerf",
+            "function_args": {
+                "path": "${path}",
+                "hires": "True"
             }
         },
         {
