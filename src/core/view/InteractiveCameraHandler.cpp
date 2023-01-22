@@ -656,6 +656,7 @@ namespace sibr {
 							SIBR_LOG << "Saving" << std::endl;
 							_cameraRecorder.save(selectedFile + ".path");
 							_cameraRecorder.saveAsBundle(selectedFile + ".out", _currentCamera.h());
+							_cameraRecorder.saveAsColmap(selectedFile, _currentCamera.h(), _currentCamera.w());
 							_cameraRecorder.saveAsLookAt(selectedFile + ".lookat");
 							if (_fribrExport) {
 								const int height = int(std::floor(1920.0f / _currentCamera.aspect()));
@@ -664,8 +665,6 @@ namespace sibr {
 						}
 					}
 				}
-				
-				
 
 				//ImGui::SameLine();
 				ImGui::Checkbox("Save video (from playing)", (&_saveFrame));

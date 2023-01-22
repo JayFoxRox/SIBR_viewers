@@ -281,6 +281,66 @@ namespace sibr
 		
 	}
 
+	void CameraRecorder::saveAsColmap(const std::string& filePath, const int height, const int width)
+	{
+
+		std::string basepath = parentDirectory(filePath);
+		std::cout << basepath << std::endl;
+		std::string images_filepath = basepath + "/images.txt";
+		std::string cameras_filepath = basepath + "/cameras.txt";
+
+		std::ofstream out_images(images_filepath.c_str(), std::ios::binary);
+		std::ofstream out_cameras(cameras_filepath.c_str(), std::ios::binary);
+
+		if (!out_images.good()) {
+			SIBR_LOG << "ERROR: cannot write to the file '" << filePath << "'" << std::endl;
+			return;
+		}
+		if (!out_cameras.good()) {
+			SIBR_LOG << "ERROR: cannot write to the file '" << filePath << "'" << std::endl;
+			return;
+		}
+
+		if (_cameras.empty()) {
+			return;
+		}
+
+		const int size = static_cast<int>(_cameras.size());
+		
+		sibr::Matrix3f converter;
+		converter << 1, 0, 0,
+			0, -1, 0,
+			0, 0, -1;
+
+
+
+		out_images << "# Image list with two lines of data per image:" << std::endl;
+		out_images << "#   IMAGE_ID, QW, QX, QY, QZ, TX, TY, TZ, CAMERA_ID, NAME" << std::endl;
+		out_images << "#   POINTS2D[] as (X, Y, POINT3D_ID)" << std::endl;
+		for (int i = 0; i < _cameras.size(); i++) {
+			sibr::Matrix3f tmp = _cameras[i].rotation().toRotationMatrix() * converter;
+			sibr::Matrix3f Qinv = tmp.transpose();
+			sibr::Quaternionf q = quatFromMatrix(Qinv);
+			sibr::Vector3f t = converter * _cameras[i].rotation().toRotationMatrix().transpose() * (-_cameras[i].position());
+		
+
+			out_images << i << " " << -_cameras[i].rotation().x() << " " << -_cameras[i].rotation().w() << " " << -_cameras[i].rotation().z() << " " << _cameras[i].rotation().y() << " " <<
+				_cameras[i].view()(0, 3) << " " << -_cameras[i].view()(1, 3) << " " << -_cameras[i].view()(2, 3) << " " << i << " " << "00000000.png" << std::endl;
+			
+			float focal = 0.5f * height / tan(_cameras[i].fovy() / 2.f);
+			//float focal = 1.0f / (tan(0.5f * cam.fovy()) * 2.0f / float(height));
+			out_cameras << i << " " << "PINHOLE" << " " << width << " " << height << " " << focal << " " << focal << " " << width / 2.0 << " " << height / 2.0 << std::endl;
+		}
+
+		out_images << std::endl;
+		out_images.close();
+		out_cameras << std::endl;
+		out_cameras.close();
+		SIBR_LOG << "[CameraRecorder] - Saved " << _cameras.size() << " cameras to " << filePath << " (using fovy " << _cameras[0].fovy() << ")." << std::endl;
+
+	}
+
+
 	void CameraRecorder::saveAsFRIBRBundle(const std::string & dirPath, const int width, const int height)
 	{
 		const std::string bundlepath = dirPath + "/path.rd.out";

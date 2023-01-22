@@ -146,6 +146,7 @@ namespace sibr
 		\param step set to a value greater than 1 to save every "step" camera in the recording stream. 
 		*/
 		void	saveAsBundle(const std::string & filePath, const int height, const int step = 1);
+		void    saveAsColmap(const std::string& filePath, const int height, const int width);
 
 		/**
 		Save the current recording stream as a bundle file and a series of empty images for FRIBR compatibility.
