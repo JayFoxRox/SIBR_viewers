@@ -32,7 +32,7 @@ namespace sibr {
 		_shader.begin();
 		_paramMVP.set(eye.viewproj());
 		_paramAlpha.set(float(1.0));
-		_paramRadius.set(1);
+		_paramRadius.set(3);
 		_paramUserColor.set(Vector3f(.1, .1, 1.0));
 
 		mesh.render_points();

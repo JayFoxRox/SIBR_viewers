@@ -17,6 +17,7 @@
 # include "core/graphics/Camera.hpp"
 # include "core/view/ViewBase.hpp"
 
+
 # define SIBR_CAMERARECORDER_DEFAULTFILE "camera-record.bytes"
 
 namespace sibr
@@ -177,7 +178,6 @@ namespace sibr
 		*/
 		bool isSaving() const { return _saving; }
 
-
 		/**
 		\return A reference to the current stream of recorded cameras.
 		*/
@@ -200,11 +200,20 @@ namespace sibr
 		void recordOfflinePath(const std::string& outPathDir, ViewBase::Ptr view, const std::string& prefix);
 
 		/**
+		Save an image
+		*/
+		void setViewPath(ViewBase::Ptr view, const std::string& dataset_path) { _view = view; _dsPath = dataset_path;  };
+
+		void saveImage(const std::string& outPathDir, const Camera& cam, int w, int h);
+
+		/**
 		 * \return the interpolation speed
 		*/
 		float & speed() { return _speed; }
 
 	private:
+		std::string				_dsPath; // path to dataset
+		ViewBase::Ptr			_view; // view to save images
 		uint					_pos; ///< Current camera ID for replay.
 		std::vector<Camera>		_cameras; ///< List of recorded cameras.
 		bool					_recording; ///< Are we currently recording.
