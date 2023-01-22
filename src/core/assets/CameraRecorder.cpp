@@ -325,7 +325,7 @@ namespace sibr
 		
 
 			out_images << i << " " << -_cameras[i].rotation().x() << " " << -_cameras[i].rotation().w() << " " << -_cameras[i].rotation().z() << " " << _cameras[i].rotation().y() << " " <<
-				_cameras[i].view()(0, 3) << " " << -_cameras[i].view()(1, 3) << " " << -_cameras[i].view()(2, 3) << " " << i << " " << "00000000.png" << std::endl;
+				_cameras[i].view()(0, 3) << " " << -_cameras[i].view()(1, 3) << " " << -_cameras[i].view()(2, 3) << " " << i << " " << "00000000.png" << std::endl << std::endl;
 			
 			float focal = 0.5f * height / tan(_cameras[i].fovy() / 2.f);
 			//float focal = 1.0f / (tan(0.5f * cam.fovy()) * 2.0f / float(height));
