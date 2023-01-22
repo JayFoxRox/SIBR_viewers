@@ -662,7 +662,7 @@ namespace sibr
 			_colors[i] = Vector3f(
 				cols[i].x(), cols[i].y(), cols[i].z());
 
-		_meshPath = dataset_path + "/points3d.ply";
+		_meshPath = dataset_path + "/points3D.bin";
 		_renderingOptions.mode = PointRenderMode;
 
 		SIBR_LOG << "SfM Mesh '" << filename << " successfully loaded. " << " (" << _vertices.size() << ") vertices detected. Init GL ..." << std::endl;
