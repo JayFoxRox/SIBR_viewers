@@ -121,7 +121,7 @@ class BundleFeaturePoint:
 
 class Bundle:
 
-    MAX_NR_FEATURE_POINTS = 1000000   # if bundle file has more than this limit, features will not be processed at all
+    MAX_NR_FEATURE_POINTS = 8000000   # if bundle file has more than this limit, features will not be processed at all
 
     def __init__(self, path_to_bundle):
         # read bundle file
@@ -295,6 +295,7 @@ class Bundle:
                 #indx = indx + 1
             
         for feature_point in self.list_of_feature_points:
+#            print("Writing ", len(feature_point.view_list) , " FEATURE POINTS " )
             if len(feature_point.view_list)> 0:
                 output_file.write(str(feature_point) + '\n')
 
