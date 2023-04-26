@@ -636,9 +636,13 @@ namespace sibr
 		const std::string camerasListing = colmapSparsePath + "/cameras.txt";
 		const std::string imagesListing = colmapSparsePath + "/images.txt";
 
+		const std::string camerasListing2 = colmapSparsePath + "/cameras.txt2";
+		const std::string imagesListing2 = colmapSparsePath + "/images.txt2";
 
 		std::ifstream camerasFile(camerasListing);
 		std::ifstream imagesFile(imagesListing);
+		std::ofstream camerasFile2(camerasListing2);
+		std::ofstream imagesFile2(imagesListing2);
 		if (!camerasFile.is_open()) {
 			SIBR_ERR << "Unable to load camera colmap file" << std::endl;
 		}
@@ -661,6 +665,8 @@ namespace sibr
 		};
 
 		std::map<size_t, CameraParametersColmap> cameraParameters;
+
+		std::map<int, std::vector<std::string>> camidtokens;
 
 		while (std::getline(camerasFile, line)) {
 			if (line.empty() || line[0] == '#') {
@@ -688,6 +694,7 @@ namespace sibr
 
 			cameraParameters[params.id] = params;
 
+			camidtokens[params.id] = tokens;
 		}
 
 		// Now load the individual images and their extrinsic parameters
@@ -697,6 +704,7 @@ namespace sibr
 			0, 0, -1;
 
 		int camid = 0;
+		int valid = 0;
 		while (std::getline(imagesFile, line)) {
 			if (line.empty() || line[0] == '#') {
 				continue;
@@ -745,6 +753,21 @@ namespace sibr
 			camera->rotation(sibr::Quaternionf(orientation));
 			camera->znear(zNear);
 			camera->zfar(zFar);
+
+			if (camera->position().x() < 0)
+			{
+				camerasFile2 << ++valid;
+				for (int i = 1; i < camidtokens[id].size(); i++)
+					camerasFile2 << " " << camidtokens[id][i];
+				camerasFile2 << "\n\n";
+
+				imagesFile2<< valid;
+				for (int i = 1; i < tokens.size() - 1; i++)
+					imagesFile2 << " " << tokens[i];
+				imagesFile2 << " " << valid << std::endl;
+				imagesFile2 << "\n\n";
+			}
+
 			cameras.push_back(camera);
 
 			++camid;

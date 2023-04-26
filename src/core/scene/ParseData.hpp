@@ -78,6 +78,8 @@ namespace sibr{
 
 		void  getParsedColmap2Data(const std::string & dataset_path, const int fovXfovY_flag, const bool capreal_flag = true);
 
+		void getParsedChunkedData(const std::string& dataset_path);
+
 		/**
 		* \brief Function to parse data from a template dataset path.
 		* \param dataset_path Path to the folder containing data
