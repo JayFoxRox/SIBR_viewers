@@ -31,16 +31,21 @@ namespace sibr {
 		/// Constructor.
 		GaussianData(int num_gaussians, float* mean_data, float* rot_data, float* scale_data, float* alpha_data, float* color_data);
 
-		void render() const;
+		void render(int G) const;
+
+		GLuint getIndexBuffer() { return indexBuffer; }
+
+		GLuint getMarkedBuffer() const { return markedBuffer; }
 
 	private:
 
-		int G;
 		GLuint meanBuffer;
 		GLuint rotBuffer;
 		GLuint scaleBuffer;
 		GLuint alphaBuffer;
 		GLuint colorBuffer;
+		GLuint indexBuffer;
+		GLuint markedBuffer;
 	};
 
 	/** Render a mesh colored using the per-vertex color attribute.
@@ -64,6 +69,7 @@ namespace sibr {
 		\param backFaceCulling should backface culling be performed
 		*/
 		int	process(
+			int G,
 			/*input*/	const GaussianData& mesh,
 			/*input*/	const Camera& eye,
 			/*output*/	IRenderTarget& dst,
