@@ -18,6 +18,7 @@ namespace sibr {
 
 	GaussianData::GaussianData(int num_gaussians, float* mean_data, float* rot_data, float* scale_data, float* alpha_data, float* color_data)
 	{
+		_num_gaussians = num_gaussians;
 		glCreateBuffers(1, &meanBuffer);
 		glCreateBuffers(1, &rotBuffer);
 		glCreateBuffers(1, &scaleBuffer);
@@ -30,8 +31,8 @@ namespace sibr {
 		glNamedBufferStorage(scaleBuffer, num_gaussians * 3 * sizeof(float), scale_data, 0);
 		glNamedBufferStorage(alphaBuffer, num_gaussians * sizeof(float), alpha_data, 0);
 		glNamedBufferStorage(colorBuffer, num_gaussians * sizeof(float) * 48, color_data, 0);
-		glNamedBufferStorage(indexBuffer, num_gaussians * sizeof(int), nullptr, 0);
-		glNamedBufferStorage(markedBuffer, num_gaussians * sizeof(int), nullptr, 0);
+		glNamedBufferData(indexBuffer, num_gaussians * sizeof(int), nullptr, GL_DYNAMIC_DRAW);
+		glNamedBufferData(markedBuffer, num_gaussians * sizeof(int), nullptr, GL_DYNAMIC_DRAW);
 	}
 
 	void GaussianData::render(int G) const
@@ -51,6 +52,7 @@ namespace sibr {
 		_shader.init("GaussianSurface",
 			sibr::loadFile("F:/bkerbl/gaussian_surface.vert"),
 			sibr::loadFile("F:/bkerbl/gaussian_surface.frag"));
+
 		_paramCamPos.init(_shader, "rayOrigin");
 		_paramMVP.init(_shader,"MVP");
 		_paramLimit.init(_shader, "alpha_limit");
@@ -67,6 +69,30 @@ namespace sibr {
 		glCreateRenderbuffers(1, &depthBuffer);
 
 		makeFBO(800, 800);
+
+		clearProg = glCreateProgram();
+		const char* clearShaderSrc = R"(
+			#version 430
+
+			layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+			layout(std430, binding = 0) buffer IntArray {
+				int arr[];
+			};
+
+			layout(location = 0) uniform int size;
+
+			void main() {
+				uint index = gl_GlobalInvocationID.x;
+				if (index < size) {
+					arr[index] = 0;
+				}
+			}
+			)";
+		clearShader = glCreateShader(GL_COMPUTE_SHADER);
+		glShaderSource(clearShader, 1, &clearShaderSrc, nullptr);
+		glAttachShader(clearProg, clearShader);
+		glLinkProgram(clearProg);
 	}
 
 	void GaussianSurfaceRenderer::makeFBO(int w, int h)
@@ -137,13 +163,17 @@ namespace sibr {
 			glReadBuffer(GL_COLOR_ATTACHMENT1);
 			glReadPixels(queryLocation.x(), target.h() - queryLocation.y() - 1, 1, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, &highlight);
 
-			//if (old_highlight > 0)
-			//{
-			//	int zero = 0;
-			//	glNamedBufferSubData(mesh.getMarkedBuffer(), old_highlight * sizeof(int), sizeof(int), &zero);
-			//}
-			//int one = 1;
-			//glNamedBufferSubData(mesh.getMarkedBuffer(), highlight * sizeof(int), sizeof(int), &one);
+
+			if (old_highlight >= 0)
+			{
+				glUseProgram(clearProg);
+				int size = mesh.getMarkedBufferSize();
+				glUniform1i(0, size);
+				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mesh.getMarkedBuffer());
+				glDispatchCompute((GLuint)std::ceil(size / 256.0f), 1, 1); 
+			}
+			int one = 1;
+			glNamedBufferSubData(mesh.getMarkedBuffer(), highlight * sizeof(int), sizeof(int), &one);
 		}
 
 		glReadBuffer(GL_COLOR_ATTACHMENT0);

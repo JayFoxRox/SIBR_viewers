@@ -37,8 +37,13 @@ namespace sibr {
 
 		GLuint getMarkedBuffer() const { return markedBuffer; }
 
+		int getMarkedBufferSize() const { return _num_gaussians; }
+
+		void initMarkedBuffer() const;
+
 	private:
 
+		int _num_gaussians;
 		GLuint meanBuffer;
 		GLuint rotBuffer;
 		GLuint scaleBuffer;
@@ -95,6 +100,8 @@ namespace sibr {
 		GLParameter			_paramLimit;
 		GLParameter			_paramStage;
 		GLParameter			_paramHighlight;
+		GLuint clearProg;
+		GLuint clearShader;
 	};
 
 } /*namespace sibr*/ 
