@@ -23,6 +23,7 @@
 #include <map>
 #include "core/system/String.hpp"
 #include "core/graphics/Mesh.hpp"
+#include <algorithm>
 
 using namespace boost::algorithm;
 namespace sibr {
@@ -504,7 +505,16 @@ namespace sibr {
 		
 		// What happens if multiple are present?
 		// Ans: Priority --> SIBR > COLMAP > NVM
-		
+
+		// Subtract minCAMID from all
+		uint minCamID = UINT_MAX;
+		for (const auto& cam : _camInfos)
+			minCamID = std::min(minCamID, cam->id());
+		for (auto& cam : _camInfos)
+			cam->_id -= minCamID;
+		for (auto& img : _imgInfos)
+			img.camId -= minCamID;
+
 		// Find max cam ID and check present image IDs
 		int maxId = 0;
 		std::vector<bool> presentIDs;
@@ -515,7 +525,7 @@ namespace sibr {
 			maxId = (maxId > int(_imgInfos[c].camId)) ? maxId : int(_imgInfos[c].camId);
 			if (_imgInfos[c].camId >= presentIDs.size())
 			{
-				//SIBR_ERR << "Incorrect Camera IDs " << std::endl;
+				SIBR_ERR << "Incorrect Camera IDs " << std::endl;
 				continue;
 			}
 			try
