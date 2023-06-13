@@ -19,11 +19,8 @@ namespace sibr {
 	GaussianData::GaussianData(int num_gaussians, float* mean_data, float* rot_data, float* scale_data, float* alpha_data, float* color_data)
 	{
 		_num_gaussians = num_gaussians;
-		glCreateBuffers(1, &meanBuffer);
-		glCreateBuffers(1, &rotBuffer);
-		glCreateBuffers(1, &scaleBuffer);
-		glCreateBuffers(1, &alphaBuffer);
-		glCreateBuffers(1, &colorBuffer);
+		GLuint toCreate[] = { meanBuffer, rotBuffer, scaleBuffer, alphaBuffer, colorBuffer };
+		glCreateBuffers(sizeof(toCreate), toCreate);
 		glNamedBufferStorage(meanBuffer, num_gaussians * 3 * sizeof(float), mean_data, 0);
 		glNamedBufferStorage(rotBuffer, num_gaussians * 4 * sizeof(float), rot_data, 0);
 		glNamedBufferStorage(scaleBuffer, num_gaussians * 3 * sizeof(float), scale_data, 0);
@@ -39,6 +36,12 @@ namespace sibr {
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, alphaBuffer);
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, colorBuffer);
 		glDrawArraysInstanced(GL_TRIANGLES, 0, 36, G);
+	}
+
+	GaussianData::~GaussianData()
+	{
+		GLuint toDelete[] = { meanBuffer, rotBuffer, scaleBuffer, alphaBuffer, colorBuffer };
+		glDeleteBuffers(sizeof(toDelete), toDelete);
 	}
 
 	GaussianSurfaceRenderer::GaussianSurfaceRenderer( void )

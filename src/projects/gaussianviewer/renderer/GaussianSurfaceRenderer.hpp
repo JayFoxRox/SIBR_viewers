@@ -33,6 +33,8 @@ namespace sibr {
 
 		void render(int G) const;
 
+		~GaussianData();
+
 	private:
 
 		int _num_gaussians;
