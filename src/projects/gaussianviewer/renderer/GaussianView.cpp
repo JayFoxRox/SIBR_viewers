@@ -220,42 +220,27 @@ sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint
 	}
 	_scene->cameras()->debugFlagCameraAsUsed(imgs_ulr);
 
-	// Parse the input files. It is possible to provide multiple input files
-	// in the model path, enclosing the list with "" and separate them
-	// by whitespace (e.g., "modelA.ply modelB.ply"). The GUI allows you to
-	// then switch between them, e.g. for visual comparison.
-	std::stringstream ss(file);
-	std::string del;
-	while (std::getline(ss, del, ' ')) 
-	{
-		// Load the PLY data (AoS) to the GPU (SoA)
-		std::vector<Pos> pos;
-		std::vector<Rot> rot;
-		std::vector<Scale> scale;
-		std::vector<float> opacity;
-		std::vector<SHs> shs;
-		counts.push_back(loadPly(del.c_str(), pos, shs, opacity, scale, rot));
+	// Load the PLY data (AoS) to the GPU (SoA)
+	std::vector<Pos> pos;
+	std::vector<Rot> rot;
+	std::vector<Scale> scale;
+	std::vector<float> opacity;
+	std::vector<SHs> shs;
+	count = loadPly(file, pos, shs, opacity, scale, rot);
 
-		int P = counts.back();
+	int P = count;
 
-		pos_cuda.push_back(nullptr);
-		rot_cuda.push_back(nullptr);
-		shs_cuda.push_back(nullptr);
-		opacity_cuda.push_back(nullptr);
-		scale_cuda.push_back(nullptr);
-
-		// Allocate and fill the GPU data
-		cudaMalloc((void**)&pos_cuda.back(), sizeof(Pos) * P);
-		cudaMemcpy(pos_cuda.back(), pos.data(), sizeof(Pos) * P, cudaMemcpyHostToDevice);
-		cudaMalloc((void**)&rot_cuda.back(), sizeof(Rot) * P);
-		cudaMemcpy(rot_cuda.back(), rot.data(), sizeof(Rot) * P, cudaMemcpyHostToDevice);
-		cudaMalloc((void**)&shs_cuda.back(), sizeof(SHs) * P);
-		cudaMemcpy(shs_cuda.back(), shs.data(), sizeof(SHs) * P, cudaMemcpyHostToDevice);
-		cudaMalloc((void**)&opacity_cuda.back(), sizeof(float) * P);
-		cudaMemcpy(opacity_cuda.back(), opacity.data(), sizeof(float) * P, cudaMemcpyHostToDevice);
-		cudaMalloc((void**)&scale_cuda.back(), sizeof(Scale) * P);
-		cudaMemcpy(scale_cuda.back(), scale.data(), sizeof(Scale) * P, cudaMemcpyHostToDevice);
-	}
+	// Allocate and fill the GPU data
+	cudaMalloc((void**)&pos_cuda, sizeof(Pos) * P);
+	cudaMemcpy(pos_cuda, pos.data(), sizeof(Pos) * P, cudaMemcpyHostToDevice);
+	cudaMalloc((void**)&rot_cuda, sizeof(Rot) * P);
+	cudaMemcpy(rot_cuda, rot.data(), sizeof(Rot) * P, cudaMemcpyHostToDevice);
+	cudaMalloc((void**)&shs_cuda, sizeof(SHs) * P);
+	cudaMemcpy(shs_cuda, shs.data(), sizeof(SHs) * P, cudaMemcpyHostToDevice);
+	cudaMalloc((void**)&opacity_cuda, sizeof(float) * P);
+	cudaMemcpy(opacity_cuda, opacity.data(), sizeof(float) * P, cudaMemcpyHostToDevice);
+	cudaMalloc((void**)&scale_cuda, sizeof(Scale) * P);
+	cudaMemcpy(scale_cuda, scale.data(), sizeof(Scale) * P, cudaMemcpyHostToDevice);
 
 	// Create space for view parameters
 	cudaMalloc((void**)&view_cuda, sizeof(sibr::Matrix4f));
@@ -263,6 +248,15 @@ sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint
 	cudaMalloc((void**)&cam_pos_cuda, 3 * sizeof(float));
 	cudaMalloc((void**)&background_cuda, 3 * sizeof(float));
 	cudaMemset(background_cuda, 0, 3 * sizeof(float));
+
+	gData = new GaussianData(P,
+		(float*)pos.data(),
+		(float*)rot.data(),
+		(float*)scale.data(),
+		opacity.data(),
+		(float*)shs.data());
+
+	_gaussianRenderer = new GaussianSurfaceRenderer();
 
 	// Create GL buffer ready for CUDA/GL interop
 	glCreateBuffers(1, &imageBuffer);
@@ -290,7 +284,11 @@ void sibr::GaussianView::setScene(const sibr::BasicIBRScene::Ptr & newScene)
 
 void sibr::GaussianView::onRenderIBR(sibr::IRenderTarget & dst, const sibr::Camera & eye)
 {
-	if (showSfm)
+	if (currMode == "Ellipsoids")
+	{
+		_gaussianRenderer->process(count, *gData, eye, dst, 0.2);
+	}
+	else if (currMode == "SfM Points")
 	{
 		_pointbasedrenderer->process(_scene->proxies()->proxy(), eye, dst);
 	}
@@ -320,16 +318,16 @@ void sibr::GaussianView::onRenderIBR(sibr::IRenderTarget & dst, const sibr::Came
 
 		// Rasterize
 		rasterizer->forward(
-			counts[data_index], 3, 16,
+			count, 3, 16,
 			background_cuda,
 			_resolution.x(), _resolution.y(),
-			pos_cuda[data_index],
-			shs_cuda[data_index],
+			pos_cuda,
+			shs_cuda,
 			nullptr,
-			opacity_cuda[data_index],
-			scale_cuda[data_index],
+			opacity_cuda,
+			scale_cuda,
 			_scalingModifier,
-			rot_cuda[data_index],
+			rot_cuda,
 			nullptr,
 			view_cuda,
 			proj_cuda,
@@ -349,10 +347,6 @@ void sibr::GaussianView::onRenderIBR(sibr::IRenderTarget & dst, const sibr::Came
 
 void sibr::GaussianView::onUpdate(Input & input)
 {
-	if (input.pressedNumber() != -1)
-	{
-		data_index = (input.pressedNumber() - 1) % counts.size();
-	}
 }
 
 void sibr::GaussianView::onGUI()
@@ -361,9 +355,20 @@ void sibr::GaussianView::onGUI()
 	const std::string guiName = "3D Gaussians";
 	if (ImGui::Begin(guiName.c_str())) 
 	{
-		ImGui::Checkbox("Show SfM", &showSfm);
+		if (ImGui::BeginCombo("Visualization Mode", currMode.c_str()))
+		{
+			if (ImGui::Selectable("Splats"))
+				currMode = "Splats";
+			if (ImGui::Selectable("SfM Points"))
+				currMode = "SfM Points";
+			if (ImGui::Selectable("Ellipsoids"))
+				currMode = "Ellipsoids";
+			ImGui::EndCombo();
+		}
+	}
+	if (currMode == "Splats")
+	{
 		ImGui::SliderFloat("Scaling Modifier", &_scalingModifier, 0.001f, 1.0f);
-		ImGui::SliderInt("Model Select", &data_index, 0, counts.size() - 1);
 	}
 	ImGui::End();
 }
@@ -371,14 +376,11 @@ void sibr::GaussianView::onGUI()
 sibr::GaussianView::~GaussianView()
 {
 	// Cleanup
-	for (int i = 0; i < counts.size(); i++)
-	{
-		cudaFree(pos_cuda[i]);
-		cudaFree(rot_cuda[i]);
-		cudaFree(scale_cuda[i]);
-		cudaFree(opacity_cuda[i]);
-		cudaFree(shs_cuda[i]);
-	}
+	cudaFree(pos_cuda);
+	cudaFree(rot_cuda);
+	cudaFree(scale_cuda);
+	cudaFree(opacity_cuda);
+	cudaFree(shs_cuda);
 
 	cudaFree(view_cuda);
 	cudaFree(proj_cuda);

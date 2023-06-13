@@ -33,14 +33,6 @@ namespace sibr {
 
 		void render(int G) const;
 
-		GLuint getIndexBuffer() { return indexBuffer; }
-
-		GLuint getMarkedBuffer() const { return markedBuffer; }
-
-		int getMarkedBufferSize() const { return _num_gaussians; }
-
-		void initMarkedBuffer() const;
-
 	private:
 
 		int _num_gaussians;
@@ -49,8 +41,6 @@ namespace sibr {
 		GLuint scaleBuffer;
 		GLuint alphaBuffer;
 		GLuint colorBuffer;
-		GLuint indexBuffer;
-		GLuint markedBuffer;
 	};
 
 	/** Render a mesh colored using the per-vertex color attribute.
@@ -79,8 +69,6 @@ namespace sibr {
 			/*input*/	const Camera& eye,
 			/*output*/	IRenderTarget& dst,
 			float alphaLimit,
-			sibr::Vector2i queryLocation,
-			int highlight,
 			/*mode*/    sibr::Mesh::RenderMode mode = sibr::Mesh::FillRenderMode,
 			/*BFC*/     bool backFaceCulling = true);
 
@@ -99,7 +87,6 @@ namespace sibr {
 		GLParameter			_paramCamPos;
 		GLParameter			_paramLimit;
 		GLParameter			_paramStage;
-		GLParameter			_paramHighlight;
 		GLuint clearProg;
 		GLuint clearShader;
 	};

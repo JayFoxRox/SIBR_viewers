@@ -23,7 +23,7 @@
 # include <core/graphics/Texture.hpp>
 #include <cuda_runtime.h>
 #include <cuda_gl_interop.h>
-
+# include "GaussianSurfaceRenderer.hpp"
 namespace CudaRasterizer
 {
 	class Rasterizer;
@@ -81,17 +81,17 @@ namespace sibr {
 
 	protected:
 
-		std::vector<int> counts;
-		std::vector<float*> pos_cuda;
-		std::vector<float*> rot_cuda;
-		std::vector<float*> scale_cuda;
-		std::vector<float*> opacity_cuda;
-		std::vector<float*> shs_cuda;
+		std::string currMode = "Splats";
+
+		int count;
+		float* pos_cuda;
+		float* rot_cuda;
+		float* scale_cuda;
+		float* opacity_cuda;
+		float* shs_cuda;
 
 		GLuint imageBuffer;
 		cudaGraphicsResource_t imageBufferCuda;
-		
-		bool showSfm = false;
 
 		CudaRasterizer::Rasterizer* rasterizer;
 
@@ -99,14 +99,14 @@ namespace sibr {
 		float* proj_cuda;
 		float* cam_pos_cuda;
 		float* background_cuda;
-		
-		int data_index = 0;
 
 		float _scalingModifier = 1.0f;
+		GaussianData* gData;
 
 		std::shared_ptr<sibr::BasicIBRScene> _scene; ///< The current scene.
 		PointBasedRenderer::Ptr _pointbasedrenderer;
 		BufferCopyRenderer* _copyRenderer;
+		GaussianSurfaceRenderer* _gaussianRenderer;
 	};
 
 } /*namespace sibr*/ 

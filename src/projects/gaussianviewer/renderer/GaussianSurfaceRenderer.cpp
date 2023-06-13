@@ -12,7 +12,7 @@
 
 
 #include "core/graphics/Texture.hpp"
-#include <core/renderer/GaussianSurfaceRenderer.hpp>
+#include "GaussianSurfaceRenderer.hpp"
 
 namespace sibr { 
 
@@ -24,15 +24,11 @@ namespace sibr {
 		glCreateBuffers(1, &scaleBuffer);
 		glCreateBuffers(1, &alphaBuffer);
 		glCreateBuffers(1, &colorBuffer);
-		glCreateBuffers(1, &indexBuffer);
-		glCreateBuffers(1, &markedBuffer);
 		glNamedBufferStorage(meanBuffer, num_gaussians * 3 * sizeof(float), mean_data, 0);
 		glNamedBufferStorage(rotBuffer, num_gaussians * 4 * sizeof(float), rot_data, 0);
 		glNamedBufferStorage(scaleBuffer, num_gaussians * 3 * sizeof(float), scale_data, 0);
 		glNamedBufferStorage(alphaBuffer, num_gaussians * sizeof(float), alpha_data, 0);
 		glNamedBufferStorage(colorBuffer, num_gaussians * sizeof(float) * 48, color_data, 0);
-		glNamedBufferData(indexBuffer, num_gaussians * sizeof(int), nullptr, GL_DYNAMIC_DRAW);
-		glNamedBufferData(markedBuffer, num_gaussians * sizeof(int), nullptr, GL_DYNAMIC_DRAW);
 	}
 
 	void GaussianData::render(int G) const
@@ -42,22 +38,19 @@ namespace sibr {
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, scaleBuffer);
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, alphaBuffer);
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, colorBuffer);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, indexBuffer);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, markedBuffer);
 		glDrawArraysInstanced(GL_TRIANGLES, 0, 36, G);
 	}
 
 	GaussianSurfaceRenderer::GaussianSurfaceRenderer( void )
 	{
 		_shader.init("GaussianSurface",
-			sibr::loadFile("F:/bkerbl/gaussian_surface.vert"),
-			sibr::loadFile("F:/bkerbl/gaussian_surface.frag"));
+			sibr::loadFile(sibr::getShadersDirectory("gaussian") + "/gaussian_surface.vert"),
+			sibr::loadFile(sibr::getShadersDirectory("gaussian") + "/gaussian_surface.frag"));
 
 		_paramCamPos.init(_shader, "rayOrigin");
 		_paramMVP.init(_shader,"MVP");
 		_paramLimit.init(_shader, "alpha_limit");
 		_paramStage.init(_shader, "stage");
-		_paramHighlight.init(_shader, "highlight");
 
 		glCreateTextures(GL_TEXTURE_2D, 1, &idTexture);
 		glTextureParameteri(idTexture, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -115,8 +108,7 @@ namespace sibr {
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuffer);
 	}
 
-	int	GaussianSurfaceRenderer::process(int G, const GaussianData& mesh, const Camera& eye, IRenderTarget& target, float limit, sibr::Vector2i queryLocation, 
-	  int highlight, sibr::Mesh::RenderMode mode, bool backFaceCulling)
+	int	GaussianSurfaceRenderer::process(int G, const GaussianData& mesh, const Camera& eye, IRenderTarget& target, float limit, sibr::Mesh::RenderMode mode, bool backFaceCulling)
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
@@ -140,7 +132,6 @@ namespace sibr {
 		_paramCamPos.set(eye.position());
 		_paramLimit.set(limit);
 		_paramStage.set(0);
-		_paramHighlight.set(highlight);
 		mesh.render(G);
 
 		// Simple additive blendnig (no order)
@@ -157,25 +148,6 @@ namespace sibr {
 
 		_shader.end();
 
-		if (queryLocation.x() != -1 && queryLocation.y() != -1)
-		{
-			int old_highlight = highlight;
-			glReadBuffer(GL_COLOR_ATTACHMENT1);
-			glReadPixels(queryLocation.x(), target.h() - queryLocation.y() - 1, 1, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, &highlight);
-
-
-			if (old_highlight >= 0)
-			{
-				glUseProgram(clearProg);
-				int size = mesh.getMarkedBufferSize();
-				glUniform1i(0, size);
-				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mesh.getMarkedBuffer());
-				glDispatchCompute((GLuint)std::ceil(size / 256.0f), 1, 1); 
-			}
-			int one = 1;
-			glNamedBufferSubData(mesh.getMarkedBuffer(), highlight * sizeof(int), sizeof(int), &one);
-		}
-
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
 		glBlitNamedFramebuffer(
 			fbo, target.fbo(),
@@ -183,7 +155,7 @@ namespace sibr {
 			0, 0, resX, resY,
 			GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-		return highlight;
+		return 0;
 	}
 
 } /*namespace sibr*/ 
