@@ -46,6 +46,8 @@ namespace sibr {
 		 */
 		RemotePointView(const sibr::BasicIBRScene::Ptr& ibrScene, uint render_w, uint render_h);
 
+		RemotePointView();
+
 		/** Replace the current scene.
 		 *\param newScene the new scene to render */
 		void setScene(const sibr::BasicIBRScene::Ptr & newScene);
@@ -67,7 +69,14 @@ namespace sibr {
 
 		virtual ~RemotePointView() override;
 
+		std::string sceneName()
+		{
+			return current_scene;
+		}
+
 	protected:
+
+		std::string current_scene;
 
 		struct RemoteRenderInfo
 		{

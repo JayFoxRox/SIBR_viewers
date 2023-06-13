@@ -90,8 +90,12 @@ void sibr::RemotePointView::send_receive()
 					}
 					_imageDirty = true;
 				}
-				uint32_t ok;
-				boost::asio::read(sock, boost::asio::buffer(&ok, sizeof(uint32_t)));
+				uint32_t sceneLength;
+				boost::asio::read(sock, boost::asio::buffer(&sceneLength, sizeof(uint32_t)));
+				std::vector<char> sceneName(sceneLength);
+				boost::asio::read(sock, boost::asio::buffer(sceneName.data(), sceneLength));
+				sceneName.push_back(0);
+				current_scene = std::string(sceneName.data());
 			}
 		}
 		catch (...)
@@ -101,23 +105,11 @@ void sibr::RemotePointView::send_receive()
 	}
 }
 
-sibr::RemotePointView::RemotePointView(const sibr::BasicIBRScene::Ptr & ibrScene, uint render_w, uint render_h) :
-	_scene(ibrScene),
-	sibr::ViewBase(render_w, render_h)
+sibr::RemotePointView::RemotePointView() : sibr::ViewBase(0, 0)
 {
 	_pointbasedrenderer.reset(new PointBasedRenderer());
 	_copyRenderer.reset(new CopyRenderer());
 	_copyRenderer->flip() = true;
-
-	// Tell the scene we are a priori using all active cameras.
-	std::vector<uint> imgs_ulr;
-	const auto & cams = ibrScene->cameras()->inputCameras();
-	for(size_t cid = 0; cid < cams.size(); ++cid) {
-		if(cams[cid]->isActive()) {
-			imgs_ulr.push_back(uint(cid));
-		}
-	}
-	_scene->cameras()->debugFlagCameraAsUsed(imgs_ulr);
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &_imageTexture);
 	glTextureParameteri(_imageTexture, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
@@ -144,6 +136,9 @@ void sibr::RemotePointView::setScene(const sibr::BasicIBRScene::Ptr & newScene) 
 
 void sibr::RemotePointView::onRenderIBR(sibr::IRenderTarget & dst, const sibr::Camera & eye)
 {
+	if (!_scene)
+		return;
+
 	bool preview = false;
 	{
 		std::lock_guard<std::mutex> lg(_renderDataMutex);

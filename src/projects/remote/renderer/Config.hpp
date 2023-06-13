@@ -42,14 +42,6 @@ namespace sibr {
 	/// Arguments for all ULR applications.
 	struct RemoteAppArgs :
 		virtual BasicIBRAppArgs {
-		Arg<int> version = { "v", 3, "ULR implementation version" };
-		ArgSwitch softVisibility = { "soft-visibility", false, "generate and use soft visibility masks" };
-		Arg<bool> masks = { "masks" , "use binary masks" };
-		Arg<std::string> maskParams = { "masks-param" , "" };
-		Arg<std::string> maskParamsExtra = { "masks-param-extra" , "" };
-		Arg<bool> invert = { "invert", "invert the masks" };
-		Arg<bool> alphas = { "alphas", "" };
-		Arg<bool> poisson = { "poisson-blend", "apply Poisson-filling to the ULR result" };
 	};
 
 }

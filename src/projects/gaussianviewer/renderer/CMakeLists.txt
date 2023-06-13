@@ -10,16 +10,10 @@
 set(SIBR_PROJECT "gaussian")
 project(sibr_${SIBR_PROJECT} LANGUAGES CXX)
 
-set(CUDA_RASTERIZER_PATH "" CACHE PATH "Path to the Cuda Rasterizer source directory")
-if(CUDA_RASTERIZER_PATH STREQUAL "")
-  message(FATAL_ERROR "Please set the CUDA_RASTERIZER_PATH variable to a valid path")
-endif()
-if(EXISTS ${CUDA_RASTERIZER_PATH}/CMakeLists.txt)
-  add_subdirectory(${CUDA_RASTERIZER_PATH} cudarasterizer)
-else()
-  message(FATAL_ERROR "Cannot find CMakeLists.txt file in directory ${CUDA_RASTERIZER_PATH}")
-endif()
-set_property(TARGET CudaRasterizer PROPERTY FOLDER "extlibs")
+sibr_gitlibrary(TARGET CudaRasterizer
+    GIT_REPOSITORY 	"https://gitlab.inria.fr/bkerbl/diff-gaussian-rasterization.git"
+    GIT_TAG			"476615b09964cd13f79785648bc87f8041ece58b"
+)
 
 find_package(CUDAToolkit REQUIRED)
 

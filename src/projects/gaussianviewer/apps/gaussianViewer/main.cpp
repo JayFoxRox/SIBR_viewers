@@ -48,7 +48,41 @@ int main(int ac, char** av) {
 	// Window setup
 	sibr::Window		window(PROGRAM_NAME, sibr::Vector2i(50, 50), myArgs, getResourcesDirectory() + "/gaussians/" + PROGRAM_NAME + ".ini");
 
+	std::string cfgLine;
+	if (!myArgs.dataset_path.isInit() || !myArgs.iteration.isInit())
+	{
+		std::ifstream cfgFile(myArgs.modelPath.get() + "/cfg_args");
+		if (!cfgFile.good())
+		{
+			SIBR_ERR << "Unable to find model config file cfg_args!";
+		}
+		std::getline(cfgFile, cfgLine);
+	}
+
+	if (!myArgs.dataset_path.isInit())
+	{
+		int start = cfgLine.find("input_path=", 0);
+		start = cfgLine.find("'", start);
+		start += 1;
+		int end = cfgLine.find_first_of(",)", start) - 1;
+		myArgs.dataset_path = cfgLine.substr(start, end - start);
+	}
+
+	if (!myArgs.iteration.isInit())
+	{
+		int start = cfgLine.find("total_iterations=", 0);
+		start = cfgLine.find("=", start);
+		start += 1;
+		int end = cfgLine.find_first_of(",)", start);
+		myArgs.iteration = cfgLine.substr(start, end - start);
+	}
+
 	BasicIBRScene::Ptr		scene(new BasicIBRScene(myArgs, true));
+
+	std::string plyfile = myArgs.modelPath.get();
+	if (plyfile.back() != '/')
+		plyfile += "/";
+	plyfile += "diffuse_point_cloud/iteration_" + myArgs.iteration.get() + "/point_cloud.ply";
 
 	// Setup the scene: load the proxy, create the texture arrays.
 	const uint flags = SIBR_GPU_LINEAR_SAMPLING | SIBR_FLIP_TEXTURE;
@@ -59,6 +93,8 @@ int main(int ac, char** av) {
 	float scene_aspect_ratio = scene_width * 1.0f / scene_height;
 	float rendering_aspect_ratio = rendering_width * 1.0f / rendering_height;
 
+	rendering_width = (rendering_width <= 0) ? 1200 : rendering_width;
+	rendering_height = (rendering_height <= 0) ? 1200 / scene_aspect_ratio : rendering_height;
 	if ((rendering_width > 0) && !myArgs.force_aspect_ratio ) {
 		if (abs(scene_aspect_ratio - rendering_aspect_ratio) > 0.001f) {
 			if (scene_width > scene_height) {
@@ -69,10 +105,6 @@ int main(int ac, char** av) {
 			}
 		}
 	}
-	
-	// check rendering size
-	rendering_width = (rendering_width <= 0) ? scene->cameras()->inputCameras()[0]->w() : rendering_width;
-	rendering_height = (rendering_height <= 0) ? scene->cameras()->inputCameras()[0]->h() : rendering_height;
 	Vector2u usedResolution(rendering_width, rendering_height);
 	std::cerr << " USED RES " << usedResolution << " scene w h " << scene_width << " : " << scene_height <<  
 		 " NAME " << scene->cameras()->inputCameras()[0]->name() << std::endl;
@@ -81,7 +113,7 @@ int main(int ac, char** av) {
 	const unsigned int sceneResHeight = usedResolution.y();
 
 	// Create the ULR view.
-	GaussianView::Ptr	gaussianView(new GaussianView(scene, sceneResWidth, sceneResHeight, toload));
+	GaussianView::Ptr	gaussianView(new GaussianView(scene, sceneResWidth, sceneResHeight, plyfile.c_str()));
 
 	// Raycaster.
 	std::shared_ptr<sibr::Raycaster> raycaster = std::make_shared<sibr::Raycaster>();
