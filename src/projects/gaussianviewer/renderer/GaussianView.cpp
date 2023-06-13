@@ -355,7 +355,7 @@ void sibr::GaussianView::onGUI()
 	const std::string guiName = "3D Gaussians";
 	if (ImGui::Begin(guiName.c_str())) 
 	{
-		if (ImGui::BeginCombo("Visualization Mode", currMode.c_str()))
+		if (ImGui::BeginCombo("Render Mode", currMode.c_str()))
 		{
 			if (ImGui::Selectable("Splats"))
 				currMode = "Splats";
