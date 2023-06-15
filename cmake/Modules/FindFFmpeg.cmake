@@ -17,12 +17,12 @@
 ##		FFMPEG_DYNAMIC_LIBS	- DLLs for windows
 
 
-if(NOT FFMPEG_DIR)
-    set(FFMPEG_DIR "$ENV{FFMPEG_DIR}" CACHE PATH "FFMPEG_DIR root directory")
+if(FFMPEG_INCLUDE_DIR)
+	file(TO_CMAKE_PATH ${FFMPEG_INCLUDE_DIR} FFMPEG_INCLUDE_DIR)
 endif()
 
-if(FFMPEG_DIR)
-	file(TO_CMAKE_PATH ${FFMPEG_DIR} FFMPEG_DIR)
+if(FFMPEG_LIBRARY_DIR)
+	file(TO_CMAKE_PATH ${FFMPEG_LIBRARY_DIR} FFMPEG_LIBRARY_DIR)
 endif()
 
 MACRO(FFMPEG_FIND varname shortname headername)
@@ -31,7 +31,7 @@ MACRO(FFMPEG_FIND varname shortname headername)
 	FIND_PATH(FFMPEG_${varname}_INCLUDE_DIRS 
 		NAMES "lib${shortname}/${headername}" 
 		PATHS
-			"${FFMPEG_DIR}/include" # modify this to adapt according to OS/compiler			
+			"${FFMPEG_INCLUDE_DIR}" # modify this to adapt according to OS/compiler			
 	)
 		
 	#Add libraries
@@ -41,7 +41,7 @@ MACRO(FFMPEG_FIND varname shortname headername)
 		FIND_LIBRARY(FFMPEG_${varname}_LIBRARIES
 			NAMES ${shortname}
 			PATHS
-				${FFMPEG_DIR}/lib
+				${FFMPEG_LIBRARY_DIR}
 		)
 
 		# set libraries and other variables
