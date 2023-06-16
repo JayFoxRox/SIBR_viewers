@@ -26,7 +26,7 @@ import os, sys, shutil
 import json
 import argparse
 from utils.paths import getBinariesPath, getColmapPath, getMeshlabPath
-from utils.commands import  getProcess, getColmap
+from utils.commands import  getProcess, getColmap, getRCprocess
 from utils.TaskPipeline import TaskPipeline
 import rc_tools
 
@@ -57,6 +57,9 @@ def main():
     programs = {
         "runRC": {
             "path": ".\\runRC.bat"
+        },
+        "RC": {
+            "path": getRCprocess()
         }
     }
 

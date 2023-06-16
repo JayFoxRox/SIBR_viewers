@@ -21,3 +21,6 @@ def getColmapPath():
     
 def getMeshlabPath():
     return os.environ['MESHLAB_PATH'] if 'MESHLAB_PATH' in os.environ else ("C:\\Program Files\\VCG\\Meshlab" if os.name == 'nt' else '')
+
+def getRCPath():
+    return os.environ['RC_PATH'] if 'RC_PATH' in os.environ else "C:\\Program Files\\Capturing Reality\\RealityCapture\\"

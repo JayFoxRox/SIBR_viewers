@@ -7,7 +7,7 @@ set RootFolder=%1
 set Video="%RootFolder%\videos\video.mp4"
 set FPS=%2
 
-set ConfigFolder=E:\Users\gdrett\src\sibr_core\install\scripts
+set ConfigFolder=D:\Users\gdrett\src\sibr_core\install\scripts
 :: path to RealityCapture application
 set RealityCaptureExe="C:\Program Files\Capturing Reality\RealityCapture\RealityCapture.exe"
 
@@ -29,13 +29,12 @@ set Project="%RootFolder%\rcproj\mesh.rcproj"
 
 :: run RealityCapture
 :: test and fix video import when RC working again
-::        -importVideo %Video% %RootFolder%\video_frames\ %FPS% ^
 
 echo %@Images%
 
-%RealityCaptureExe% -importLicense %RootFolder%\rc.rclicense ^
-        -addFolder %TrainImages% ^
+%RealityCaptureExe% -addFolder %TrainImages% ^
         -addFolder %TestImages% ^
+        -importVideo %Video% %RootFolder%\video_frames\ %FPS% ^
         -align ^
         -selectMaximalComponent ^
         -selectAllImages ^
