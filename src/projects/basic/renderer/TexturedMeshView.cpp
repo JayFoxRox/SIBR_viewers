@@ -10,7 +10,7 @@
  */
 
 
-#include <projects/ulr/renderer/TexturedMeshView.hpp>
+#include <projects/basic/renderer/TexturedMeshView.hpp>
 #include <core/graphics/GUI.hpp>
 
 sibr::TexturedMeshView::TexturedMeshView(const sibr::BasicIBRScene::Ptr & ibrScene, uint render_w, uint render_h) :
