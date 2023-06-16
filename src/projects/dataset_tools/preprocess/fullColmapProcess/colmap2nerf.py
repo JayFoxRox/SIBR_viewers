@@ -215,7 +215,7 @@ def convert(AABB_SCALE, SKIP_EARLY, IMAGE_FOLDER, TEXT_FOLDER, OUT_PATH, totp=-1
         up=np.zeros(3)
         for line in f:
             line=line.strip()
-            if line[0]=="#":
+            if len(line)!=0 and line[0]=="#":
                 continue
             i=i+1
             if i < SKIP_EARLY*2:
@@ -226,6 +226,9 @@ def convert(AABB_SCALE, SKIP_EARLY, IMAGE_FOLDER, TEXT_FOLDER, OUT_PATH, totp=-1
                 # why is this requireing a relitive path while using ^
                 image_rel = os.path.relpath(IMAGE_FOLDER)
                 name = str(f"./{image_rel}/{elems[9]}")
+                if not os.path.exists(name):
+                    name = name + ".png"
+                    print("opening ", name)
                 b=sharpness(name)
                 #print(name, "sharpness=",b)
                 image_id = int(elems[0])
@@ -328,6 +331,15 @@ def createNerf(path):
     IMAGE_FOLDER=os.path.join(os.path.join(colmappath,  "stereo"), "images")
     OUT_PATH= os.path.join(os.path.join(colmappath,  "stereo"), "transforms.json")
     totp, totw, avglen, rMat = convert(AABB_SCALE, SKIP_EARLY, IMAGE_FOLDER, TEXT_FOLDER, OUT_PATH, totp, totw, avglen, rMat)
+
+    # if test2_path exists
+    colmappath = os.path.join(os.path.join(str(path), "colmap_1000"), "test_path2") 
+
+    if os.path.exists(colmappath):
+        TEXT_FOLDER=os.path.join(os.path.join(colmappath,  "stereo"), "sparse")
+        IMAGE_FOLDER=os.path.join(os.path.join(colmappath,  "stereo"), "images")
+        OUT_PATH= os.path.join(os.path.join(colmappath,  "stereo"), "transforms.json")
+        totp, totw, avglen, rMat = convert(AABB_SCALE, SKIP_EARLY, IMAGE_FOLDER, TEXT_FOLDER, OUT_PATH, totp, totw, avglen, rMat)
 
 if __name__ == "__main__":
     args = parse_args()
