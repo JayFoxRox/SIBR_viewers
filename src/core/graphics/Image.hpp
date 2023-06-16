@@ -283,6 +283,8 @@ namespace sibr
 		*/
 		Image& operator=(Image&& other) noexcept;
 
+		Image& fill(Pixel const& value);
+
 		/**
 		\copydoc IImage::load
 		*/
@@ -757,6 +759,12 @@ namespace sibr
 	template<typename T_Type, unsigned int T_NumComp>
 	Image<T_Type, T_NumComp>& Image<T_Type, T_NumComp>::operator=(Image<T_Type, T_NumComp>&& other) noexcept {
 		_pixels = std::move(other._pixels);
+		return *this;
+	}
+
+	template <typename T_Type, unsigned int T_NumComp>
+	Image<T_Type, T_NumComp>& Image<T_Type, T_NumComp>::fill(Pixel const& value) {
+		std::fill(_pixels.begin<Pixel>(), _pixels.end<Pixel>(), value);
 		return *this;
 	}
 
