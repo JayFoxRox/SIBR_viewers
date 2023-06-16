@@ -691,7 +691,7 @@ namespace sibr {
 		data.userColor = color;
 		data.depthTest = false;
 
-		return addMeshData(data);
+		return addMeshData(data).setColorMode(MeshData::USER_DEFINED);
 	}
 
 	MeshData & MultiMeshManager::getMeshData(const std::string & name)

@@ -63,12 +63,14 @@ def main():
     parser.add_argument("--out_path", type=str, required=False, help = "output path ")
     parser.add_argument("--video_name", type=str, default='default', required=False, help = "name of video file to load")
     parser.add_argument("--create_colmap", action='store_true', help="create colmap hierarchy")
+    parser.add_argument("--target_width", type=str, default='default', help="colmap_target_width")
     parser.add_argument("--from_step", type=str, default='default', help="Run from this step to --to_step (or end if no to_step")
     parser.add_argument("--to_step", type=str, default='default', help="up to but *excluding* this step (from --from_step); must be unique steps")
 
     # RC arguments
     parser.add_argument("--do_mvs", action='store_false', help="use train folder")
     parser.add_argument("--calib_only", action='store_true', help="only do calibration")
+    parser.add_argument("--hires_nerf", action='store_true', help="create hi res nerf")
     parser.add_argument("--car_data", action='store_true', help="pre(pre)process car camera data ")
     parser.add_argument("--do_train", action='store_false', help="use train folder")
     parser.add_argument("--do_validation", action='store_false', help="use validation folder")
@@ -156,6 +158,10 @@ def main():
         
     if args["one_over_fps"] == 'default':
         args["one_over_fps"] = "0.02"
+
+    if args["target_width"] == 'default':
+        args["target_width"] = "1000"
+    print("TARGET WIDTH ", args["target_width"])
 
     if args["no_validation_split"]:
         args["do_validation_split"] = False

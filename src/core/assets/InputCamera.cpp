@@ -10,14 +10,20 @@
  */
 
 
-
-
 #include "core/assets/ActiveImageFile.hpp"
 #include "core/assets/InputCamera.hpp"
 #include <boost/algorithm/string.hpp>
 #include <map>
 #include "core/system/String.hpp"
 #include "picojson/picojson.hpp"
+
+
+// Colmap binary stuff
+#include "colmapheader.h"
+typedef uint32_t image_t;
+typedef uint32_t camera_t;
+typedef uint64_t point3D_t;
+typedef uint32_t point2D_t;
 
 #define SIBR_INPUTCAMERA_BINARYFILE_VERSION 10
 #define IBRVIEW_TOPVIEW_SAVEVERSION "version002"
@@ -1292,4 +1298,132 @@ namespace sibr
 
 		file.close();
 	}
-} // namespace sibr
+
+	std::vector<InputCamera::Ptr> InputCamera::loadColmapBin(const std::string& colmapSparsePath, const float zNear, const float zFar, const int fovXfovYFlag)
+	{
+		const std::string camerasListing = colmapSparsePath + "/cameras.bin";
+		const std::string imagesListing = colmapSparsePath + "/images.bin";
+
+
+  		std::ifstream camerasFile(camerasListing, std::ios::binary);
+		std::ifstream imagesFile(imagesListing, std::ios::binary);
+
+		if (!camerasFile.is_open()) {
+			SIBR_ERR << "Unable to load camera colmap file" << camerasListing << std::endl;
+		}
+		if (!imagesFile.is_open()) {
+			SIBR_WRG << "Unable to load images colmap file" << imagesListing << std::endl;
+		}
+
+		std::vector<InputCamera::Ptr> cameras;
+
+		std::string line;
+
+		struct CameraParametersColmap {
+			size_t id;
+			size_t width;
+			size_t height;
+			float  fx;
+			float  fy;
+			float  dx;
+			float  dy;
+		};
+
+		std::map<size_t, CameraParametersColmap> cameraParameters;
+  		const size_t num_cameras = ReadBinaryLittleEndian<uint64_t>(&camerasFile);
+
+  		for (size_t i = 0; i < num_cameras ; ++i) {
+
+			CameraParametersColmap params;
+
+			params.id = ReadBinaryLittleEndian<uint32_t>(&camerasFile);
+			int model_id = ReadBinaryLittleEndian<int>(&camerasFile);
+			params.width = ReadBinaryLittleEndian<uint64_t>(&camerasFile);
+			params.height = ReadBinaryLittleEndian<uint64_t>(&camerasFile);
+			std::vector<double> Params(4);
+
+    			ReadBinaryLittleEndian<double>(&camerasFile, &Params);
+			params.fx = float(Params[0]);
+			params.fy = float(Params[1]);
+			params.dx = float(Params[2]);
+			params.dy = float(Params[3]);
+			cameraParameters[params.id] = params;
+		}
+
+		// Now load the individual images and their extrinsic parameters
+		sibr::Matrix3f converter;
+		converter << 1, 0, 0,
+			0, -1, 0,
+			0, 0, -1;
+
+  		const size_t num_reg_images = ReadBinaryLittleEndian<uint64_t>(&imagesFile);
+		for (size_t i = 0; i < num_reg_images; ++i) {
+
+			uint	    cId = ReadBinaryLittleEndian<image_t>(&imagesFile);
+			float       qw = float(ReadBinaryLittleEndian<double>(&imagesFile));
+			float       qx = float(ReadBinaryLittleEndian<double>(&imagesFile)) ;
+			float       qy = float(ReadBinaryLittleEndian<double>(&imagesFile)) ;
+			float       qz = float(ReadBinaryLittleEndian<double>(&imagesFile)) ;
+			float       tx = float(ReadBinaryLittleEndian<double>(&imagesFile));
+			float       ty = float(ReadBinaryLittleEndian<double>(&imagesFile));
+			float       tz = float(ReadBinaryLittleEndian<double>(&imagesFile));
+			size_t      id = ReadBinaryLittleEndian<camera_t>(&imagesFile) ;
+
+
+			if (cameraParameters.find(id) == cameraParameters.end())
+			{
+/* code multi camera broken
+				SIBR_ERR << "Could not find intrinsics for image: "
+					<< id << std::endl;
+			*/
+				id = 1;
+			}
+			const CameraParametersColmap& camParams = cameraParameters[id];
+
+
+			const sibr::Quaternionf quat(qw, qx, qy, qz);
+			const sibr::Matrix3f orientation = quat.toRotationMatrix().transpose() * converter;
+			sibr::Vector3f translation(tx, ty, tz);
+
+			sibr::Vector3f position = -(orientation * converter * translation);
+
+			sibr::InputCamera::Ptr camera;
+			if (fovXfovYFlag) {
+				camera = std::make_shared<InputCamera>(InputCamera(camParams.fy, camParams.fx, 0.0f, 0.0f, int(camParams.width), int(camParams.height), int(cId)));
+			}
+			else {
+				camera = std::make_shared<InputCamera>(InputCamera(camParams.fy, 0.0f, 0.0f, int(camParams.width), int(camParams.height), int(cId)));
+			}
+			std::string image_name;
+			char name_char;
+			do {
+				imagesFile.read(&name_char, 1);
+				if (name_char != '\0') {
+					image_name += name_char;
+				}
+			} while (name_char != '\0');
+
+			camera->name(image_name);
+			camera->position(position);
+			camera->rotation(sibr::Quaternionf(orientation));
+			camera->znear(zNear);
+			camera->zfar(zFar);
+			cameras.push_back(camera);
+
+
+    		// ignore the 2d points
+    		const size_t num_points2D = ReadBinaryLittleEndian<uint64_t>(&imagesFile);
+
+    			for (size_t j = 0; j < num_points2D; ++j) {
+			      const double x = ReadBinaryLittleEndian<double>(&imagesFile);
+			      const double y = ReadBinaryLittleEndian<double>(&imagesFile);
+				  point3D_t id = ReadBinaryLittleEndian<point3D_t>(&imagesFile);
+    			}
+		}
+		return cameras;
+	}
+
+
+
+
+} 

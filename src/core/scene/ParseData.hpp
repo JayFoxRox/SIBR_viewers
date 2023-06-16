@@ -75,6 +75,9 @@ namespace sibr{
 		*/
 		void  getParsedColmapData(const std::string & dataset_path, const int fovXfovY_flag, const bool capreal_flag = true);
 
+
+		void  getParsedColmap2Data(const std::string & dataset_path, const int fovXfovY_flag, const bool capreal_flag = true);
+
 		/**
 		* \brief Function to parse data from a template dataset path.
 		* \param dataset_path Path to the folder containing data
