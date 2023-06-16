@@ -60,13 +60,13 @@ def preprocess_for_rc(path, videoName=""):
             if not(cnt % TEST_SKIP ):
                 filename = "test_"+filename
                 fname = os.path.join(test_path, filename)
-                print("Copying ", image, " to ", fname , " in test")
+#                print("Copying ", image, " to ", fname , " in test")
                 shutil.copyfile(image, fname)
             else:
                 filename = "train_"+filename
                 fname = os.path.join(test_path, filename)
                 fname = os.path.join(train_path, filename)
-                print("Copying ", image, " to ", fname , " in train")
+#                print("Copying ", image, " to ", fname , " in train")
                 shutil.copyfile(image, fname)
 
         cnt = cnt + 1
@@ -81,7 +81,11 @@ def preprocess_for_rc(path, videoName=""):
     vname = os.path.join(videopath, videoName)
     if os.path.exists(vname):
         print("Copying video ", vname, " to ",  os.path.join(videopath, "video.mp4"))
-        shutil.copyfile(vname, os.path.join(videopath, "video.mp4"))
+        outname = os.path.join(videopath, "video.mp4")
+        if not os.path.exists(outname):
+            shutil.copyfile(vname, outname)
+        else:
+            print("WARNING: ", outname, " exists not overwriting")
 
 def densify_mesh(mesh_path):
     ms = pymeshlab.MeshSet()
@@ -103,17 +107,22 @@ def rc_to_colmap(rc_path, out_path, create_colmap=False, target_width=-1):
     dst_image_path = os.path.join(out_path, "images")
 
     # create entire colmap structure
-    #
     if create_colmap:
         dir_name = os.path.join(out_path, "stereo")
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
+
+        stereo_stereo_dir = os.path.join(dir_name, "stereo")
+        if not os.path.exists(stereo_stereo_dir):
+            os.makedirs(stereo_stereo_dir)
 
         dst_image_path = os.path.join(dir_name, "images")
 
         sparse_stereo_dir = dir_name = os.path.join(dir_name, "sparse")
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
+
+
     else:
         sparse_stereo_dir = out_path
 
@@ -121,8 +130,6 @@ def rc_to_colmap(rc_path, out_path, create_colmap=False, target_width=-1):
         os.makedirs(dst_image_path)
 
     # create cameras.txt
-    #
-
     fname = os.path.join(sparse_stereo_dir, "cameras.txt")
     print("Creating ", fname)
     numcams = len(input_bundle.list_of_input_images)
@@ -150,46 +157,102 @@ def rc_to_colmap(rc_path, out_path, create_colmap=False, target_width=-1):
             camera_id = camera_id + 1
         outfile.close()
 
-    #
     # create images.txt
-    #
     fname = os.path.join(sparse_stereo_dir, "images.txt")
 
     print("Creating ", fname)
     camera_id = 1
     with open(fname, 'w') as outfile:
-      outfile.write( "# Image list with two lines of data per image:\n" )
-      outfile.write( "#   IMAGE_ID, QW, QX, QY, QZ, TX, TY, TZ, CAMERA_ID, NAME\n" )
-      outfile.write( "#   POINTS2D[] as (X, Y, POINT3D_ID)\n" )
-      for cam in input_bundle.list_of_cameras:
-         name = os.path.basename(input_bundle.list_of_input_images[camera_id-1].path)
-         # to sibr internal
+        outfile.write( "# Image list with two lines of data per image:\n" )
+        outfile.write( "#   IMAGE_ID, QW, QX, QY, QZ, TX, TY, TZ, CAMERA_ID, NAME\n" )
+        outfile.write( "#   POINTS2D[] as (X, Y, POINT3D_ID)\n" )
+        point2d_index = 0
+        for cam in input_bundle.list_of_cameras:
+            imname = input_bundle.list_of_input_images[camera_id-1].path
+            name = os.path.basename(imname)
+            im = cv2.imread(imname, cv2.IMREAD_UNCHANGED)
+            w = im.shape[1]
+            h = im.shape[0]
+
+            # to sibr internal
+            br = np.matrix(cam.rotation).transpose()
+            t = -np.matmul(br , np.matrix([cam.translation[0], cam.translation[1], cam.translation[2]]).transpose())
          
-         br = np.matrix(cam.rotation).transpose()
-         t = -np.matmul(br , np.matrix([cam.translation[0], cam.translation[1], cam.translation[2]]).transpose())
-         
-         # sibr save to colmap
-         br = np.matmul(br, np.matrix([[1, 0, 0], [0, -1, 0], [0, 0, -1]]))
-         br = br.transpose()
+            # sibr save to colmap
+            br = np.matmul(br, np.matrix([[1, 0, 0], [0, -1, 0], [0, 0, -1]]))
+            br = br.transpose()
 
-         sci_rot = R.from_matrix(br)
-         sci_quat = sci_rot.as_quat()
+            sci_rot = R.from_matrix(br)
+            sci_quat = sci_rot.as_quat()
 
-         t = -np.matmul(br, t)
+            t = -np.matmul(br, t)
 
-         outfile.write("{} {} {} {} {} {} {} {} {} {}\n\n".format(camera_id, -sci_quat[3], -sci_quat[0], -sci_quat[1], -sci_quat[2], t[0,0], t[1,0], t[2,0], camera_id, name))
-         camera_id = camera_id + 1
-      outfile.close()
+            outfile.write("{} {} {} {} {} {} {} {} {} {}\n".format(camera_id, -sci_quat[3], -sci_quat[0], -sci_quat[1], -sci_quat[2], t[0,0], t[1,0], t[2,0], camera_id, name))
+            # write out points
+            first = False
+            for p in cam.list_of_feature_points:
+                for v in p.view_list:
+                    if v[0] == camera_id-1:
+                        outfile.write( str(2.*v[2]+w) + " " + str(2.*v[3]+h)+ " -1" ) # TODO: not sure about this, seems to be -1 in all existing files
+                        if not first:
+                            outfile.write(" ")
+                        else:
+                            first = False
 
-#
-# create points3D.txt
-#
+                        p.point2d_index[v[0]] = point2d_index
+                        point2d_index = point2d_index + 1
+
+            outfile.write("\n")
+            camera_id = camera_id + 1
+    outfile.close()
+
+    # create points3D.txt
+    fname = os.path.join(sparse_stereo_dir, "points3D.txt")
+
+    print("Creating ", fname)
+    camera_id = 1
+    with open(fname, 'w') as outfile:
+        num_points = len(input_bundle.list_of_feature_points)
+#  FIX mean_track_length = sum((len(pt.image_ids) for _, pt in points3D.items()))/len(points3D)
+        mean_track_length = 10 # 10 is a placeholder value
+        outfile.write("# 3D point list with one line of data per point:\n" )
+        outfile.write("#   POINT3D_ID, X, Y, Z, R, G, B, ERROR, TRACK[] as (IMAGE_ID, POINT2D_IDX)\n")
+        outfile.write("# Number of points: {}, mean track length: {}\n".format(num_points, mean_track_length))
+        for p in input_bundle.list_of_feature_points:
+            # error set to 0.1 for all
+            outfile.write(str(p.id+1)+ " " + str(p.position[0]) + " " + str(p.position[1]) + " " + str(p.position[2]) + " " + str( p.color[0])+  " " + str( p.color[1])+  " " + str( p.color[2])+ " 0.1")
+            for v in p.view_list:
+#                print("Cam id ", v[0], " P= ", p.id+1 , " p2dind " , p.point2d_index )
+                outfile.write(" " + str(v[0]+1)+ " " + str(p.point2d_index[v[0]])  )
+            outfile.write("\n")
+
+
+    if create_colmap:
+        fname = os.path.join(stereo_stereo_dir, "fusion.cfg")
+        outfile_fusion = open(fname, 'w') 
+        fname = os.path.join(stereo_stereo_dir, "patch-match.cfg")
+        outfile_patchmatch = open(fname, 'w') 
+        outdir = os.path.join(stereo_stereo_dir, "normal_maps")
+        if not os.path.exists(outdir):
+            os.makedirs(outdir)
+        outdir = os.path.join(stereo_stereo_dir, "depth_maps")
+        if not os.path.exists(outdir):
+            os.makedirs(outdir)
+        outdir = os.path.join(stereo_stereo_dir, "consistency_graphs")
+        if not os.path.exists(outdir):
+            os.makedirs(outdir)
+
     # copy images
     for fname in os.listdir(rc_path):
         if fname.endswith(".jpg") or fname.endswith(".JPG") or fname.endswith(".png") or fname.endswith(".PNG") :
             src_image_fname = os.path.join(rc_path, fname)
             dst_image_fname = os.path.join(dst_image_path, os.path.basename(fname))
-            print("Copying ", src_image_fname, "to ", dst_image_fname)
+#            print("Copying ", src_image_fname, "to ", dst_image_fname)
+
+            if create_colmap:
+                  outfile_fusion.write(fname+"\n")
+                  outfile_patchmatch.write(fname+"\n")
+                  outfile_patchmatch.write("__auto__, 20\n")
 
             # resize if necessary
             if target_width != -1:
@@ -208,6 +271,8 @@ def rc_to_colmap(rc_path, out_path, create_colmap=False, target_width=-1):
 
     # copy mesh; fake it
     if create_colmap:
+        outfile_patchmatch.close()
+        outfile_fusion.close()
         # assume meshes above
         rc_mesh_dir = os.path.join(os.path.abspath(os.path.join(rc_path, os.pardir)), "meshes")
         out_mesh_dir = os.path.join(os.path.abspath(os.path.join(out_path, os.pardir)), "capreal")
@@ -223,6 +288,7 @@ def rc_to_colmap(rc_path, out_path, create_colmap=False, target_width=-1):
             shutil.copyfile(mtl, os.path.join(out_mesh_dir, "mesh.mtl"))
             shutil.copyfile(texture, os.path.join(out_mesh_dir, "mesh_u1_v1.png"))
             shutil.copyfile(texture, os.path.join(out_mesh_dir, "texture.png"))
+
    
 
 # taken from ibr_preprocess_rc_to_sibr

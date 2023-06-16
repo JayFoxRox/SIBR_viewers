@@ -75,7 +75,7 @@
             "function": "selective_colmap_process.fix_cameras",
             "function_args": {
                 "path": "${path}",
-                "photoName": "MG_"
+                "photoName": "MG_",
                 "sparseSubdir": ""
             }
         },

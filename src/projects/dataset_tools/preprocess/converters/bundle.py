@@ -79,6 +79,8 @@ class BundleFeaturePoint:
         # each camera has the following info:
         # (<camId> <sift keypoint> <x> <y>) # (x,y) floating point value with (0,0) center of the img
         self.view_list  = view_list
+        # for colmap conversion
+        self.point2d_index = {}
 
     def remove_cam(self, cam_id):
         for index in range (len(self.view_list)):
@@ -162,6 +164,10 @@ class Bundle:
 
                     # add feature point to the list of feature points contained in the bundle
                     feature_point = BundleFeaturePoint(feature_point_id, feature_point_position, feature_point_color, list_of_view_info)
+                    
+                    # for colmap conversion
+                    for v in list_of_view_info:
+                        self.list_of_cameras[v[0]].list_of_feature_points.append(feature_point)
 
                     feature_point_id = feature_point_id + 1
 
