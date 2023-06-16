@@ -251,14 +251,27 @@ class Bundle:
         # update nr_cameras attribute
         self.nr_cameras = len (self.list_of_cameras)
 
-    def save (self, path_to_output_file):
+    def save (self, path_to_output_file, new_res=[]):
         output_file = open(path_to_output_file, "w")
 
         output_file.write(self.header + '\n')
         output_file.write(str(self.nr_cameras) + " " + str(self.nr_feature_points) + '\n')
 
-        for cam in self.list_of_cameras:
-            output_file.write(str(cam) + '\n')
+        if new_res == []:
+            for cam in self.list_of_cameras:
+                output_file.write(str(cam) + '\n')
+        else:
+            indx = 0
+            for cam in self.list_of_cameras:
+                im = self.list_of_input_images[indx]
+                old_w = im.resolution[0]
+                old_h = im.resolution[1]
+                new_focal = cam.focal_length*(min(old_h/new_res[1], old_w/new_res[0]))
+                print("Old : ", cam.focal_length, " New : " , new_focal)
+                #cam.focal_length = new_focal
+                output_file.write(str(cam) + '\n')
+                indx = indx + 1
+            
 
         for feature_point in self.list_of_feature_points:
             output_file.write(str(feature_point) + '\n')
