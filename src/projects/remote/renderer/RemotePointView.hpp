@@ -24,6 +24,7 @@
 # include <memory>
 # include <core/graphics/Texture.hpp>
 #include <projects/remote/json.hpp>
+#include <thread>
 using json = nlohmann::json;
 
 namespace sibr { 
