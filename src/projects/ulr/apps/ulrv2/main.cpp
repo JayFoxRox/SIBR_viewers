@@ -136,7 +136,7 @@ int main(int ac, char** av) {
 
 	if (myArgs.offscreen || myArgs.pathFile.get() !=  "" ) {
 		generalCamera->getCameraRecorder().loadPath(myArgs.pathFile.get(), usedResolution.x(), usedResolution.y());
-		generalCamera->getCameraRecorder().recordOfflinePath(myArgs.outPath, multiViewManager.getIBRSubView("ULR view"), "ulr");
+		generalCamera->getCameraRecorder().recordOfflinePath(myArgs.outPath, multiViewManager.getIBRSubView("ULR view"), "");
 		if( !myArgs.noExit )
 			exit(0);
 	}

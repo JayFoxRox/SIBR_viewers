@@ -385,7 +385,11 @@ namespace sibr
 				SIBR_ERR << "Error creating directory " << dstFolder << std::endl;
 		}
 
-		dstFolder = outpathd = outpathd + "/" + prefix;
+        if( prefix != "" ) 
+    		dstFolder = outpathd = outpathd + "/" + prefix;
+        else 
+            dstFolder = outpathd ;
+
 		if (!directoryExists(outpathd) && !boost::filesystem::create_directories(dstFolder))
 			SIBR_ERR << "Error creating directory " << dstFolder << std::endl;
 

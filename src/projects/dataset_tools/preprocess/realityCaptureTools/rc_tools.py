@@ -152,7 +152,7 @@ def convert_sibr_mesh(path):
     ms.load_new_mesh(mesh_path)
     meshply_path = out_mesh_path = os.path.join(os.path.join(os.path.join(path, "sibr"), "capreal"), "mesh.ply")
     print("Saving mesh (slow...)", out_mesh_path)
-    ms.save_current_mesh(out_mesh_path, save_wedge_texcoord=False)
+    ms.save_current_mesh(out_mesh_path, save_wedge_texcoord=False, binary=False)
     print("Done saving mesh (slow...)", out_mesh_path)
     texture_path = os.path.join(os.path.join(os.path.join(path, "sibr"), "capreal"), "mesh_u1_v1.png")
     out_texture_path = os.path.join(os.path.join(os.path.join(path, "sibr"), "capreal"), "texture.png")
