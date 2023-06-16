@@ -79,6 +79,7 @@ def main():
     parser.add_argument("--model_name", type=str, default='default', help="Internal name of RC model")
     parser.add_argument("--path_prefix", type=str, default='default', help="Internal prefix of path images")
     parser.add_argument("--one_over_fps", type=str, default='default', help="Sampling rate for the video")
+    parser.add_argument("--valid_skip", type=str, default='default', help="skip every nth image for validation")
     # "presets"
     parser.add_argument("--images_only", action='store_false', help="just process images: no validation, no test")
     parser.add_argument("--video_only", action='store_true', help="just process video: no photos, no test")
@@ -146,6 +147,9 @@ def main():
         elif os.path.exists("../preprocess/realityCaptureTools/registrationConfig.xml"):
             args["config_folder"] = "../preprocess/realityCaptureTools/"
 
+    if args["valid_skip"] == 'default' :
+        args["valid_skip"] = "10"
+        
     if args["one_over_fps"] == 'default':
         args["one_over_fps"] = "0.02"
 

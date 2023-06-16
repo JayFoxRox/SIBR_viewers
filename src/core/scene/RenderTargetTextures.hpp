@@ -106,6 +106,8 @@ namespace sibr{
 		
 		RenderTargetTextures(uint w = 0) : RTTextureSize(w) {}
 
+		virtual void initRGBandDepthTextureArrays(ICalibratedCameras::Ptr cams, IInputImages::Ptr imgs, IProxyMesh::Ptr proxies, int textureFlags, unsigned int w, unsigned int h, bool faceCull = true);
+		// TODO: remove this, not needed
 		virtual void initRGBandDepthTextureArrays(ICalibratedCameras::Ptr cams, IInputImages::Ptr imgs, IProxyMesh::Ptr proxies, int textureFlags, int texture_width, bool faceCull = true, bool force_aspect_ratio = false);
 		virtual void initRGBandDepthTextureArrays(ICalibratedCameras::Ptr cams, IInputImages::Ptr imgs, IProxyMesh::Ptr proxies, int textureFlags, bool faceCull = true, bool force_aspect_ratio=false);
 		virtual void initializeDefaultRenderTargets(ICalibratedCameras::Ptr cams, IInputImages::Ptr imgs, IProxyMesh::Ptr proxies);

@@ -397,13 +397,15 @@ namespace sibr
 
 		for (int i = 0; i < _cameras.size(); ++i) {
 			outFrame->clear();
-			view->onRenderIBR(*outFrame, _cameras[i]);
 			std::ostringstream ssZeroPad;
 			ssZeroPad << std::setw(8) << std::setfill('0') << i;
 			outFileName = outpathd + "/" +  ssZeroPad.str() + ".png";
+			std::cout << outFileName << " " << std::endl;
+			view->onRenderIBR(*outFrame, _cameras[i]);
 			outFrame->readBack(*outImage);
 			outImage->save(outFileName, false);
 		}
+		std::cout << std::endl;
 
 		std::cout << "Done rendering path. " << std::endl;
 

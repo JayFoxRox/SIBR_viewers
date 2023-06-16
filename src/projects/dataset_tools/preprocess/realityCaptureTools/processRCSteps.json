@@ -6,7 +6,8 @@
             "function_args": {
                 "path": "${path}",
                 "video_name": "${video_name}",
-                "do_validation_split": "${do_validation_split}"
+                "do_validation_split": "${do_validation_split}",
+                "valid_skip": "${valid_skip}"
             }
         },
         {
