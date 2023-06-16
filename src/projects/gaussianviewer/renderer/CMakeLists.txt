@@ -12,7 +12,7 @@ project(sibr_${SIBR_PROJECT} LANGUAGES CXX)
 
 sibr_gitlibrary(TARGET CudaRasterizer
     GIT_REPOSITORY 	"https://gitlab.inria.fr/bkerbl/diff-gaussian-rasterization.git"
-    GIT_TAG			"476615b09964cd13f79785648bc87f8041ece58b"
+    GIT_TAG			"646450327e489a103522cf0b008919a35ecc46d2"
 )
 
 find_package(CUDAToolkit REQUIRED)
