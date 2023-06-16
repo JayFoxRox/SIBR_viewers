@@ -5,7 +5,15 @@
             "function": "utils.datasets.buildDatasetStructure",
             "function_args": {
                 "path" : "${path}",
-                "types" : ["colmap", "capreal"]
+                "types" : ["colmap"]
+            }
+        },
+        {
+            "name": "extract_video_frames",
+            "function": "selective_colmap_process.extract_video_frames",
+            "function_args": {
+                "pathIn": "${path}/videos",
+                "pathOut": "${path}/images"
             }
         },
         {
@@ -14,7 +22,7 @@
             "command_args": [
                 "feature_extractor",
                 "--database_path", "${path}/colmap/dataset.db",
-		        "--image_path", "${path}/images/",
+                "--image_path", "${path}/images/",
                 "--ImageReader.camera_model", "OPENCV",
                 "--SiftExtraction.max_image_size", "${siftExtraction_ImageSize}",
                 "--SiftExtraction.estimate_affine_shape", "${siftExtraction_EstimateAffineShape}",
@@ -30,8 +38,6 @@
             "command_args": [
                 "exhaustive_matcher",
                 "--database_path", "${path}/colmap/dataset.db",
-                "--SiftMatching.guided_matching", "1",
-                "--ExhaustiveMatching.block_size", "${exhaustiveMatcher_ExhaustiveMatchingBlockSize}",
                 "--SiftMatching.gpu_index", "${gpusIndices}"
             ]
         },
@@ -41,15 +47,37 @@
             "command_args": [
                 "mapper",
                 "--database_path", "${path}/colmap/dataset.db",
-		        "--image_path", "${path}/images/",
+                "--image_path", "${path}/images/",
                 "--output_path", "${path}/colmap/sparse/",
-                "--Mapper.ba_local_max_num_iterations", "${mapper_MapperDotbaLocalMaxNumIterations}",
-                "--Mapper.ba_global_max_num_iterations", "${mapper_MapperDotbaGlobalMaxNumIterations}",
-                "--Mapper.ba_global_images_ratio", "${mapper_MapperDotbaGlobalImagesRatio}",
-                "--Mapper.ba_global_points_ratio", "${mapper_MapperDotbaGlobalPointsRatio}",
-                "--Mapper.ba_global_max_refinements", "${mapper_MapperDotbaGlobalMaxRefinements}",
-                "--Mapper.ba_local_max_refinements", "${mapper_MapperDotbaLocalMaxRefinements}"
+                "--Mapper.num_threads", "16",
+                "--Mapper.init_min_tri_angle", "4",
+                "--Mapper.multiple_models", "0",
+                "--Mapper.extract_colors", "0",
+                "--Mapper.ba_global_images_ratio", "1.2",
+                "--Mapper.ba_global_points_ratio", "1.2",
+                "--Mapper.ba_global_max_num_iterations", "20",
+                "--Mapper.ba_global_max_refinements", "3",
+                "--Mapper.ba_global_points_freq", "200000"
             ]
+        },
+        {
+            "name": "colmap_model_converter_sparse_0",
+            "app": "colmap",
+            "command_args": [
+                "model_converter",
+                "--input_path", "${path}/colmap/sparse/0",
+                "--output_path", "${path}/colmap/sparse/",
+                "--output_type", "TXT"
+            ]
+        },
+        {    
+            "name": "fix_cameras",
+            "function": "selective_colmap_process.fix_cameras",
+            "function_args": {
+                "path": "${path}",
+                "photoName": "MG_"
+                "sparseSubdir": ""
+            }
         },
         {
             "name": "colmap_image_undistorter_colmap",
@@ -57,21 +85,45 @@
             "command_args": [
                 "image_undistorter",
                 "--image_path", "${path}/images/",
-                "--input_path", "${path}/colmap/sparse/0",
-                "--output_path", "${path}/colmap/stereo/",
+                "--input_path", "${path}/colmap/sparse/",
+                "--output_path", "${path}/colmap/stereo",
                 "--output_type", "COLMAP"
             ]
         },
         {
-            "name": "colmap_image_undistorter_capreal",
+            "name": "colmap_model_converter_stereo_sparse",
             "app": "colmap",
             "command_args": [
-                "image_undistorter",
-                "--image_path", "${path}/images/",
-                "--input_path", "${path}/colmap/sparse/0/",
-                "--output_path", "${path}/capreal/undistorted/",
-                "--output_type", "CMP-MVS"
+                "model_converter",
+                "--input_path", "${path}/colmap/stereo/sparse",
+                "--output_path", "${path}/colmap/stereo/sparse/",
+                "--output_type", "TXT"
             ]
+        },
+        {
+            "name": "build_dataset_structure",
+            "function": "utils.datasets.buildDatasetStructure",
+            "function_args": {
+                "path" : "${path}",
+                "types" : ["capreal"]
+            }
+        },
+        {
+            "name": "colmap_image_deleter_colmap",
+            "app": "colmap",
+            "command_args": [
+                "image_deleter",
+                "--input_path", "${path}/colmap/sparse/",
+                "--output_path", "${path}/colmap/sparse/",
+                "--image_names_path", "${path}/videos/Video_frames.txt"
+            ]
+        },
+        { 
+            "name": "remove_video_images",
+            "function": "selective_colmap_process.remove_video_images",
+            "function_args": {
+                "path": "${path}"
+            }
         },
         {
             "name": "colmap_patch_match_stereo",
@@ -138,7 +190,7 @@
                 "inputMesh" : "${path}/colmap/stereo/unix-meshed-delaunay.ply",
                 "outputMesh" : "${path}/colmap/stereo/unix-meshed-delaunay-simplified.ply",
                 "meshlabPath" : "${meshlabPath}",
-		"meshsize" : "${meshsize}"
+                "meshsize" : "${meshsize}"
             }
         },
         {

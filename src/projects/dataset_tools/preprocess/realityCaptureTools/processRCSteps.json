@@ -1,0 +1,49 @@
+{
+    "steps" : [
+        {
+            "name": "preprocess_for_rc",
+            "function": "rc_tools.preprocess_for_rc",
+            "function_args": {
+                "path": "${path}"
+            }
+        },
+        {
+            "name": "run_rc",
+            "app": "runRC",
+            "command_args": [
+                "${path}",
+                "0.02"
+            ]
+        },
+        {
+            "name": "rc_to_colmap_cameras",
+            "function": "rc_tools.rc_to_colmap",
+            "function_args": {
+                "rc_path": "${path}/rcScene/cameras",
+                "out_path": "${path}/colmap",
+                "create_colmap": "1",
+                "target_width": "1000"
+            }
+        },
+        {
+            "name": "rc_to_colmap_test_cameras",
+            "function": "rc_tools.rc_to_colmap",
+            "function_args": {
+                "rc_path": "${path}/rcScene/test_cameras",
+                "out_path": "${path}/test_colmap",
+                "create_colmap": "0",
+                "target_width": "1000"
+            }
+        },
+        {
+            "name": "rc_to_colmap_path_cameras",
+            "function": "rc_tools.rc_to_colmap",
+            "function_args": {
+                "rc_path": "${path}/rcScene/path_cameras",
+                "out_path": "${path}/path_colmap",
+                "create_colmap": "0",
+                "target_width": "1000"
+            }
+        }
+    ]
+}
