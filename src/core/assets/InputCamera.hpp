@@ -312,6 +312,7 @@ namespace sibr
 		*/
 		static std::vector<InputCamera::Ptr> loadMeshroom(const std::string& meshroomSFMPath, const float zNear = 0.01f, const float zFar = 1000.0f);
 
+		uint _id; ///< Input camera id
 
 	protected:
 
@@ -321,7 +322,6 @@ namespace sibr
 		float _k2; ///< K2 bundler dist parameter
 		uint _w; ///< Image width
 		uint _h; ///< Image height
-		uint _id; ///< Input camera id
 		std::string _name; ///< Input image name
 		bool _active; ///< is the camera currently in use.
 	};

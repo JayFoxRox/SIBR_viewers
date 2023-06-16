@@ -8,12 +8,13 @@
 # For inquiries contact sibr@inria.fr and/or George.Drettakis@inria.fr
 
 
-CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.16.3)
+
 set (CMAKE_SYSTEM_VERSION 10.0.15063.0 CACHE INTERNAL "Cmake system version" FORCE)
 PROJECT(sibr_projects)
 
 ## Check the cmake version
-set(REQUIRED_VERSION "3.16.0")
+set(REQUIRED_VERSION "3.16.3")
 
 ## FOR CLUSTER
 ##set(REQUIRED_VERSION "3.10.0")
@@ -46,7 +47,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(CheckCXXCompilerFlag)
 get_filename_component(currentBuildTool ${CMAKE_BUILD_TOOL} NAME_WE)	# tool that can launch the native build system. returned value may be the full path
 if(${currentBuildTool} MATCHES "(msdev|devenv|nmake|MSBuild)")
-    add_definitions(/W3 /DNOMINMAX /MP -D_USE_MATH_DEFINES)# /D_ITERATOR_DEBUG_LEVEL=1 because you need all external DLl to compile with this flag too
+
+	add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:/W3;/DNOMINMAX;/MP;-D_USE_MATH_DEFINES>")
+    #add_definitions(/W3 /DNOMINMAX /MP -D_USE_MATH_DEFINES)# /D_ITERATOR_DEBUG_LEVEL=1 because you need all external DLl to compile with this flag too
     set(CMAKE_CONFIGURATION_TYPES "RelWithDebInfo;Release;Debug" CACHE STRING "" FORCE)
     set(CMAKE_CXX_STANDARD 14)
 	set(CMAKE_CXX_STANDARD_REQUIRED ON)

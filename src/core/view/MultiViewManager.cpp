@@ -161,6 +161,7 @@ namespace sibr
 		else {
 			_ibrSubViews[title] = { view, rtPtr, viewport, title, flags, updateFunc, defaultFuncUsed };
 		}
+		_ibrSubViews[title].shouldUpdateLayout = true;
 	}
 
 	void MultiViewBase::addIBRSubView(const std::string & title, ViewBase::Ptr view, const Vector2u & res, const ImGuiWindowFlags flags)

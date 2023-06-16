@@ -193,7 +193,8 @@ find_package(Boost 1.65.0 REQUIRED COMPONENTS ${Boost_REQUIRED_COMPONENTS})
 
 
 if(WIN32)
-    add_definitions(/EHsc)
+	add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:/EHsc>")
+    #add_definitions(/EHsc)
 endif()
 
 if(Boost_LIB_DIAGNOSTIC_DEFINITIONS)

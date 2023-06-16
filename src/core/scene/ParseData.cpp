@@ -15,7 +15,7 @@
 
 #include <fstream>
 #include <sstream>
-
+#include <algorithm>
 
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
@@ -24,6 +24,7 @@
 #include "core/system/String.hpp"
 #include "core/graphics/Mesh.hpp"
 #include "core/system/Utils.hpp"
+#include <algorithm>
 
 using namespace boost::algorithm;
 namespace sibr {
@@ -257,6 +258,94 @@ namespace sibr {
 		_meshPath = dataset_path + "/sparse/0/points3d.bin";
 	}
 
+	void colmapSave(const std::string& filename, const std::vector<InputCamera::Ptr>& xformPath, float scale) {
+		// save as colmap images.txt file
+		sibr::Matrix3f converter;
+		converter << 1, 0, 0,
+			0, -1, 0,
+			0, 0, -1;
+
+		std::ofstream outputColmapPath, outputColmapPathCams;
+		std::string colmapPathCams = parentDirectory(filename) + std::string("/cameras.txt");
+
+		std::cerr << std::endl;
+		std::cerr << std::endl;
+		std::cerr << "Writing colmap path to " << parentDirectory(filename) << std::endl;
+
+		outputColmapPath.open(filename);
+		if (!outputColmapPath.good())
+			SIBR_ERR << "Cant open output file " << filename << std::endl;
+		outputColmapPathCams.open(colmapPathCams);
+
+		outputColmapPathCams << "# Camera list with one line of data per camera:" << std::endl;
+		outputColmapPathCams << "#   CAMERA_ID, MODEL, WIDTH, HEIGHT, PARAMS[]" << std::endl;
+		outputColmapPathCams << "# Number of cameras: " << xformPath.size() << std::endl;
+
+		SIBR_WRG << "No focal x given making it equal to focaly * aspect ratio; use result at own risk. Should have a colmap dataset as input" << std::endl;
+
+		for (int i = 0; i < xformPath.size(); i++) {
+			float focalx = xformPath[i]->focal() * xformPath[i]->aspect(); // use aspect ratio
+			outputColmapPathCams << i + 1 << " PINHOLE " << xformPath[i]->w() * scale << " " << xformPath[i]->h() * scale
+				<< " " << xformPath[i]->focal() * scale << " " << focalx * scale
+				<< " " << xformPath[i]->w() * scale * 0.5 << " " << xformPath[i]->h() * scale * 0.5 << std::endl;
+		}
+
+
+		outputColmapPath << "# Image list with two lines of data per image:" << std::endl;
+		outputColmapPath << "#   IMAGE_ID, QW, QX, QY, QZ, TX, TY, TZ, CAMERA_ID, NAME" << std::endl;
+		outputColmapPath << "#   POINTS2D[] as (X, Y, POINT3D_ID)" << std::endl;
+		for (int i = 0; i < xformPath.size(); i++) {
+			sibr::Matrix3f tmp = xformPath[i]->rotation().toRotationMatrix() * converter;
+			sibr::Matrix3f Qinv = tmp.transpose();
+			sibr::Quaternionf q = quatFromMatrix(Qinv);
+			sibr::Vector3f t = -Qinv * xformPath[i]->position();
+
+			outputColmapPath << (i+1) << " " << q.w() << " " << -q.x() << " " << -q.y() << " " << -q.z() << " " <<
+				t.x() << " " << t.y() << " " << t.z() << " " << (i+1) << " " << xformPath[i]->name() << std::endl;
+			outputColmapPath << std::endl; // empty line, no points
+		}
+		outputColmapPath.close();
+		outputColmapPathCams.close();
+	}
+
+	void ParseData::getParsedChunkedData(const std::string& dataset_path)
+	{
+		_basePathName = sibr::parentDirectory(sibr::parentDirectory(dataset_path));;
+
+		auto test = sibr::getFileName(dataset_path);
+		std::replace(test.begin(), test.end(), '_', ' ');
+		std::stringstream ss(test);
+		int x, y;
+		ss >> x >> y;
+		x = 0;
+		y = 0;
+
+		_imgPath = _basePathName + "/cameras/";
+
+		auto camdirs = sibr::listSubdirectories(_imgPath);
+
+		for (int i = 0; i < camdirs.size(); i++)
+		{
+			auto cam = std::make_shared<InputCamera>(0, 0, 0, 0, 0, 0, _camInfos.size());
+			cam->loadFromBinary(_imgPath + camdirs[i] + "/incam.bin");
+
+			auto quat = cam->transform().rotation();
+			auto mat = sibr::matFromQuat(quat);
+
+			if (mat(2, 2) > 0.9 || cam->position().x() < (x) * 100.9 || cam->position().x() > (x+1) * 100.9 || cam->position().y() < y * 100.9 || cam->position().y() > (y + 1) * 100.9)
+				continue;
+
+			cam->name(camdirs[i] + ".png");
+			_camInfos.push_back(cam);
+		}
+
+		populateFromCamInfos();
+
+		colmapSave(_basePathName + "/sparse/images.txt", _camInfos, 1.0f);
+
+		_meshPath = dataset_path + "/mesh.ply";
+	}
+
 
 	void ParseData::getParsedColmapData(const std::string & dataset_path, const int fovXfovY_flag, const bool capreal_flag)
 	{
@@ -338,6 +427,7 @@ namespace sibr {
 		std::string nvmscene = myArgs.dataset_path.get() + customPath + "/nvm/scene.nvm";
 		std::string meshroom = myArgs.dataset_path.get() + "/../../StructureFromMotion/";
 		std::string meshroom_sibr = myArgs.dataset_path.get() + "/StructureFromMotion/";
+		std::string chunked = myArgs.dataset_path.get() + "/chunk.dat";
 
 		if(datasetTypeStr == "sibr") {
 			if (!sibr::fileExists(bundler))
@@ -396,6 +486,11 @@ namespace sibr {
 			}
 			else if (sibr::fileExists(colmap_2))
 				_datasetType = Type::COLMAP2;
+
+			else if (sibr::fileExists(chunked))
+			{
+				_datasetType = Type::CHUNKED;
+			}
 			else {
 				SIBR_ERR << "Cannot determine type of dataset at /" + myArgs.dataset_path.get() + customPath << std::endl;
 			}
@@ -406,6 +501,7 @@ namespace sibr {
 			case Type::COLMAP_CAPREAL : getParsedColmapData(myArgs.dataset_path, myArgs.colmap_fovXfovY_flag, true); break;
 			case Type::COLMAP : 		getParsedColmapData(myArgs.dataset_path, myArgs.colmap_fovXfovY_flag, false); break;
 			case Type::COLMAP2 : 		getParsedColmap2Data(myArgs.dataset_path, myArgs.colmap_fovXfovY_flag, false); break;
+			case Type::CHUNKED:			getParsedChunkedData(myArgs.dataset_path); break;
 			case Type::NVM : 			getParsedNVMData(myArgs.dataset_path, customPath, "/nvm/"); break;
 			case Type::MESHROOM : 		if (sibr::directoryExists(meshroom)) getParsedMeshroomData(myArgs.dataset_path.get() + "/../../");
 										else if (sibr::directoryExists(meshroom_sibr)) getParsedMeshroomData(myArgs.dataset_path); break;
@@ -413,7 +509,16 @@ namespace sibr {
 		
 		// What happens if multiple are present?
 		// Ans: Priority --> SIBR > COLMAP > NVM
-		
+
+		// Subtract minCAMID from all
+		uint minCamID = UINT_MAX;
+		for (const auto& cam : _camInfos)
+			minCamID = std::min(minCamID, cam->id());
+		for (auto& cam : _camInfos)
+			cam->_id -= minCamID;
+		for (auto& img : _imgInfos)
+			img.camId -= minCamID;
+
 		// Find max cam ID and check present image IDs
 		int maxId = 0;
 		std::vector<bool> presentIDs;
@@ -422,6 +527,11 @@ namespace sibr {
 
 		for (int c = 0; c < _numCameras; c++) {
 			maxId = (maxId > int(_imgInfos[c].camId)) ? maxId : int(_imgInfos[c].camId);
+			if (_imgInfos[c].camId >= presentIDs.size())
+			{
+				SIBR_ERR << "Incorrect Camera IDs " << std::endl;
+				continue;
+			}
 			try
 			{
 				presentIDs[_imgInfos[c].camId] = true;
