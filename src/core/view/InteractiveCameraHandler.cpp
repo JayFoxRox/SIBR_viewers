@@ -354,6 +354,10 @@ namespace sibr {
 				SIBR_LOG << "[Trackball] Display visual guides: " << (_trackball.drawThis ? "on" : "off") << "." << std::endl;
 			}
 		}
+		// only free key
+		else if (input.key().isReleased(sibr::Key::M)) {
+			_cameraRecorder.saveImage("", _currentCamera, _currentCamera.w(), _currentCamera.h());
+		}
 		else if (input.key().isReleased(sibr::Key::Y)) {
 			switchMode(_currentMode == TRACKBALL ? FPS : TRACKBALL);
 		}

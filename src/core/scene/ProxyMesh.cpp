@@ -19,7 +19,12 @@ namespace sibr {
 	{
 		_proxy.reset(new Mesh());
 		// GD HACK
-		if (!_proxy->load(data->meshPath(), data->basePathName()) && !_proxy->load(removeExtension(data->meshPath()) + ".ply") && !_proxy->load(removeExtension(data->meshPath()) + ".obj")) {
+		if (boost::filesystem::extension(data->meshPath()) == ".bin") {
+			if (!_proxy->loadSfM(data->meshPath(), data->basePathName())) {
+				SIBR_WRG << "proxy model not found at " << data->meshPath() << std::endl;
+			}
+		}
+		else if (!_proxy->load(data->meshPath(), data->basePathName()) && !_proxy->load(removeExtension(data->meshPath()) + ".ply") && !_proxy->load(removeExtension(data->meshPath()) + ".obj")) {
 			if (!_proxy->loadSfM(data->meshPath(), data->basePathName())) {
 				SIBR_WRG << "proxy model not found at " << data->meshPath() << std::endl;
 			}

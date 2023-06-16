@@ -254,7 +254,7 @@ namespace sibr {
 
 		populateFromCamInfos();
 
-		_meshPath = dataset_path + "/sparse/0/points3d.ply";
+		_meshPath = dataset_path + "/sparse/0/points3d.bin";
 	}
 
 

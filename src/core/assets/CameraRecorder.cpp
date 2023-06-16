@@ -471,5 +471,45 @@ namespace sibr
 
 	}
 
+	void CameraRecorder::saveImage(const std::string& outPathDir, const Camera& cam, int w, int h) {
+		sibr::ImageRGBA32F::Ptr outImage;
+		_ow = w, _oh = h;
+		outImage.reset(new ImageRGBA32F(_ow, _oh));
+		std::string outpathd = outPathDir;
+
+		sibr::RenderTargetRGBA32F::Ptr outFrame;
+		outFrame.reset(new RenderTargetRGBA32F(_ow, _oh));
+		std::string outFileName;
+
+		boost::filesystem::path dstFolder;
+
+		outpathd = outPathDir;
+
+		if (outPathDir == "") { // default to path parent, saved by loadPath
+			outpathd = _dsPath + "/" + "pathOutput";
+			dstFolder = outpathd;
+			if (!directoryExists(outpathd) && !boost::filesystem::create_directories(dstFolder))
+				SIBR_ERR << "Error creating directory " << dstFolder << std::endl;
+		}
+
+		dstFolder = outpathd;
+
+		if (!directoryExists(outpathd) && !boost::filesystem::create_directories(dstFolder))
+			SIBR_ERR << "Error creating directory " << dstFolder << std::endl;
+
+		std::cout << "Saving current camera to " << outpathd << std::endl;
+
+		outFrame->clear();
+		std::ostringstream ssZeroPad;
+		static int i = 0;
+		ssZeroPad << std::setw(8) << std::setfill('0') << i++;
+		outFileName = outpathd + "/" + ssZeroPad.str() + ".png";
+		std::cout << outFileName << " " << std::endl;
+		_view->onRenderIBR(*outFrame, cam);
+		outFrame->readBack(*outImage);
+		outImage->save(outFileName, false);
+		std::cout << std::endl;
+		std::cout << "Done saving image. " << std::endl;
+	}
 
 } // namespace sibr

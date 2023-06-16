@@ -115,7 +115,7 @@ namespace sibr
 
 			if (width == 0) {// default
 				if (_imgs->inputImages()[0]->w() > 1920) {
-					SIBR_LOG << "Limiting width to 1920 for performance; use --texture_width to override" << std::endl;
+					SIBR_LOG << "Limiting width to 1920 for performance; use --texture-width to override" << std::endl;
 					mwidth = 1920;
 				}
 			}
