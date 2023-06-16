@@ -31,61 +31,137 @@ from scipy.spatial.transform import Rotation as R
 from utils.paths import getBinariesPath, getColmapPath, getMeshlabPath
 from utils.commands import  getProcess, getColmap, getRCprocess, runCommand
 
-def preprocess_for_rc(path, videoName=""):
-    # create train/test split (every 10 images for now)
+def preprocess_for_rc(path, video_name='default', do_validation_split=True):
+    # create train/validation split (every 10 images for now)
     TEST_SKIP = 10
 
-    imagespath = os.path.abspath(os.path.join(path, "images"))
-    videopath = os.path.abspath(os.path.join(path, "videos"))
-    testpath = os.path.abspath(os.path.join(path, "test"))
-    trainpath = os.path.abspath(os.path.join(path, "test"))
-    gtvideo_path = os.path.abspath(os.path.join(path, "video_path"))
+    # Should exist
+    rawpath = os.path.join(path, "raw")
+    if not os.path.exists(rawpath):
+        os.makedirs(os.path.join(path, "raw"))
+
+    imagespath = os.path.abspath(os.path.join(rawpath, "images"))
+    testpath = os.path.abspath(os.path.join(rawpath, "test"))
+    videopath = os.path.abspath(os.path.join(rawpath, "videos"))
+    do_test = False
+    inputpath = os.path.join(path, "input")
+
+    # If not, move around
+    if not os.path.exists(imagespath):
+        if os.path.exists(os.path.join(path, "images")):
+            shutil.move(os.path.join(path, "images"), imagespath)
+        elif not os.path.exists(os.path.join(path, "videos")) and not os.path.exists(videopath):
+            print("ERROR: No images nor video, exiting. Images should be in $path/raw/images")
+            exit(-1)
+        # videos are optional
+        if os.path.exists(os.path.join(path, "videos")):
+            shutil.move(os.path.join(path, "videos"), videopath)
+        # test images (stills for path)
+        test_orig = os.path.join(path, "test")
+#        print("TEST ", test_orig, " " , os.path.exists(test_orig) , " > ", testpath)
+        if os.path.exists(test_orig):
+            do_test = True
+            shutil.move(test_orig, testpath)
+    else:
+        print("Found images {}".format(imagespath))
+        if os.path.exists(videopath):
+            print("Found video {}".format(videopath))
+        if os.path.exists(testpath):
+            print("Found test {}".format(testpath))
+            do_test = True
 
     cnt = 0
-    train_path =os.path.join(path, "train")
+    validation_path = os.path.abspath(os.path.join(inputpath, "validation"))
+    train_path = os.path.abspath(os.path.join(inputpath, "train"))
     if not os.path.exists(train_path):
         os.makedirs(train_path)
-    test_path = os.path.join(path, "test")
-    if not os.path.exists(test_path):
-        os.makedirs(test_path)
+    if not os.path.exists(validation_path):
+        os.makedirs(validation_path)
+    input_test_path = os.path.abspath(os.path.join(inputpath, "test"))
+    if not os.path.exists(input_test_path):
+        os.makedirs(input_test_path)
+
+    # rcScene -- will contain full bundle files from RC
+    rcscenepath = os.path.join(path, "rcScene")
+    if not os.path.exists(rcscenepath):
+        os.makedirs(rcscenepath)
+
+    # rcProj -- RC project save
+    rcprojpath = os.path.join(path, "rcProj")
+    if not os.path.exists(rcprojpath):
+        os.makedirs(rcprojpath)
 
 
-    print("Test/Train ", test_path,  "\n", train_path)
+    # sibr -- will contain full size colmap
+    sibrpath = os.path.join(path, "sibr")
+    if not os.path.exists(sibrpath):
+        os.makedirs(sibrpath)
+        caprealpath = os.path.join(sibrpath, "capreal")
+        os.makedirs(caprealpath)
 
-    for filename in os.listdir(imagespath):
-        ext = os.path.splitext(filename)[1]
-        if ext == ".JPG" or ext == ".jpg" or ext == ".PNG" or ext == ".jpg" :
-            image = os.path.join(imagespath, filename) 
-            print("IM ", image)
-            if not(cnt % TEST_SKIP ):
+#    print("DO VALID IN TOOLS ", do_validation_split)
+    if do_validation_split:
+        print("Train/Validation", train_path , " : ", validation_path)
+        for filename in os.listdir(imagespath):
+            ext = os.path.splitext(filename)[1]
+            if ext == ".JPG" or ext == ".jpg" or ext == ".PNG" or ext == ".jpg" :
+                image = os.path.join(imagespath, filename) 
+#            print("IM ", image)
+                if not(cnt % TEST_SKIP ):
+                    filename = "validation_"+filename
+                    fname = os.path.join(validation_path, filename)
+#                print("Copying ", image, " to ", fname , " in validation")
+                    shutil.copyfile(image, fname)
+                else:
+                    filename = "train_"+filename
+                    fname = os.path.join(train_path, filename)
+#                print("Copying ", image, " to ", fname , " in train")
+                    shutil.copyfile(image, fname)
+
+            cnt = cnt + 1
+
+    if do_test:
+        for filename in os.listdir(testpath):
+            ext = os.path.splitext(filename)[1]
+            if ext == ".JPG" or ext == ".jpg" or ext == ".PNG" or ext == ".jpg" :
+                image = os.path.join(testpath, filename) 
                 filename = "test_"+filename
-                fname = os.path.join(test_path, filename)
+                fname = os.path.join(input_test_path, filename)
 #                print("Copying ", image, " to ", fname , " in test")
                 shutil.copyfile(image, fname)
-            else:
-                filename = "train_"+filename
-                fname = os.path.join(test_path, filename)
-                fname = os.path.join(train_path, filename)
-#                print("Copying ", image, " to ", fname , " in train")
-                shutil.copyfile(image, fname)
+    else:
+        print ("****************** NOT DOING TEST !!!")
 
-        cnt = cnt + 1
 
     # extract video name -- if not given, take first
-    if videoName == "":
-        for filename in os.listdir(videopath):
-            if ("MP4" in filename) or ("mp4" in filename):
-                videoName = filename
+    if video_name == 'default':
+        if os.path.exists(videopath):
+            for filename in os.listdir(videopath):
+#            print("Checking ", filename)
+                if ("MP4" in filename) or ("mp4" in filename):
+                    video_name = filename
+    video_filename = os.path.join(path, os.path.join("raw", os.path.join("videos", video_name)))
+    print("Full video path:", video_filename)
 
-    # copy to "video.mp4"
-    vname = os.path.join(videopath, videoName)
-    if os.path.exists(vname):
-        print("Copying video ", vname, " to ",  os.path.join(videopath, "video.mp4"))
-        outname = os.path.join(videopath, "video.mp4")
-        if not os.path.exists(outname):
-            shutil.copyfile(vname, outname)
-        else:
-            print("WARNING: ", outname, " exists not overwriting")
+    return "video_filename", video_filename
+
+def convert_sibr_mesh(path):
+    ms = pymeshlab.MeshSet()
+    mesh_path = os.path.join(os.path.join(os.path.join(path, "rcScene"), "meshes"), "mesh.obj")
+    print("Loading mesh (slow...)", mesh_path)
+    ms.load_new_mesh(mesh_path)
+    meshply_path = out_mesh_path = os.path.join(os.path.join(os.path.join(path, "sibr"), "capreal"), "mesh.ply")
+    print("Saving mesh (slow...)", out_mesh_path)
+    ms.save_current_mesh(out_mesh_path, save_wedge_texcoord=False)
+    print("Done saving mesh (slow...)", out_mesh_path)
+    texture_path = os.path.join(os.path.join(os.path.join(path, "sibr"), "capreal"), "mesh_u1_v1.png")
+    out_texture_path = os.path.join(os.path.join(os.path.join(path, "sibr"), "capreal"), "texture.png")
+    print("Copying (to allow meshlab to work) {} to {}".format(texture_path, out_texture_path))
+    shutil.copyfile(texture_path, out_texture_path)
+    out_mesh_path = os.path.join(os.path.join(os.path.join(os.path.join(path, "sibr"), "colmap"), "stereo"), "meshed-delaunay.ply")
+    print("Copying {} to {}".format(meshply_path, out_mesh_path))
+    shutil.copyfile(meshply_path, out_mesh_path)
+
 
 def densify_mesh(mesh_path):
     ms = pymeshlab.MeshSet()
@@ -95,6 +171,8 @@ def densify_mesh(mesh_path):
     ms.subdivision_surfaces_butterfly_subdivision(threshold=subdiv_threshold)
     path_split = os.path.split(mesh_path)
     dense_mesh_fname = "dense_" + path_split[1]
+    fname, fname_ext = os.path.splitext(dense_mesh_fname)
+    dense_mesh_fname = fname + ".obj"
     dense_mesh_path = os.path.join(path_split[0], dense_mesh_fname)
     print("Writing dense mesh ", dense_mesh_path)
     ms.save_current_mesh(dense_mesh_path)
@@ -278,23 +356,6 @@ def rc_to_colmap(rc_path, out_path, create_colmap=False, target_width=-1):
     if create_colmap:
         outfile_patchmatch.close()
         outfile_fusion.close()
-        # assume meshes above
-        rc_mesh_dir = os.path.join(os.path.abspath(os.path.join(rc_path, os.pardir)), "meshes")
-        out_mesh_dir = os.path.join(os.path.abspath(os.path.join(out_path, os.pardir)), "capreal")
-        print("RC mesh dir: ", rc_mesh_dir)
-        print("Out mesh dir: ", out_mesh_dir)
-        mesh = os.path.join(rc_mesh_dir, "mesh.obj")
-        mtl = os.path.join(rc_mesh_dir, "mesh.mtl")
-        texture = os.path.join(rc_mesh_dir, "mesh_u1_v1.png")
-        if os.path.exists(mesh):
-            if not os.path.exists(out_mesh_dir):
-                os.makedirs(out_mesh_dir)
-            shutil.copyfile(mesh, os.path.join(out_mesh_dir, "mesh.obj"))
-            shutil.copyfile(mtl, os.path.join(out_mesh_dir, "mesh.mtl"))
-            shutil.copyfile(texture, os.path.join(out_mesh_dir, "mesh_u1_v1.png"))
-            shutil.copyfile(texture, os.path.join(out_mesh_dir, "texture.png"))
-
-   
 
 # taken from ibr_preprocess_rc_to_sibr
 # TODO: pretty ugly needs rethink and cleanup
@@ -305,8 +366,8 @@ def crop_images(path_data, path_dest):
     avg_resolution = input_bundle.get_avg_resolution()
     print("AVG resolution ", avg_resolution)
 
-    # special case: test_cameras take size/crop data from train cameras so they are all the same
-    if "test_" not in path_data:
+    # special case: validation_cameras take size/crop data from train cameras so they are all the same
+    if "validation_" not in path_data:
 
         # generate resolutions.txt and put it in the current dataset folder
         resolutions_txt_path = os.path.join(path_data, "resolutions.txt")
@@ -340,7 +401,7 @@ def crop_images(path_data, path_dest):
         # read proposed cropped resolution
         path_to_crop_new_size_txt = os.path.join(path_data, "cropNewSize.txt")
     else:
-        train_path_data = str.replace(path_data, "test_", "")
+        train_path_data = str.replace(path_data, "validation_", "")
         path_to_crop_new_size_txt = os.path.join(train_path_data, "cropNewSize.txt")
         print("Reading crop size from ", path_to_crop_new_size_txt )
 
@@ -373,3 +434,17 @@ def crop_images(path_data, path_dest):
         print("Command: cropFromCenter failed, exiting (ARGS:", "--inputFile", path_to_transform_list_txt, "--outputPath", path_dest, "--avgResolution", str(avg_resolution[0]), str(avg_resolution[1]), "--cropResolution", str(proposed_res[0]), str(proposed_res[1]))
         exit(1)
 
+
+def fix_video_only(path):
+    # TODO: currently only works for video_only + calib_only; doesnt do video only with MVS
+    # verify that train is actually empty
+    train_dir = os.path.join(path, os.path.join("rcScene", "train_cameras"))
+    test_dir = os.path.join(path, os.path.join("rcScene", "test_path_cameras"))
+    files = os.listdir(train_dir)
+    if len(files) == 1: # empty bundle file
+        shutil.move(train_dir, train_dir+"_save")
+        print("MOVING {} to {}".format(test_dir, train_dir))
+        shutil.move(test_dir, train_dir)
+    else:
+        print("FATAL ERROR: trying to overwrite existing train images")
+        exit(1)

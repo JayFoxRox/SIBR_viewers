@@ -19,6 +19,7 @@ from utils.paths import getBinariesPath, getColmapPath, getMeshlabPath, getRCPat
 def getProcess(programName, binaryPath = getBinariesPath()):
     suffixes = [ '', '_msr', '_rwdi', '_d']
 
+    print("BINARIES ", binaryPath)
     for suffix in suffixes:
         binary = os.path.join(binaryPath, programName + suffix + (".exe" if os.name == 'nt' else ''))
 
@@ -36,7 +37,7 @@ def getRCprocess(binaryPath = getRCPath()):
 
 
 def runCommand(binary, command_args):
-    print("Running process '%s'" % (' '.join([binary, *command_args])))
+#    print("Running process '%s'" % (' '.join([binary, *command_args])))
     sys.stdout.flush()
     completedProcess = subprocess.run([binary, *command_args])
 
