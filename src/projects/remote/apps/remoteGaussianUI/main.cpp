@@ -20,6 +20,7 @@
 #include <core/renderer/DepthRenderer.hpp>
 #include <core/raycaster/Raycaster.hpp>
 #include <core/view/SceneDebugView.hpp>
+#include <algorithm>
 
 #define PROGRAM_NAME "SIBR Remote Gaussian Viewer"
 using namespace sibr;
@@ -57,7 +58,7 @@ void resetScene(RemoteAppArgs myArgs,
 	const uint flags = SIBR_GPU_LINEAR_SAMPLING | SIBR_FLIP_TEXTURE;
 
 	// Fix rendering aspect ratio if user provided rendering size
-	float divider = scene->cameras()->inputCameras()[0]->w() / 1200.0;
+	float divider = scene->cameras()->inputCameras()[0]->w() / std::min(1200.f, (float)scene->cameras()->inputCameras()[0]->w());
 	uint scene_width = scene->cameras()->inputCameras()[0]->w();
 	uint scene_height = scene->cameras()->inputCameras()[0]->h();
 	float scene_aspect_ratio = scene_width * 1.0f / scene_height;

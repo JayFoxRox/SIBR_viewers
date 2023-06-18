@@ -78,6 +78,8 @@ namespace sibr{
 
 		void  getParsedColmap2Data(const std::string & dataset_path, const int fovXfovY_flag, const bool capreal_flag = true);
 
+		void getParsedBlenderData(const std::string& dataset_path);
+
 		void getParsedChunkedData(const std::string& dataset_path);
 
 		/**

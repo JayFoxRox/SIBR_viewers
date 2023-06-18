@@ -1446,7 +1446,68 @@ namespace sibr
 		return cameras;
 	}
 
+	std::vector<InputCamera::Ptr> InputCamera::loadTransform(const std::string& transformPath, int w, int h, std::string extension, const float zNear, const float zFar, const int offset, const int fovXfovYFlag)
+	{
+		std::ifstream json_file(transformPath, std::ios::in);
 
+		if (!json_file)
+		{
+			std::cerr << "file loading failed: " << transformPath << std::endl;
+			return std::vector<InputCamera::Ptr>();
+		}
+
+		std::vector<InputCamera::Ptr> cameras;
+
+		picojson::value v;
+		picojson::set_last_error(std::string());
+		std::string err = picojson::parse(v, json_file);
+		if (!err.empty()) {
+			picojson::set_last_error(err);
+			json_file.setstate(std::ios::failbit);
+		}
+
+		float fovx = v.get("camera_angle_x").get<double>();
+		picojson::array& frames = v.get("frames").get<picojson::array>();
+
+		for (int i = 0; i < frames.size(); i++)
+		{
+			std::string imgname = frames[i].get("file_path").get<std::string>() + "." + extension;
+
+			auto mat = frames[i].get("transform_matrix").get<picojson::array>();
+
+			Eigen::Matrix4f matrix;
+			for (int i = 0; i < 4; i++)
+			{
+				auto row = mat[i].get<picojson::array>();
+				for (int j = 0; j < 4; j++)
+				{
+					matrix(i, j) = row[j].get<double>();
+				}
+			}
+
+			Eigen::Matrix3f R = matrix.block<3, 3>(0, 0);
+			Eigen::Vector3f T(matrix(0, 3), matrix(1, 3), matrix(2, 3));
+
+			float focalx = 0.5f * w / tan(fovx / 2.0f);
+			float focaly = (((float)h)/w) * focalx;
+
+			sibr::InputCamera::Ptr camera;
+			if (fovXfovYFlag) {
+				camera = std::make_shared<InputCamera>(InputCamera(focaly, focalx, 0.0f, 0.0f, int(w), int(h), i + offset));
+			}
+			else {
+				camera = std::make_shared<InputCamera>(InputCamera(focalx, 0.0f, 0.0f, int(w), int(h), i + offset));
+			}
+
+			camera->name(imgname);
+			camera->position(T);
+			camera->rotation(sibr::Quaternionf(R));
+			camera->znear(zNear);
+			camera->zfar(zFar);
+			cameras.push_back(camera);
+		}
+		return cameras;
+	}
 
 
 } 

@@ -53,7 +53,7 @@ namespace sibr{
 		* \ingroup sibr_scene
 		*/
 		enum class Type {
-			EMPTY, SIBR, COLMAP_CAPREAL, COLMAP, COLMAP2, NVM, MESHROOM, CHUNKED, EXTERNAL
+			EMPTY, BLENDER, SIBR, COLMAP_CAPREAL, COLMAP, COLMAP2, NVM, MESHROOM, CHUNKED, EXTERNAL
 		};
 
 		/**
