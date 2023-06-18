@@ -237,6 +237,23 @@ namespace sibr {
 
 	}
 
+	void ParseData::getParsedBlenderData(const std::string& dataset_path)
+	{
+		_camInfos = InputCamera::loadTransform(dataset_path + "/transforms_train.json", 800, 800, "png", 0.01f, 1000.0f);
+
+		_basePathName = dataset_path;
+
+		if (_camInfos.empty()) {
+			SIBR_ERR << "Colmap camera calibration file does not exist at /" + _basePathName + "/sparse/." << std::endl;
+		}
+
+		_imgPath = dataset_path;
+
+		populateFromCamInfos();
+
+		_meshPath = dataset_path;
+	}
+
 	void ParseData::getParsedColmap2Data(const std::string& dataset_path, const int fovXfovY_flag, const bool capreal_flag)
 	{
 		_basePathName = dataset_path + "/sparse/0/";
@@ -244,15 +261,21 @@ namespace sibr {
 		_camInfos = sibr::InputCamera::loadColmapBin(_basePathName, 0.01f, 1000.0f, fovXfovY_flag);
 
 		if (_camInfos.empty()) {
+			_camInfos = sibr::InputCamera::loadColmap(_basePathName, 0.01f, 1000.0f, fovXfovY_flag);
+		}
+
+		if (_camInfos.empty()) {
 			SIBR_ERR << "Colmap camera calibration file does not exist at /" + _basePathName + "/sparse/." << std::endl;
 		}
 
 		_imgPath = dataset_path + "/images/";
 
-
 		populateFromCamInfos();
 
 		_meshPath = dataset_path + "/sparse/0/points3d.bin";
+
+		if (!std::ifstream(_meshPath).good())
+			_meshPath = dataset_path + "/sparse/0/points3d.txt";
 	}
 
 	void colmapSave(const std::string& filename, const std::vector<InputCamera::Ptr>& xformPath, float scale) {
@@ -424,6 +447,7 @@ namespace sibr {
 		std::string meshroom = myArgs.dataset_path.get() + "/../../StructureFromMotion/";
 		std::string meshroom_sibr = myArgs.dataset_path.get() + "/StructureFromMotion/";
 		std::string chunked = myArgs.dataset_path.get() + "/chunk.dat";
+		std::string blender = myArgs.dataset_path.get() + "/transforms_train.json";
 
 		if(datasetTypeStr == "sibr") {
 			if (!sibr::fileExists(bundler))
@@ -431,6 +455,14 @@ namespace sibr {
 						 << "Reason : bundler folder (" << bundler << ") does not exist" << std::endl;
 
 			_datasetType = Type::SIBR;
+		}
+		else if (datasetTypeStr == "blender")
+		{
+			if (!sibr::fileExists(blender))
+				SIBR_ERR << "Cannot use dataset_type " + myArgs.dataset_type.get() + " at /" + myArgs.dataset_path.get() + "." << std::endl
+				<< "Reason : blender transform (" << blender << ") does not exist" << std::endl;
+
+			_datasetType = Type::BLENDER;
 		}
 		else if (datasetTypeStr == "colmap_capreal") {
 			if (!sibr::fileExists(colmap))
@@ -477,6 +509,10 @@ namespace sibr {
 			else if (sibr::fileExists(nvmscene)) {
 				_datasetType = Type::NVM;
 			}
+			else if (sibr::fileExists(blender))
+			{
+				_datasetType = Type::BLENDER;
+			}
 			else if (sibr::directoryExists(meshroom) || sibr::directoryExists(meshroom_sibr)) {
 				_datasetType = Type::MESHROOM;
 			}
@@ -493,6 +529,7 @@ namespace sibr {
 		}
 
 		switch(_datasetType) {
+			case Type::BLENDER:			getParsedBlenderData(myArgs.dataset_path); break;
 			case Type::SIBR : 			getParsedBundlerData(myArgs.dataset_path, customPath, myArgs.scene_metadata_filename); break;
 			case Type::COLMAP_CAPREAL : getParsedColmapData(myArgs.dataset_path, myArgs.colmap_fovXfovY_flag, true); break;
 			case Type::COLMAP : 		getParsedColmapData(myArgs.dataset_path, myArgs.colmap_fovXfovY_flag, false); break;
