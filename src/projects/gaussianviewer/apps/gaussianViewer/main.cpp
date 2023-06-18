@@ -19,6 +19,7 @@
 #include <core/renderer/DepthRenderer.hpp>
 #include <core/raycaster/Raycaster.hpp>
 #include <core/view/SceneDebugView.hpp>
+#include <algorithm>
 
 #define PROGRAM_NAME "sibr_3Dgaussian"
 using namespace sibr;
@@ -93,8 +94,8 @@ int main(int ac, char** av) {
 	float scene_aspect_ratio = scene_width * 1.0f / scene_height;
 	float rendering_aspect_ratio = rendering_width * 1.0f / rendering_height;
 
-	rendering_width = (rendering_width <= 0) ? 1200 : rendering_width;
-	rendering_height = (rendering_height <= 0) ? 1200 / scene_aspect_ratio : rendering_height;
+	rendering_width = (rendering_width <= 0) ? std::min(1200U, scene_width) : rendering_width;
+	rendering_height = (rendering_height <= 0) ? std::min(1200U, scene_width) / scene_aspect_ratio : rendering_height;
 	if ((rendering_width > 0) && !myArgs.force_aspect_ratio ) {
 		if (abs(scene_aspect_ratio - rendering_aspect_ratio) > 0.001f) {
 			if (scene_width > scene_height) {

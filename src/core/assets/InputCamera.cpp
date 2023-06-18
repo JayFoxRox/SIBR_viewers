@@ -1446,7 +1446,7 @@ namespace sibr
 		return cameras;
 	}
 
-	std::vector<InputCamera::Ptr> InputCamera::loadTransform(const std::string& transformPath, int w, int h, std::string extension, const float zNear, const float zFar, const int fovXfovYFlag)
+	std::vector<InputCamera::Ptr> InputCamera::loadTransform(const std::string& transformPath, int w, int h, std::string extension, const float zNear, const float zFar, const int offset, const int fovXfovYFlag)
 	{
 		std::ifstream json_file(transformPath, std::ios::in);
 
@@ -1488,21 +1488,20 @@ namespace sibr
 			Eigen::Matrix3f R = matrix.block<3, 3>(0, 0);
 			Eigen::Vector3f T(matrix(0, 3), matrix(1, 3), matrix(2, 3));
 
-			float focal = 0.5f * w / tan(fovx / 2.0f);
-			float fovy = 2 * atan(h / (2 * focal));
+			float focalx = 0.5f * w / tan(fovx / 2.0f);
+			float focaly = (((float)h)/w) * focalx;
 
 			sibr::InputCamera::Ptr camera;
 			if (fovXfovYFlag) {
-				camera = std::make_shared<InputCamera>(InputCamera(fovy, fovx, 0.0f, 0.0f, int(w), int(h), int(i)));
+				camera = std::make_shared<InputCamera>(InputCamera(focaly, focalx, 0.0f, 0.0f, int(w), int(h), i + offset));
 			}
 			else {
-				camera = std::make_shared<InputCamera>(InputCamera(fovy, 0.0f, 0.0f, int(w), int(h), int(i)));
+				camera = std::make_shared<InputCamera>(InputCamera(focalx, 0.0f, 0.0f, int(w), int(h), i + offset));
 			}
 
 			camera->name(imgname);
-			camera->position(-T);
-			camera->rotation(sibr::Quaternionf(sibr::Matrix3f::Identity()));
-			//camera->rotation(sibr::Quaternionf(R));
+			camera->position(T);
+			camera->rotation(sibr::Quaternionf(R));
 			camera->znear(zNear);
 			camera->zfar(zFar);
 			cameras.push_back(camera);

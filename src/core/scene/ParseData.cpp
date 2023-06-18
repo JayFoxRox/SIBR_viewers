@@ -234,12 +234,13 @@ namespace sibr {
 		populateFromCamInfos();
 
 		_meshPath = _basePathName + "/Texturing/" + sibr::listSubdirectories(_basePathName + "/Texturing/")[0] + "/texturedMesh.obj";
-
 	}
 
 	void ParseData::getParsedBlenderData(const std::string& dataset_path)
 	{
-		_camInfos = InputCamera::loadTransform(dataset_path + "/transforms_train.json", 800, 800, "png", 0.01f, 1000.0f);
+		_camInfos = InputCamera::loadTransform(dataset_path + "/transforms_test.json", 800, 800, "png", 0.01f, 1000.0f);
+		auto testInfos = InputCamera::loadTransform(dataset_path + "/transforms_train.json", 800, 800, "png", 0.01f, 1000.0f, _camInfos.size());
+		_camInfos.insert(_camInfos.end(), testInfos.begin(), testInfos.end());
 
 		_basePathName = dataset_path;
 
@@ -456,14 +457,6 @@ namespace sibr {
 
 			_datasetType = Type::SIBR;
 		}
-		else if (datasetTypeStr == "blender")
-		{
-			if (!sibr::fileExists(blender))
-				SIBR_ERR << "Cannot use dataset_type " + myArgs.dataset_type.get() + " at /" + myArgs.dataset_path.get() + "." << std::endl
-				<< "Reason : blender transform (" << blender << ") does not exist" << std::endl;
-
-			_datasetType = Type::BLENDER;
-		}
 		else if (datasetTypeStr == "colmap_capreal") {
 			if (!sibr::fileExists(colmap))
 				SIBR_ERR << "Cannot use dataset_type " + myArgs.dataset_type.get() + " at /" + myArgs.dataset_path.get() + "." << std::endl
@@ -496,6 +489,14 @@ namespace sibr {
 
 			_datasetType = Type::MESHROOM;
 		}
+		else if (datasetTypeStr == "blender")
+		{
+			if (!sibr::fileExists(blender))
+				SIBR_ERR << "Cannot use dataset_type " + myArgs.dataset_type.get() + " at /" + myArgs.dataset_path.get() + "." << std::endl
+				<< "Reason : blender transform (" << blender << ") does not exist" << std::endl;
+
+			_datasetType = Type::BLENDER;
+		}
 		else {
 			if (sibr::fileExists(bundler)) {
 				_datasetType = Type::SIBR;
@@ -509,10 +510,6 @@ namespace sibr {
 			else if (sibr::fileExists(nvmscene)) {
 				_datasetType = Type::NVM;
 			}
-			else if (sibr::fileExists(blender))
-			{
-				_datasetType = Type::BLENDER;
-			}
 			else if (sibr::directoryExists(meshroom) || sibr::directoryExists(meshroom_sibr)) {
 				_datasetType = Type::MESHROOM;
 			}
@@ -522,6 +519,10 @@ namespace sibr {
 			else if (sibr::fileExists(chunked))
 			{
 				_datasetType = Type::CHUNKED;
+			}
+			else if (sibr::fileExists(blender))
+			{
+				_datasetType = Type::BLENDER;
 			}
 			else {
 				SIBR_ERR << "Cannot determine type of dataset at /" + myArgs.dataset_path.get() + customPath << std::endl;
