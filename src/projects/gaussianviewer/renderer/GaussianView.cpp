@@ -42,7 +42,7 @@ struct RichPoint
 
 float sigmoid(const float m1)
 {
-	return 1.0 / (1.0 + exp(-m1));
+	return 1.0f / (1.0f + exp(-m1));
 }
 
 // Load the Gaussians from the given file.
@@ -215,7 +215,7 @@ std::function<char* (size_t N)> resizeFunctional(void** ptr, size_t& S) {
 	return lambda;
 }
 
-sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint render_w, uint render_h, const char* file) :
+sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint render_w, uint render_h, const char* file, bool white_bg) :
 	_scene(ibrScene),
 	sibr::ViewBase(render_w, render_h)
 {
@@ -261,9 +261,11 @@ sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint
 	cudaMalloc((void**)&proj_cuda, sizeof(sibr::Matrix4f));
 	cudaMalloc((void**)&cam_pos_cuda, 3 * sizeof(float));
 	cudaMalloc((void**)&background_cuda, 3 * sizeof(float));
-	cudaMemset(background_cuda, 0, 3 * sizeof(float));
 
-	gData = new GaussianData(P,
+	float bg[3] = { white_bg ? 1.f : 0.f, white_bg ? 1.f : 0.f, white_bg ? 1.f : 0.f };
+	cudaMemcpy(background_cuda, bg, 3 * sizeof(float), cudaMemcpyHostToDevice);
+
+	gData = new GaussianData(P, 
 		(float*)pos.data(),
 		(float*)rot.data(),
 		(float*)scale.data(),
@@ -301,7 +303,7 @@ void sibr::GaussianView::onRenderIBR(sibr::IRenderTarget & dst, const sibr::Came
 {
 	if (currMode == "Ellipsoids")
 	{
-		_gaussianRenderer->process(count, *gData, eye, dst, 0.2);
+		_gaussianRenderer->process(count, *gData, eye, dst, 0.2f);
 	}
 	else if (currMode == "SfM Points")
 	{

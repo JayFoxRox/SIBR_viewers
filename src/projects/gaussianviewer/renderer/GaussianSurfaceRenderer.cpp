@@ -80,7 +80,7 @@ namespace sibr {
 				if (index < size) {
 					arr[index] = 0;
 				}
-			}
+			} 
 			)";
 		clearShader = glCreateShader(GL_COMPUTE_SHADER);
 		glShaderSource(clearShader, 1, &clearShaderSrc, nullptr);

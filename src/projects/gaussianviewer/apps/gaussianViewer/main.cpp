@@ -28,6 +28,15 @@ const char* usage = ""
 "Usage: " PROGRAM_NAME " -path <dataset-path>"    	                                "\n"
 ;
 
+std::pair<int, int> findArg(const std::string& line, const std::string& name)
+{
+	int start = line.find(name, 0);
+	start = line.find("=", start);
+	start += 1;
+	int end = line.find_first_of(",)", start);
+	return std::make_pair(start, end);
+}
+
 int main(int ac, char** av) {
 
 	// Parse Command-line Args
@@ -62,21 +71,18 @@ int main(int ac, char** av) {
 
 	if (!myArgs.dataset_path.isInit())
 	{
-		int start = cfgLine.find("input_path=", 0);
-		start = cfgLine.find("'", start);
-		start += 1;
-		int end = cfgLine.find_first_of(",)", start) - 1;
-		myArgs.dataset_path = cfgLine.substr(start, end - start);
+		auto rng = findArg(cfgLine, "input_path");
+		myArgs.dataset_path = cfgLine.substr(rng.first + 1, rng.second - rng.first - 2);
 	}
 
 	if (!myArgs.iteration.isInit())
 	{
-		int start = cfgLine.find("total_iterations=", 0);
-		start = cfgLine.find("=", start);
-		start += 1;
-		int end = cfgLine.find_first_of(",)", start);
-		myArgs.iteration = cfgLine.substr(start, end - start);
+		auto rng = findArg(cfgLine, "total_iterations");
+		myArgs.iteration = cfgLine.substr(rng.first, rng.second - rng.first);		
 	}
+
+	auto rng = findArg(cfgLine, "white_background");
+	bool white_background = cfgLine.substr(rng.first, rng.second - rng.first).find("True") != -1;
 
 	BasicIBRScene::Ptr		scene(new BasicIBRScene(myArgs, true));
 
@@ -100,7 +106,7 @@ int main(int ac, char** av) {
 		if (abs(scene_aspect_ratio - rendering_aspect_ratio) > 0.001f) {
 			if (scene_width > scene_height) {
 				rendering_height = rendering_width / scene_aspect_ratio;
-			}
+			} 
 			else {
 				rendering_width = rendering_height * scene_aspect_ratio;
 			}
@@ -114,7 +120,7 @@ int main(int ac, char** av) {
 	const unsigned int sceneResHeight = usedResolution.y();
 
 	// Create the ULR view.
-	GaussianView::Ptr	gaussianView(new GaussianView(scene, sceneResWidth, sceneResHeight, plyfile.c_str()));
+	GaussianView::Ptr	gaussianView(new GaussianView(scene, sceneResWidth, sceneResHeight, plyfile.c_str(), white_background));
 
 	// Raycaster.
 	std::shared_ptr<sibr::Raycaster> raycaster = std::make_shared<sibr::Raycaster>();

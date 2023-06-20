@@ -21,7 +21,7 @@
 
 namespace sibr { 
 
-	class SIBR_EXP_RENDERER_EXPORT GaussianData
+	class GaussianData
 	{
 	public:
 		typedef std::shared_ptr<GaussianData>	Ptr;
@@ -46,7 +46,7 @@ namespace sibr {
 	/** Render a mesh colored using the per-vertex color attribute.
 	\ingroup sibr_renderer
 	*/
-	class SIBR_EXP_RENDERER_EXPORT GaussianSurfaceRenderer
+	class GaussianSurfaceRenderer
 	{
 	public:
 		typedef std::shared_ptr<GaussianSurfaceRenderer>	Ptr;
