@@ -1395,7 +1395,7 @@ namespace sibr
 
 			if (cameraParameters.find(id) == cameraParameters.end())
 			{
-/* code multi camera broken
+				/* code multi camera broken
 				SIBR_ERR << "Could not find intrinsics for image: "
 					<< id << std::endl;
 			*/
