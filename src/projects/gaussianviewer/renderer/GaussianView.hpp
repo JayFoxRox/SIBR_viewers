@@ -23,7 +23,9 @@
 # include <core/graphics/Texture.hpp>
 #include <cuda_runtime.h>
 #include <cuda_gl_interop.h>
+#include <functional>
 # include "GaussianSurfaceRenderer.hpp"
+
 namespace CudaRasterizer
 {
 	class Rasterizer;
@@ -93,7 +95,9 @@ namespace sibr {
 		GLuint imageBuffer;
 		cudaGraphicsResource_t imageBufferCuda;
 
-		CudaRasterizer::Rasterizer* rasterizer;
+		size_t allocdGeom = 0, allocdBinning = 0, allocdImg = 0;
+		void* geomPtr = nullptr, * binningPtr = nullptr, * imgPtr = nullptr;
+		std::function<char* (size_t N)> geomBufferFunc, binningBufferFunc, imgBufferFunc;
 
 		float* view_cuda;
 		float* proj_cuda;

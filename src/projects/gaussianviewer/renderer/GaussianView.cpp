@@ -201,6 +201,20 @@ namespace sibr
 	};
 }
 
+std::function<char* (size_t N)> resizeFunctional(void** ptr, size_t& S) {
+	auto lambda = [ptr, &S](size_t N) {
+		if (N > S)
+		{
+			if (*ptr)
+				cudaFree(*ptr);
+			cudaMalloc(ptr, N);
+			S = N;
+		}
+		return reinterpret_cast<char*>(*ptr);
+	};
+	return lambda;
+}
+
 sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint render_w, uint render_h, const char* file) :
 	_scene(ibrScene),
 	sibr::ViewBase(render_w, render_h)
@@ -263,8 +277,9 @@ sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint
 	glNamedBufferStorage(imageBuffer, render_w * render_h * 3 * sizeof(float), nullptr, GL_DYNAMIC_STORAGE_BIT);
 	cudaGraphicsGLRegisterBuffer(&imageBufferCuda, imageBuffer, cudaGraphicsRegisterFlagsWriteDiscard);
 
-	// Instantiate the Cuda Rasterizer
-	rasterizer = CudaRasterizer::Rasterizer::make(1);
+	geomBufferFunc = resizeFunctional(&geomPtr, allocdGeom);
+	binningBufferFunc = resizeFunctional(&binningPtr, allocdBinning);
+	imgBufferFunc = resizeFunctional(&imgPtr, allocdImg);
 }
 
 void sibr::GaussianView::setScene(const sibr::BasicIBRScene::Ptr & newScene)
@@ -317,7 +332,10 @@ void sibr::GaussianView::onRenderIBR(sibr::IRenderTarget & dst, const sibr::Came
 		cudaGraphicsResourceGetMappedPointer((void**)&image_cuda, &bytes, imageBufferCuda);
 
 		// Rasterize
-		rasterizer->forward(
+		CudaRasterizer::Rasterizer::forward(
+			geomBufferFunc,
+			binningBufferFunc,
+			imgBufferFunc,
 			count, 3, 16,
 			background_cuda,
 			_resolution.x(), _resolution.y(),
@@ -391,6 +409,5 @@ sibr::GaussianView::~GaussianView()
 
 	glDeleteBuffers(1, &imageBuffer);
 
-	delete rasterizer;
 	delete _copyRenderer;
 }
