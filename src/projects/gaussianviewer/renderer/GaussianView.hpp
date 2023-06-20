@@ -52,7 +52,7 @@ namespace sibr {
 		 * \param render_w rendering width
 		 * \param render_h rendering height
 		 */
-		GaussianView(const sibr::BasicIBRScene::Ptr& ibrScene, uint render_w, uint render_h, const char* file);
+		GaussianView(const sibr::BasicIBRScene::Ptr& ibrScene, uint render_w, uint render_h, const char* file, bool white_bg = false);
 
 		/** Replace the current scene.
 		 *\param newScene the new scene to render */
