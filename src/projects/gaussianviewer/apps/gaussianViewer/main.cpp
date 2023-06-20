@@ -24,10 +24,6 @@
 #define PROGRAM_NAME "sibr_3Dgaussian"
 using namespace sibr;
 
-const char* usage = ""
-"Usage: " PROGRAM_NAME " -path <dataset-path>"    	                                "\n"
-;
-
 std::pair<int, int> findArg(const std::string& line, const std::string& name)
 {
 	int start = line.find(name, 0);
@@ -37,8 +33,8 @@ std::pair<int, int> findArg(const std::string& line, const std::string& name)
 	return std::make_pair(start, end);
 }
 
-int main(int ac, char** av) {
-
+int main(int ac, char** av) 
+{
 	// Parse Command-line Args
 	CommandLineArgs::parseMainArgs(ac, av);
 	GaussianAppArgs myArgs;
@@ -64,7 +60,7 @@ int main(int ac, char** av) {
 		std::ifstream cfgFile(myArgs.modelPath.get() + "/cfg_args");
 		if (!cfgFile.good())
 		{
-			SIBR_ERR << "Unable to find model config file cfg_args!";
+			SIBR_ERR << "Could not find config file 'cfg_args' at " << myArgs.modelPath.get();
 		}
 		std::getline(cfgFile, cfgLine);
 	}
@@ -84,7 +80,24 @@ int main(int ac, char** av) {
 	auto rng = findArg(cfgLine, "white_background");
 	bool white_background = cfgLine.substr(rng.first, rng.second - rng.first).find("True") != -1;
 
-	BasicIBRScene::Ptr		scene(new BasicIBRScene(myArgs, true));
+	BasicIBRScene::SceneOptions myOpts;
+	myOpts.renderTargets = false;
+	myOpts.mesh = true;
+	myOpts.images = myArgs.loadImages;
+	myOpts.cameras = true;
+	myOpts.texture = false;
+
+	BasicIBRScene::Ptr scene;
+	try
+	{
+		scene.reset(new BasicIBRScene(myArgs, myOpts));
+	}
+	catch (...)
+	{
+		SIBR_LOG << "Did not find specified input folder, loading from model path" << std::endl;
+		myArgs.dataset_path = myArgs.modelPath.get();
+		scene.reset(new BasicIBRScene(myArgs, myOpts));
+	}
 
 	std::string plyfile = myArgs.modelPath.get();
 	if (plyfile.back() != '/')
@@ -113,8 +126,6 @@ int main(int ac, char** av) {
 		}
 	}
 	Vector2u usedResolution(rendering_width, rendering_height);
-	std::cerr << " USED RES " << usedResolution << " scene w h " << scene_width << " : " << scene_height <<  
-		 " NAME " << scene->cameras()->inputCameras()[0]->name() << std::endl;
 
 	const unsigned int sceneResWidth = usedResolution.x();
 	const unsigned int sceneResHeight = usedResolution.y();
@@ -148,7 +159,8 @@ int main(int ac, char** av) {
 
 	// save images
 	generalCamera->getCameraRecorder().setViewPath(gaussianView, myArgs.dataset_path.get());
-	if (myArgs.pathFile.get() !=  "" ) {
+	if (myArgs.pathFile.get() !=  "" ) 
+	{
 		generalCamera->getCameraRecorder().loadPath(myArgs.pathFile.get(), usedResolution.x(), usedResolution.y());
 		generalCamera->getCameraRecorder().recordOfflinePath(myArgs.outPath, multiViewManager.getIBRSubView("Point view"), "");
 		if( !myArgs.noExit )

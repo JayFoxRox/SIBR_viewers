@@ -22,7 +22,6 @@ namespace sibr {
 		_paramMVP.init(_shader,"mvp");
 		_paramAlpha.init(_shader,"alpha");
 		_paramRadius.init(_shader,"radius");
-		_paramUserColor.init(_shader,"user_color");
 	}
 
 	void	PointBasedRenderer::process(const Mesh& mesh, const Camera& eye, IRenderTarget& dst, bool backfaceCull)

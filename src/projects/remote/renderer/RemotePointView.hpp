@@ -39,15 +39,7 @@ namespace sibr {
 
 	public:
 
-		/**
-		 * Constructor
-		 * \param ibrScene The scene to use for rendering.
-		 * \param render_w rendering width
-		 * \param render_h rendering height
-		 */
-		RemotePointView(const sibr::BasicIBRScene::Ptr& ibrScene, uint render_w, uint render_h);
-
-		RemotePointView();
+		RemotePointView(std::string ip, uint port);
 
 		/** Replace the current scene.
 		 *\param newScene the new scene to render */
@@ -102,6 +94,9 @@ namespace sibr {
 		float _scalingModifier = 1.0f;
 
 		std::atomic<bool> keep_running = true;
+
+		std::string _ip;
+		int _port;
 
 		void send_receive();
 

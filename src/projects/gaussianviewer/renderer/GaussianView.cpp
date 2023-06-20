@@ -56,7 +56,7 @@ int loadPly(const char* filename,
 	std::ifstream infile(filename, std::ios_base::binary);
 
 	if (!infile.good())
-		throw std::runtime_error("File not found!");
+		SIBR_ERR << "Unable to find model's PLY file, attempted:\n" << filename << std::endl;
 
 	// "Parse" header (it has to be a specific format anyway)
 	std::string buff;
@@ -70,7 +70,7 @@ int loadPly(const char* filename,
 	ss >> dummy >> dummy >> count;
 
 	// Output number of Gaussians contained
-	std::cout << count << std::endl;
+	SIBR_LOG << "Loading " << count << " Gaussian splats" << std::endl;
 
 	while (std::getline(infile, buff))
 		if (buff.compare("end_header") == 0)

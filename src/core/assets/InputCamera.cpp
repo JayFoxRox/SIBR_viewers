@@ -1446,6 +1446,70 @@ namespace sibr
 		return cameras;
 	}
 
+	std::vector<InputCamera::Ptr> InputCamera::loadJSON(const std::string& jsonPath, const float zNear, const float zFar)
+	{
+		std::ifstream json_file(jsonPath, std::ios::in);
+
+		if (!json_file)
+		{
+			std::cerr << "file loading failed: " << jsonPath << std::endl;
+			return std::vector<InputCamera::Ptr>();
+		}
+
+		std::vector<InputCamera::Ptr> cameras;
+
+		picojson::value v;
+		picojson::set_last_error(std::string());
+		std::string err = picojson::parse(v, json_file);
+		if (!err.empty()) {
+			picojson::set_last_error(err);
+			json_file.setstate(std::ios::failbit);
+		}
+
+		picojson::array& frames = v.get<picojson::array>();
+
+		for (size_t i = 0; i < frames.size(); ++i)
+		{
+			int id = frames[i].get("id").get<double>();
+			std::string imgname = frames[i].get("img_name").get<std::string>();
+			int width = frames[i].get("width").get<double>();
+			int height = frames[i].get("height").get<double>();
+			float fy = frames[i].get("fy").get<double>();
+			float fx = frames[i].get("fx").get<double>();
+
+			sibr::InputCamera::Ptr camera = std::make_shared<InputCamera>(InputCamera(fy, fx, 0.0f, 0.0f, width, height, id));
+
+			picojson::array& pos = frames[i].get("position").get<picojson::array>();
+			sibr::Vector3f position(pos[0].get<double>(), pos[1].get<double>(), pos[2].get<double>());
+
+			//position.x() = 0;
+			//position.y() = 0;
+			//position.z() = 1;
+
+			picojson::array& rot = frames[i].get("rotation").get<picojson::array>();
+			sibr::Matrix3f orientation;
+			for (int i = 0; i < 3; i++)
+			{
+				picojson::array& row = rot[i].get<picojson::array>();
+				for (int j = 0; j < 3; j++)
+				{
+					orientation(i, j) = row[j].get<double>();
+				}
+			}
+			orientation.col(1) = -orientation.col(1);
+			orientation.col(2) = -orientation.col(2);
+			//orientation = sibr::Matrix3f::Identity();
+
+			camera->name(imgname);
+			camera->position(position);
+			camera->rotation(sibr::Quaternionf(orientation));
+			camera->znear(zNear);
+			camera->zfar(zFar);
+			cameras.push_back(camera);
+		}
+		return cameras;
+	}
+
 	std::vector<InputCamera::Ptr> InputCamera::loadTransform(const std::string& transformPath, int w, int h, std::string extension, const float zNear, const float zFar, const int offset, const int fovXfovYFlag)
 	{
 		std::ifstream json_file(transformPath, std::ios::in);

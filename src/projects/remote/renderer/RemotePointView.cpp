@@ -33,13 +33,13 @@ void sibr::RemotePointView::send_receive()
 {
 	while (keep_running)
 	{
-		std::cout << "Waiting for connection..." << std::endl;
+		SIBR_LOG << "Trying to connect..." << std::endl;
 		try
 		{
 			boost::asio::io_service ioservice;
 			boost::asio::ip::tcp::socket sock(ioservice);
-			boost::asio::ip::address addr = boost::asio::ip::address::from_string("127.0.0.1");
-			boost::asio::ip::tcp::endpoint contact(addr, 6009);
+			boost::asio::ip::address addr = boost::asio::ip::address::from_string(_ip);
+			boost::asio::ip::tcp::endpoint contact(addr, _port);
 
 			boost::system::error_code ec;
 			do
@@ -48,7 +48,7 @@ void sibr::RemotePointView::send_receive()
 				std::this_thread::sleep_for(std::chrono::milliseconds(100));
 			} while (keep_running && ec.failed());
 
-			std::cout << "Connected!" << std::endl;
+			SIBR_LOG << "Connected!" << std::endl;
 			while (keep_running)
 			{
 				{
@@ -56,7 +56,6 @@ void sibr::RemotePointView::send_receive()
 
 					// Serialize our arbitrary data to something simple, yet convenient for both sides
 					json sendData;
-
 					sendData[jTrain] = _doTrainingBool ? 1 : 0;
 					sendData[jSHsPython] = _doSHsPython ? 1 : 0;
 					sendData[jRotScalePython] = _doRotScalePython ? 1 : 0;
@@ -100,12 +99,13 @@ void sibr::RemotePointView::send_receive()
 		}
 		catch (...)
 		{
-			std::cout << "Connection dropped" << std::endl;
+			SIBR_LOG << "Connection dropped" << std::endl;
 		}
 	}
 }
 
-sibr::RemotePointView::RemotePointView() : sibr::ViewBase(0, 0)
+sibr::RemotePointView::RemotePointView(std::string ip, uint port) : sibr::ViewBase(0, 0),
+_ip(ip), _port(port)
 {
 	_pointbasedrenderer.reset(new PointBasedRenderer());
 	_copyRenderer.reset(new CopyRenderer());
@@ -191,8 +191,8 @@ void sibr::RemotePointView::onGUI()
 	const std::string guiName = "Remote Viewer Settings (" + name() + ")";
 	if (ImGui::Begin(guiName.c_str())) 
 	{
-		ImGui::Checkbox("Show SfM", &_showSfM);
-		ImGui::Checkbox("Show SfM during Motion", &_renderSfMInMotion);
+		ImGui::Checkbox("Show Input Points", &_showSfM);
+		ImGui::Checkbox("Show Input Points during Motion", &_renderSfMInMotion);
 		ImGui::Checkbox("Train", &_doTrainingBool);
 		ImGui::Checkbox("SHs Python", &_doSHsPython);
 		ImGui::Checkbox("Rot-Scale Python", &_doRotScalePython);
