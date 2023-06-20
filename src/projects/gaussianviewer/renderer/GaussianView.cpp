@@ -406,8 +406,14 @@ sibr::GaussianView::~GaussianView()
 	cudaFree(background_cuda);
 
 	cudaGraphicsUnregisterResource(imageBufferCuda);
-
 	glDeleteBuffers(1, &imageBuffer);
+
+	if (geomPtr)
+		cudaFree(geomPtr);
+	if (binningPtr)
+		cudaFree(binningPtr);
+	if (imgPtr)
+		cudaFree(imgPtr);
 
 	delete _copyRenderer;
 }
