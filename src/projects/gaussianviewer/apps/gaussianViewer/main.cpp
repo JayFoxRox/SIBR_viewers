@@ -67,13 +67,13 @@ int main(int ac, char** av)
 
 	if (!myArgs.dataset_path.isInit())
 	{
-		auto rng = findArg(cfgLine, "input_path");
+		auto rng = findArg(cfgLine, "source_path");
 		myArgs.dataset_path = cfgLine.substr(rng.first + 1, rng.second - rng.first - 2);
 	}
 
 	if (!myArgs.iteration.isInit())
 	{
-		auto rng = findArg(cfgLine, "total_iterations");
+		auto rng = findArg(cfgLine, "iterations");
 		myArgs.iteration = cfgLine.substr(rng.first, rng.second - rng.first);		
 	}
 
@@ -102,7 +102,7 @@ int main(int ac, char** av)
 	std::string plyfile = myArgs.modelPath.get();
 	if (plyfile.back() != '/')
 		plyfile += "/";
-	plyfile += "diffuse_point_cloud/iteration_" + myArgs.iteration.get() + "/point_cloud.ply";
+	plyfile += "point_cloud/iteration_" + myArgs.iteration.get() + "/point_cloud.ply";
 
 	// Setup the scene: load the proxy, create the texture arrays.
 	const uint flags = SIBR_GPU_LINEAR_SAMPLING | SIBR_FLIP_TEXTURE;
