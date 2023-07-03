@@ -125,11 +125,22 @@ int loadPly(const char* filename,
 	{
 		int i = mapp[k].second;
 		pos[k] = points[i].pos;
-		rot[k] = points[i].rot;
-		// We have exp activation on scale, but it's done by the rasterizer
-		scales[k] = points[i].scale;
-		// We have sigmoid activation on opacities, not done by rasterizer
+
+		// Normalize quaternion
+		float length2 = 0;
+		for (int j = 0; j < 4; j++)
+			length2 += points[i].rot.rot[j] * points[i].rot.rot[j];
+		float length = sqrt(length2);
+		for (int j = 0; j < 4; j++)
+			rot[k].rot[j] = points[i].rot.rot[j] / length;
+
+		// Exponentiate scale
+		for(int j = 0; j < 3; j++)
+			scales[k].scale[j] = exp(points[i].scale.scale[j]);
+
+		// Activate alpha
 		opacities[k] = sigmoid(points[i].opacity);
+
 		shs[k].shs[0] = points[i].shs.shs[0];
 		shs[k].shs[1] = points[i].shs.shs[1];
 		shs[k].shs[2] = points[i].shs.shs[2];
