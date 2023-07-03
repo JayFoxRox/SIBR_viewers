@@ -591,7 +591,7 @@ namespace sibr {
 			maxId = (maxId > int(_imgInfos[c].camId)) ? maxId : int(_imgInfos[c].camId);
 			if (_imgInfos[c].camId >= presentIDs.size())
 			{
-				SIBR_ERR << "Incorrect Camera IDs " << std::endl;
+				//SIBR_ERR << "Incorrect Camera IDs " << std::endl;
 				continue;
 			}
 			try

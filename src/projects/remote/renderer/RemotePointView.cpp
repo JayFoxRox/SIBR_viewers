@@ -23,7 +23,6 @@ constexpr char* jZNear = "z_near";
 constexpr char* jTrain = "train";
 constexpr char* jViewMat = "view_matrix";
 constexpr char* jViewProjMat = "view_projection_matrix";
-constexpr char* jSkipValidation = "skip_validation";
 constexpr char* jScalingModifier = "scaling_modifier";
 constexpr char* jSHsPython = "shs_python";
 constexpr char* jRotScalePython = "rot_scale_python";
@@ -59,7 +58,6 @@ void sibr::RemotePointView::send_receive()
 					sendData[jTrain] = _doTrainingBool ? 1 : 0;
 					sendData[jSHsPython] = _doSHsPython ? 1 : 0;
 					sendData[jRotScalePython] = _doRotScalePython ? 1 : 0;
-					sendData[jSkipValidation] = _skipValidation ? 1 : 0;
 					sendData[jScalingModifier] = _scalingModifier;
 					sendData[jResX] = _remoteInfo.imgResolution.x();
 					sendData[jResY] = _remoteInfo.imgResolution.y();
@@ -176,7 +174,7 @@ void sibr::RemotePointView::onRenderIBR(sibr::IRenderTarget & dst, const sibr::C
 				glBindTexture(GL_TEXTURE_2D, 0);
 				_imageResize = false;
 			}
-			if (_imageDirty)
+			if (_imageDirty && _imageData.size() == 3 * _resolution.x() * _resolution.y())
 			{
 				glTextureSubImage2D(_imageTexture, 0, 0, 0, _resolution.x(), _resolution.y(), GL_RGB, GL_UNSIGNED_BYTE, _imageData.data());
 				_imageDirty = false;
@@ -196,7 +194,6 @@ void sibr::RemotePointView::onGUI()
 		ImGui::Checkbox("Train", &_doTrainingBool);
 		ImGui::Checkbox("SHs Python", &_doSHsPython);
 		ImGui::Checkbox("Rot-Scale Python", &_doRotScalePython);
-		ImGui::Checkbox("Skip Validation", &_skipValidation);
 		ImGui::Checkbox("Keep model alive (after training)", &_keepAlive);
 		ImGui::SliderFloat("Scaling Modifier", &_scalingModifier, 0.001f, 1.0f);
 	}

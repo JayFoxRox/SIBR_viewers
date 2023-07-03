@@ -87,7 +87,6 @@ namespace sibr {
 		bool _doTrainingBool = true;
 		bool _doSHsPython = false;
 		bool _doRotScalePython = false;
-		bool _skipValidation = false;
 		bool _keepAlive = true;
 		bool _showSfM = false;
 
