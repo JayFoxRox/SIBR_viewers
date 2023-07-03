@@ -55,7 +55,7 @@ int main(int ac, char** av)
 	sibr::Window		window(PROGRAM_NAME, sibr::Vector2i(50, 50), myArgs, getResourcesDirectory() + "/gaussians/" + PROGRAM_NAME + ".ini");
 
 	std::string cfgLine;
-	if (!myArgs.dataset_path.isInit() || !myArgs.iteration.isInit())
+	if (!myArgs.dataset_path.isInit())
 	{
 		std::ifstream cfgFile(myArgs.modelPath.get() + "/cfg_args");
 		if (!cfgFile.good())
@@ -63,18 +63,8 @@ int main(int ac, char** av)
 			SIBR_ERR << "Could not find config file 'cfg_args' at " << myArgs.modelPath.get();
 		}
 		std::getline(cfgFile, cfgLine);
-	}
-
-	if (!myArgs.dataset_path.isInit())
-	{
 		auto rng = findArg(cfgLine, "source_path");
 		myArgs.dataset_path = cfgLine.substr(rng.first + 1, rng.second - rng.first - 2);
-	}
-
-	if (!myArgs.iteration.isInit())
-	{
-		auto rng = findArg(cfgLine, "iterations");
-		myArgs.iteration = cfgLine.substr(rng.first, rng.second - rng.first);		
 	}
 
 	auto rng = findArg(cfgLine, "white_background");
@@ -102,7 +92,7 @@ int main(int ac, char** av)
 	std::string plyfile = myArgs.modelPath.get();
 	if (plyfile.back() != '/')
 		plyfile += "/";
-	plyfile += "point_cloud/iteration_" + myArgs.iteration.get() + "/point_cloud.ply";
+	plyfile += "point_cloud/iteration_" + std::to_string(myArgs.iteration.get()) + "/point_cloud.ply";
 
 	// Setup the scene: load the proxy, create the texture arrays.
 	const uint flags = SIBR_GPU_LINEAR_SAMPLING | SIBR_FLIP_TEXTURE;
