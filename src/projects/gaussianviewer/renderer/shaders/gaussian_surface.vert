@@ -89,10 +89,10 @@ void main() {
     float a = alphas[boxID];
 	alphaVert = a;
 	ellipsoidScale = vec3(scales[3 * boxID + 0], scales[3 * boxID + 1], scales[3 * boxID + 2]);
-	ellipsoidScale = 2 * exp(ellipsoidScale);
+	ellipsoidScale = 2 * ellipsoidScale;
 
 	vec4 q = rots[boxID];
-	ellipsoidRotation = transpose(quatToMat3(q / length(q)));
+	ellipsoidRotation = transpose(quatToMat3(q));
 
     int vertexIndex = boxIndices[gl_VertexID];
     worldPos = ellipsoidRotation * (ellipsoidScale * boxVertices[vertexIndex]);

@@ -20,6 +20,41 @@
 #include <core/raycaster/Raycaster.hpp>
 #include <core/view/SceneDebugView.hpp>
 #include <algorithm>
+#include <boost/filesystem.hpp>
+#include <regex>
+
+namespace fs = boost::filesystem;
+
+std::string findLargestNumberedSubdirectory(const std::string& directoryPath) {
+	fs::path dirPath(directoryPath);
+	if (!fs::exists(dirPath) || !fs::is_directory(dirPath)) {
+		std::cerr << "Invalid directory: " << directoryPath << std::endl;
+		return "";
+	}
+
+	std::regex regexPattern(R"_(iteration_(\d+))_");
+	std::string largestSubdirectory;
+	int largestNumber = -1;
+
+	for (const auto& entry : fs::directory_iterator(dirPath)) {
+		if (fs::is_directory(entry)) {
+			std::string subdirectory = entry.path().filename().string();
+			std::smatch match;
+
+			if (std::regex_match(subdirectory, match, regexPattern)) {
+				int number = std::stoi(match[1]);
+
+				if (number > largestNumber) {
+					largestNumber = number;
+					largestSubdirectory = subdirectory;
+				}
+			}
+		}
+	}
+
+	return largestSubdirectory;
+}
+
 
 #define PROGRAM_NAME "sibr_3Dgaussian"
 using namespace sibr;
@@ -92,7 +127,15 @@ int main(int ac, char** av)
 	std::string plyfile = myArgs.modelPath.get();
 	if (plyfile.back() != '/')
 		plyfile += "/";
-	plyfile += "point_cloud/iteration_" + std::to_string(myArgs.iteration.get()) + "/point_cloud.ply";
+	plyfile += "point_cloud";
+	if (!myArgs.iteration.isInit())
+	{
+		plyfile += "/" + findLargestNumberedSubdirectory(plyfile) + "/point_cloud.ply";
+	}
+	else
+	{
+		plyfile += "/iteration_" + myArgs.iteration.get() + " / point_cloud.ply";
+	}
 
 	// Setup the scene: load the proxy, create the texture arrays.
 	const uint flags = SIBR_GPU_LINEAR_SAMPLING | SIBR_FLIP_TEXTURE;

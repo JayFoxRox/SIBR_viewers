@@ -316,7 +316,7 @@ void sibr::GaussianView::onRenderIBR(sibr::IRenderTarget & dst, const sibr::Came
 	{
 		_gaussianRenderer->process(count, *gData, eye, dst, 0.2f);
 	}
-	else if (currMode == "SfM Points")
+	else if (currMode == "Initial Points")
 	{
 		_pointbasedrenderer->process(_scene->proxies()->proxy(), eye, dst);
 	}
@@ -390,8 +390,8 @@ void sibr::GaussianView::onGUI()
 		{
 			if (ImGui::Selectable("Splats"))
 				currMode = "Splats";
-			if (ImGui::Selectable("SfM Points"))
-				currMode = "SfM Points";
+			if (ImGui::Selectable("Initial Points"))
+				currMode = "Initial Points";
 			if (ImGui::Selectable("Ellipsoids"))
 				currMode = "Ellipsoids";
 			ImGui::EndCombo();
