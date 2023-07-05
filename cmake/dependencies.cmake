@@ -202,21 +202,25 @@ sibr_addlibrary(
 ##############
 ## Find OpenCV
 ##############
-if (${MSVC_TOOLSET_VERSION} EQUAL 143)
-	MESSAGE("SPECIAL OPENCV HANDLING")
-	set(opencv_set_arguments 
-        CHECK_CACHED_VAR OpenCV_DIR PATH "install" ## see OpenCVConfig.cmake
-    )
-elseif (MSVC11 OR MSVC12)
-    set(opencv_set_arguments 
-        CHECK_CACHED_VAR OpenCV_DIR PATH "opencv/build" ## see OpenCVConfig.cmake
-    )
-elseif (MSVC14)
-    set(opencv_set_arguments 
-        CHECK_CACHED_VAR OpenCV_DIR PATH "opencv-4.5.0/build" ## see OpenCVConfig.cmake
-    )
-else ()
-    message("There is no provided OpenCV library for your version of MSVC")
+if (WIN32)
+	if (${MSVC_TOOLSET_VERSION} EQUAL 143)
+		MESSAGE("SPECIAL OPENCV HANDLING")
+		set(opencv_set_arguments 
+		CHECK_CACHED_VAR OpenCV_DIR PATH "install" ## see OpenCVConfig.cmake
+	    )
+	elseif (MSVC11 OR MSVC12)
+	    set(opencv_set_arguments 
+		CHECK_CACHED_VAR OpenCV_DIR PATH "opencv/build" ## see OpenCVConfig.cmake
+	    )
+	elseif (MSVC14)
+	    set(opencv_set_arguments 
+		CHECK_CACHED_VAR OpenCV_DIR PATH "opencv-4.5.0/build" ## see OpenCVConfig.cmake
+	    )
+	else ()
+	    message("There is no provided OpenCV library for your compiler, relying on find_package to find it")
+	endif()
+else()
+	    message("There is no provided OpenCV library for your compiler, relying on find_package to find it")
 endif()
 
 sibr_addlibrary(NAME OpenCV #VERBOSE ON
