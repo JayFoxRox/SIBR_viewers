@@ -7,7 +7,6 @@
 # 
 # For inquiries contact sibr@inria.fr and/or George.Drettakis@inria.fr
 
-
 ## Important Note:
 ## This is not an official Find*cmake. It has been written for searching through
 ## a custom path (EMBREE_DIR) before checking elsewhere.
