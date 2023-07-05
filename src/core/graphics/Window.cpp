@@ -305,7 +305,7 @@ namespace sibr
 		/// \todo TODO: fix, width and height might be erroneous. SR
 		viewport(Viewport(0.f, 0.f, (float)width, (float)height));	/// \todo TODO: bind both
 
-		_useVSync = !args.vsync;
+		_useVSync = args.vsync;
 		glfwSwapInterval(args.vsync);
 		glfwSetKeyCallback(_glfwWin.get(), glfwKeyboardCallback);
 		glfwSetScrollCallback(_glfwWin.get(), glfwMouseScrollCallback);

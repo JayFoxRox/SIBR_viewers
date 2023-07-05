@@ -218,8 +218,8 @@ std::function<char* (size_t N)> resizeFunctional(void** ptr, size_t& S) {
 		{
 			if (*ptr)
 				cudaFree(*ptr);
-			cudaMalloc(ptr, N);
-			S = N;
+			cudaMalloc(ptr, 2 * N);
+			S = 2 * N;
 		}
 		return reinterpret_cast<char*>(*ptr);
 	};
