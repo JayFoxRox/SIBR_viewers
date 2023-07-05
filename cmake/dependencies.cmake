@@ -202,7 +202,12 @@ sibr_addlibrary(
 ##############
 ## Find OpenCV
 ##############
-if (MSVC11 OR MSVC12)
+if (${MSVC_TOOLSET_VERSION} EQUAL 143)
+	MESSAGE("SPECIAL OPENCV HANDLING")
+	set(opencv_set_arguments 
+        CHECK_CACHED_VAR OpenCV_DIR PATH "install" ## see OpenCVConfig.cmake
+    )
+elseif (MSVC11 OR MSVC12)
     set(opencv_set_arguments 
         CHECK_CACHED_VAR OpenCV_DIR PATH "opencv/build" ## see OpenCVConfig.cmake
     )
@@ -218,7 +223,8 @@ sibr_addlibrary(NAME OpenCV #VERBOSE ON
         MSVC11 "https://repo-sam.inria.fr/fungraph/dependencies/sibr/~0.9/opencv.7z"
         MSVC12 "https://repo-sam.inria.fr/fungraph/dependencies/sibr/~0.9/opencv.7z"
         MSVC14 "https://repo-sam.inria.fr/fungraph/dependencies/sibr/~0.9/opencv-4.5.0.7z"    # opencv compatible with msvc14 and with contribs
-        SET ${opencv_set_arguments}
+        MSVC17 "https://repo-sam.inria.fr/fungraph/dependencies/sibr/~0.9/opencv4-8.7z" 
+		SET ${opencv_set_arguments}
     )
 find_package(OpenCV REQUIRED) ## Use directly the OpenCVConfig.cmake provided
 
