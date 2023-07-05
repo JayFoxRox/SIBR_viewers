@@ -39,7 +39,7 @@ function(sibr_addlibrary)
     endif()
 
     file(MAKE_DIRECTORY ${EXTLIBS_PACKAGE_FOLDER})
-    cmake_parse_arguments(args "VCID" "VERBOSE;TIMEOUT;DEFAULT_USE;NAME;VERSION;MSVC11;MSVC12;MSVC14" "MULTI_SET;SET" ${ARGN})
+    cmake_parse_arguments(args "VCID" "VERBOSE;TIMEOUT;DEFAULT_USE;NAME;VERSION;MSVC11;MSVC12;MSVC14;MSVC17" "MULTI_SET;SET" ${ARGN})
 
 
     if (NOT "${args_VERSION}" MATCHES "")
@@ -60,6 +60,7 @@ function(sibr_addlibrary)
                     MSVC11 "${LIB_PACKAGE_FOLDER}" "${args_MSVC11}"
                     MSVC12 "${LIB_PACKAGE_FOLDER}" "${args_MSVC12}"
                     MSVC14 "${LIB_PACKAGE_FOLDER}" "${args_MSVC14}" # TODO SV: make sure to build this library if required
+					MSVC17 "${LIB_PACKAGE_FOLDER}" "${args_MSVC17}"
                     SET         ${args_SET}
                     MULTI_SET   ${args_MULTI_SET}
                 )

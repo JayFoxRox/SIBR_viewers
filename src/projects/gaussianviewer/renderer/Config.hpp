@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020, Inria
+ * Copyright (C) 2023, Inria
  * GRAPHDECO research group, https://team.inria.fr/graphdeco
  * All rights reserved.
  *
@@ -44,6 +44,7 @@ namespace sibr {
 		virtual BasicIBRAppArgs {
 		RequiredArg<std::string> modelPath = { "model-path", "Model directory" };
 		RequiredArg<std::string> iteration = { "iteration", "Iteration to load from model" };
+		Arg<bool> loadImages = { "load_images", "Whether or not to load images for scene overview."};
 	};
 
 }

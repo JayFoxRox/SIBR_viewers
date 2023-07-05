@@ -128,7 +128,7 @@ function(win3rdParty prefix )
 
     ## set the handled version of MSVC
     ## if you plan to add a win3rdParty dir to download with a new MSVC version: build the win3rdParty dir and add the MSCV entry here.
-    set(MSVC_VERSIONS_LIST "MSVC11;MSVC12;MSVC14")
+    set(MSVC_VERSIONS_LIST "MSVC17;MSVC11;MSVC12;MSVC14")
 
     #include(CMakeParseArguments)   # CMakeParseArguments is obsolete since cmake 3.5
     # cmake_parse_arguments (<prefix> <options> <one_value_keywords> <multi_value_keywords> args)
@@ -143,7 +143,7 @@ function(win3rdParty prefix )
     # message(STATUS "value of w3p_DEFAULT_USE = ${w3p_DEFAULT_USE}")
 
     # foreach (loop_var ${MSVC_VERSIONS_LIST})
-    #         message(STATUS "value of w3p_${loop_var} = ${w3p_${loop_var}}")
+            # message(STATUS "value of w3p_${loop_var} = ${w3p_${loop_var}}")
     # endforeach(loop_var)
 
     # message(STATUS "value of w3p_MULTI_SET = ${w3p_MULTI_SET}")
@@ -158,36 +158,38 @@ function(win3rdParty prefix )
     if(NOT DEFINED w3p_DEFAULT_USE)
         set(w3p_DEFAULT_USE ON)
     endif()
+	
 
     ## 1st use (check/update|download) :
     set(${prefix}_WIN3RDPARTY_USE ${w3p_DEFAULT_USE} CACHE BOOL "Use required 3rdParty binaries from ${prefix}_WIN3RDPARTY_DIR or download it if not exist")
+
 
     ## We want to test if each version of MSVC was filled by the function (see associated parameters)
     ## As CMake is running only for one version of MSVC, if that MSVC version was filled, we get back associated parameters,
     ## otherwise we can't use the downloadAndExtractZipFile with win3rdParty.
     set(enableWin3rdParty OFF)
-    foreach(MSVC_VER ${MSVC_VERSIONS_LIST})
-        if(${MSVC_VER} AND w3p_${MSVC_VER})
-            list(LENGTH w3p_${MSVC_VER} count)
-            if("${count}" LESS "2")
-                message(WARNING "You are using ${MSVC_VER} with ${prefix}_WIN3RDPARTY_USE=${${prefix}_WIN3RDPARTY_USE}, but win3rdParty function isn't filled for ${MSVC_VER}!")
-            else()
-                list(GET w3p_${MSVC_VER} 0 Win3rdPartyName)
-                list(GET w3p_${MSVC_VER} 1 Win3rdPartyUrl)
-                if(w3p_VCID)
-                    ## try to get the VcId of MSVC. See also MSVC_VERSION cmake var in the doc.
-                    string(REGEX REPLACE "MS([A-Za-z_0-9-]+)" "\\1" vcId ${MSVC_VER})
-                    string(TOLOWER ${vcId} vcId)
-                    set(${prefix}_WIN3RDPARTY_VCID "${vcId}0" CACHE STRING "the MSVC id (commonly used to prefix/suffix library name, see boost or CGAL)")
-                    mark_as_advanced(${prefix}_WIN3RDPARTY_VCID)
-                endif()
-                set(enableWin3rdParty ON)
-                set(suffixCompilerID ${MSVC_VER})
+	
+	foreach(MSVC_VER ${MSVC_VERSIONS_LIST})
+		if(${MSVC_VER} AND w3p_${MSVC_VER} OR ${MSVC_TOOLSET_VERSION} EQUAL 143 AND ${MSVC_VER} STREQUAL "MSVC17") 
+			list(LENGTH w3p_${MSVC_VER} count)
+			if("${count}" LESS "2")
+				#message(WARNING "You are using ${MSVC_VER} with ${prefix}_WIN3RDPARTY_USE=${${prefix}_WIN3RDPARTY_USE}, but win3rdParty function isn't filled for ${MSVC_VER}!")
+			else()
+				list(GET w3p_${MSVC_VER} 0 Win3rdPartyName)
+				list(GET w3p_${MSVC_VER} 1 Win3rdPartyUrl)
+				if(w3p_VCID)
+					## try to get the VcId of MSVC. See also MSVC_VERSION cmake var in the doc.
+					string(REGEX REPLACE "MS([A-Za-z_0-9-]+)" "\\1" vcId ${MSVC_VER})
+					string(TOLOWER ${vcId} vcId)
+					set(${prefix}_WIN3RDPARTY_VCID "${vcId}0" CACHE STRING "the MSVC id (commonly used to prefix/suffix library name, see boost or CGAL)")
+					mark_as_advanced(${prefix}_WIN3RDPARTY_VCID)
+				endif()
+				set(enableWin3rdParty ON)
+				set(suffixCompilerID ${MSVC_VER})
 				break()
-            endif()
-        endif()
-    endforeach()
-
+			endif()
+		endif()
+	endforeach()
     ## If previous step succeed to get MSVC dirname and URL of the current MSVC version, use it to auto download/update the win3rdParty dir
     if(enableWin3rdParty AND ${prefix}_WIN3RDPARTY_USE)
 

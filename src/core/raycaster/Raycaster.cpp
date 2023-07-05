@@ -81,7 +81,7 @@ namespace sibr
 			SIBR_LOG << "Cannot create an embree scene" << std::endl;
 		else {
 			//SIBR_LOG << "Embree device and scene created" << std::endl;
-			SIBR_LOG << "Warning Backface culling state : "<< rtcGetDeviceProperty(*g_device, RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED) << std::endl;
+			//SIBR_LOG << "Warning Backface culling state : "<< rtcGetDeviceProperty(*g_device, RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED) << std::endl;
 			return true; // Success
 		}
 		return false; // Fail

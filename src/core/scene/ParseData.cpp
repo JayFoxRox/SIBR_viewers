@@ -258,6 +258,20 @@ namespace sibr {
 		_meshPath = dataset_path;
 	}
 
+	void ParseData::getParsedGaussianData(const std::string& dataset_path)
+	{
+		_camInfos = InputCamera::loadJSON(dataset_path + "/cameras.json");
+		_meshPath = dataset_path + "/input.ply";
+
+		_basePathName = dataset_path;
+
+		_imgPath = ".";
+
+		populateFromCamInfos();
+
+		_meshPath = dataset_path + "/input.ply";
+	}
+
 	void ParseData::getParsedColmap2Data(const std::string& dataset_path, const int fovXfovY_flag, const bool capreal_flag)
 	{
 		_basePathName = dataset_path + "/sparse/0/";
@@ -453,6 +467,7 @@ namespace sibr {
 		std::string meshroom_sibr = myArgs.dataset_path.get() + "/StructureFromMotion/";
 		std::string chunked = myArgs.dataset_path.get() + "/chunk.dat";
 		std::string blender = myArgs.dataset_path.get() + "/transforms_train.json";
+		std::string gaussian = myArgs.dataset_path.get() + "/cameras.json";
 
 		if(datasetTypeStr == "sibr") {
 			if (!sibr::fileExists(bundler))
@@ -501,9 +516,21 @@ namespace sibr {
 
 			_datasetType = Type::BLENDER;
 		}
+		else if (datasetTypeStr == "gaussian")
+		{
+			if (!sibr::fileExists(gaussian))
+				SIBR_ERR << "Cannot use dataset_type " + myArgs.dataset_type.get() + " at /" + myArgs.dataset_path.get() + "." << std::endl
+				<< "Reason : Gaussian transform (" << blender << ") does not exist" << std::endl;
+
+			_datasetType = Type::BLENDER;
+		}
 		else {
 			if (sibr::fileExists(bundler)) {
 				_datasetType = Type::SIBR;
+			}
+			else if (sibr::fileExists(gaussian))
+			{
+				_datasetType = Type::GAUSSIAN;
 			}
 			else if (sibr::fileExists(colmap) && (sibr::fileExists(caprealobj) || sibr::fileExists(caprealply))) {
 				_datasetType = Type::COLMAP_CAPREAL;
@@ -534,6 +561,7 @@ namespace sibr {
 		}
 
 		switch(_datasetType) {
+			case Type::GAUSSIAN:			getParsedGaussianData(myArgs.dataset_path); break;
 			case Type::BLENDER:			getParsedBlenderData(myArgs.dataset_path); break;
 			case Type::SIBR : 			getParsedBundlerData(myArgs.dataset_path, customPath, myArgs.scene_metadata_filename); break;
 			case Type::COLMAP_CAPREAL : getParsedColmapData(myArgs.dataset_path, myArgs.colmap_fovXfovY_flag, true); break;
@@ -567,7 +595,7 @@ namespace sibr {
 			maxId = (maxId > int(_imgInfos[c].camId)) ? maxId : int(_imgInfos[c].camId);
 			if (_imgInfos[c].camId >= presentIDs.size())
 			{
-				SIBR_ERR << "Incorrect Camera IDs " << std::endl;
+				//SIBR_ERR << "Incorrect Camera IDs " << std::endl;
 				continue;
 			}
 			try

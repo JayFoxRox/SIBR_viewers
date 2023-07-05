@@ -1,4 +1,4 @@
-# Copyright (C) 2020, Inria
+# Copyright (C) 2023, Inria
 # GRAPHDECO research group, https://team.inria.fr/graphdeco
 # All rights reserved.
 # 
@@ -11,8 +11,8 @@ set(SIBR_PROJECT "gaussian")
 project(sibr_${SIBR_PROJECT} LANGUAGES CXX)
 
 sibr_gitlibrary(TARGET CudaRasterizer
-    GIT_REPOSITORY 	"https://gitlab.inria.fr/bkerbl/diff-gaussian-rasterization.git"
-    GIT_TAG			"677e32c93ffeb74aef360cfa26b2346364ae0309"
+    GIT_REPOSITORY 	"https://github.com/graphdeco-inria/diff-gaussian-rasterization.git"
+    GIT_TAG			"3a07ac2e39b9ba7043ffc8bb98397c3ba6e2532d"
 )
 
 find_package(CUDAToolkit REQUIRED)

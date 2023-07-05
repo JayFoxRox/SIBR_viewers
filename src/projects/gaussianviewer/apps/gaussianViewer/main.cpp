@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020, Inria
+ * Copyright (C) 2023, Inria
  * GRAPHDECO research group, https://team.inria.fr/graphdeco
  * All rights reserved.
  *
@@ -20,13 +20,44 @@
 #include <core/raycaster/Raycaster.hpp>
 #include <core/view/SceneDebugView.hpp>
 #include <algorithm>
+#include <boost/filesystem.hpp>
+#include <regex>
+
+namespace fs = boost::filesystem;
+
+std::string findLargestNumberedSubdirectory(const std::string& directoryPath) {
+	fs::path dirPath(directoryPath);
+	if (!fs::exists(dirPath) || !fs::is_directory(dirPath)) {
+		std::cerr << "Invalid directory: " << directoryPath << std::endl;
+		return "";
+	}
+
+	std::regex regexPattern(R"_(iteration_(\d+))_");
+	std::string largestSubdirectory;
+	int largestNumber = -1;
+
+	for (const auto& entry : fs::directory_iterator(dirPath)) {
+		if (fs::is_directory(entry)) {
+			std::string subdirectory = entry.path().filename().string();
+			std::smatch match;
+
+			if (std::regex_match(subdirectory, match, regexPattern)) {
+				int number = std::stoi(match[1]);
+
+				if (number > largestNumber) {
+					largestNumber = number;
+					largestSubdirectory = subdirectory;
+				}
+			}
+		}
+	}
+
+	return largestSubdirectory;
+}
+
 
 #define PROGRAM_NAME "sibr_3Dgaussian"
 using namespace sibr;
-
-const char* usage = ""
-"Usage: " PROGRAM_NAME " -path <dataset-path>"    	                                "\n"
-;
 
 std::pair<int, int> findArg(const std::string& line, const std::string& name)
 {
@@ -37,8 +68,8 @@ std::pair<int, int> findArg(const std::string& line, const std::string& name)
 	return std::make_pair(start, end);
 }
 
-int main(int ac, char** av) {
-
+int main(int ac, char** av) 
+{
 	// Parse Command-line Args
 	CommandLineArgs::parseMainArgs(ac, av);
 	GaussianAppArgs myArgs;
@@ -59,37 +90,52 @@ int main(int ac, char** av) {
 	sibr::Window		window(PROGRAM_NAME, sibr::Vector2i(50, 50), myArgs, getResourcesDirectory() + "/gaussians/" + PROGRAM_NAME + ".ini");
 
 	std::string cfgLine;
-	if (!myArgs.dataset_path.isInit() || !myArgs.iteration.isInit())
+	if (!myArgs.dataset_path.isInit())
 	{
 		std::ifstream cfgFile(myArgs.modelPath.get() + "/cfg_args");
 		if (!cfgFile.good())
 		{
-			SIBR_ERR << "Unable to find model config file cfg_args!";
+			SIBR_ERR << "Could not find config file 'cfg_args' at " << myArgs.modelPath.get();
 		}
 		std::getline(cfgFile, cfgLine);
-	}
-
-	if (!myArgs.dataset_path.isInit())
-	{
-		auto rng = findArg(cfgLine, "input_path");
+		auto rng = findArg(cfgLine, "source_path");
 		myArgs.dataset_path = cfgLine.substr(rng.first + 1, rng.second - rng.first - 2);
-	}
-
-	if (!myArgs.iteration.isInit())
-	{
-		auto rng = findArg(cfgLine, "total_iterations");
-		myArgs.iteration = cfgLine.substr(rng.first, rng.second - rng.first);		
 	}
 
 	auto rng = findArg(cfgLine, "white_background");
 	bool white_background = cfgLine.substr(rng.first, rng.second - rng.first).find("True") != -1;
 
-	BasicIBRScene::Ptr		scene(new BasicIBRScene(myArgs, true));
+	BasicIBRScene::SceneOptions myOpts;
+	myOpts.renderTargets = myArgs.loadImages;
+	myOpts.mesh = true;
+	myOpts.images = myArgs.loadImages;
+	myOpts.cameras = true;
+	myOpts.texture = false;
+
+	BasicIBRScene::Ptr scene;
+	try
+	{
+		scene.reset(new BasicIBRScene(myArgs, myOpts));
+	}
+	catch (...)
+	{
+		SIBR_LOG << "Did not find specified input folder, loading from model path" << std::endl;
+		myArgs.dataset_path = myArgs.modelPath.get();
+		scene.reset(new BasicIBRScene(myArgs, myOpts));
+	}
 
 	std::string plyfile = myArgs.modelPath.get();
 	if (plyfile.back() != '/')
 		plyfile += "/";
-	plyfile += "diffuse_point_cloud/iteration_" + myArgs.iteration.get() + "/point_cloud.ply";
+	plyfile += "point_cloud";
+	if (!myArgs.iteration.isInit())
+	{
+		plyfile += "/" + findLargestNumberedSubdirectory(plyfile) + "/point_cloud.ply";
+	}
+	else
+	{
+		plyfile += "/iteration_" + myArgs.iteration.get() + " / point_cloud.ply";
+	}
 
 	// Setup the scene: load the proxy, create the texture arrays.
 	const uint flags = SIBR_GPU_LINEAR_SAMPLING | SIBR_FLIP_TEXTURE;
@@ -113,8 +159,6 @@ int main(int ac, char** av) {
 		}
 	}
 	Vector2u usedResolution(rendering_width, rendering_height);
-	std::cerr << " USED RES " << usedResolution << " scene w h " << scene_width << " : " << scene_height <<  
-		 " NAME " << scene->cameras()->inputCameras()[0]->name() << std::endl;
 
 	const unsigned int sceneResWidth = usedResolution.x();
 	const unsigned int sceneResHeight = usedResolution.y();
@@ -148,7 +192,8 @@ int main(int ac, char** av) {
 
 	// save images
 	generalCamera->getCameraRecorder().setViewPath(gaussianView, myArgs.dataset_path.get());
-	if (myArgs.pathFile.get() !=  "" ) {
+	if (myArgs.pathFile.get() !=  "" ) 
+	{
 		generalCamera->getCameraRecorder().loadPath(myArgs.pathFile.get(), usedResolution.x(), usedResolution.y());
 		generalCamera->getCameraRecorder().recordOfflinePath(myArgs.outPath, multiViewManager.getIBRSubView("Point view"), "");
 		if( !myArgs.noExit )

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020, Inria
+ * Copyright (C) 2023, Inria
  * GRAPHDECO research group, https://team.inria.fr/graphdeco
  * All rights reserved.
  *
@@ -39,15 +39,7 @@ namespace sibr {
 
 	public:
 
-		/**
-		 * Constructor
-		 * \param ibrScene The scene to use for rendering.
-		 * \param render_w rendering width
-		 * \param render_h rendering height
-		 */
-		RemotePointView(const sibr::BasicIBRScene::Ptr& ibrScene, uint render_w, uint render_h);
-
-		RemotePointView();
+		RemotePointView(std::string ip, uint port);
 
 		/** Replace the current scene.
 		 *\param newScene the new scene to render */
@@ -95,13 +87,15 @@ namespace sibr {
 		bool _doTrainingBool = true;
 		bool _doSHsPython = false;
 		bool _doRotScalePython = false;
-		bool _skipValidation = false;
 		bool _keepAlive = true;
 		bool _showSfM = false;
 
 		float _scalingModifier = 1.0f;
 
 		std::atomic<bool> keep_running = true;
+
+		std::string _ip;
+		int _port;
 
 		void send_receive();
 

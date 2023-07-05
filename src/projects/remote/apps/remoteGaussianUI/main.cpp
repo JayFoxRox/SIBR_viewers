@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020, Inria
+ * Copyright (C) 2023, Inria
  * GRAPHDECO research group, https://team.inria.fr/graphdeco
  * All rights reserved.
  *
@@ -11,12 +11,10 @@
 
 
 #include <fstream>
-
 #include <core/graphics/Window.hpp>
 #include <core/view/MultiViewManager.hpp>
 #include <core/system/String.hpp>
 #include "projects/remote/renderer/RemotePointView.hpp" 
-
 #include <core/renderer/DepthRenderer.hpp>
 #include <core/raycaster/Raycaster.hpp>
 #include <core/view/SceneDebugView.hpp>
@@ -24,10 +22,6 @@
 
 #define PROGRAM_NAME "SIBR Remote Gaussian Viewer"
 using namespace sibr;
-
-const char* usage = ""
-"Usage: " PROGRAM_NAME " -path <dataset-path>"    	                                "\n"
-;
 
 void resetScene(RemoteAppArgs myArgs,
 	int rendering_width,
@@ -44,14 +38,21 @@ void resetScene(RemoteAppArgs myArgs,
 		multiViewManager.removeSubView("Top view");
 	}
 
+	BasicIBRScene::SceneOptions myOpts;
+	myOpts.renderTargets = myArgs.loadImages;
+	myOpts.mesh = true;
+	myOpts.images = myArgs.loadImages;
+	myOpts.cameras = true;
+	myOpts.texture = false;
+
 	try
 	{
-		scene.reset(new BasicIBRScene(myArgs, true));
+		scene.reset(new BasicIBRScene(myArgs, myOpts));
 	}
 	catch (std::exception& ex)
 	{
-		std::cerr << ex.what() << std::endl;
-		return;
+		SIBR_ERR << "Problem loading model info from input path " << myArgs.dataset_path
+			<< ". Consider overriding path to model directory using --path.";
 	}
 
 	// Setup the scene: load the proxy, create the texture arrays.
@@ -79,8 +80,6 @@ void resetScene(RemoteAppArgs myArgs,
 	rendering_width = (rendering_width <= 0) ? scene->cameras()->inputCameras()[0]->w() / divider : rendering_width;
 	rendering_height = (rendering_height <= 0) ? scene->cameras()->inputCameras()[0]->h() / divider : rendering_height;
 	Vector2u usedResolution(rendering_width, rendering_height);
-	std::cerr << " USED RES " << usedResolution << " scene w h " << scene_width << " : " << scene_height <<
-		" NAME " << scene->cameras()->inputCameras()[0]->name() << std::endl;
 
 	const unsigned int sceneResWidth = usedResolution.x();
 	const unsigned int sceneResHeight = usedResolution.y();
@@ -139,7 +138,7 @@ int main(int ac, char** av) {
 	// Add views to mvm.
 	MultiViewManager        multiViewManager(window, false);
 	BasicIBRScene::Ptr		scene;
-	RemotePointView::Ptr	remoteView(new RemotePointView);
+	RemotePointView::Ptr	remoteView(new RemotePointView(myArgs.ip, myArgs.port));
 	std::shared_ptr<sibr::SceneDebugView> topView;
 	
 	std::string currentName;

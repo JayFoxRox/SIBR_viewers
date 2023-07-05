@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020, Inria
+ * Copyright (C) 2023, Inria
  * GRAPHDECO research group, https://team.inria.fr/graphdeco
  * All rights reserved.
  *
@@ -23,7 +23,6 @@ constexpr char* jZNear = "z_near";
 constexpr char* jTrain = "train";
 constexpr char* jViewMat = "view_matrix";
 constexpr char* jViewProjMat = "view_projection_matrix";
-constexpr char* jSkipValidation = "skip_validation";
 constexpr char* jScalingModifier = "scaling_modifier";
 constexpr char* jSHsPython = "shs_python";
 constexpr char* jRotScalePython = "rot_scale_python";
@@ -33,13 +32,13 @@ void sibr::RemotePointView::send_receive()
 {
 	while (keep_running)
 	{
-		std::cout << "Waiting for connection..." << std::endl;
+		SIBR_LOG << "Trying to connect..." << std::endl;
 		try
 		{
 			boost::asio::io_service ioservice;
 			boost::asio::ip::tcp::socket sock(ioservice);
-			boost::asio::ip::address addr = boost::asio::ip::address::from_string("127.0.0.1");
-			boost::asio::ip::tcp::endpoint contact(addr, 6009);
+			boost::asio::ip::address addr = boost::asio::ip::address::from_string(_ip);
+			boost::asio::ip::tcp::endpoint contact(addr, _port);
 
 			boost::system::error_code ec;
 			do
@@ -48,7 +47,7 @@ void sibr::RemotePointView::send_receive()
 				std::this_thread::sleep_for(std::chrono::milliseconds(100));
 			} while (keep_running && ec.failed());
 
-			std::cout << "Connected!" << std::endl;
+			SIBR_LOG << "Connected!" << std::endl;
 			while (keep_running)
 			{
 				{
@@ -56,11 +55,9 @@ void sibr::RemotePointView::send_receive()
 
 					// Serialize our arbitrary data to something simple, yet convenient for both sides
 					json sendData;
-
 					sendData[jTrain] = _doTrainingBool ? 1 : 0;
 					sendData[jSHsPython] = _doSHsPython ? 1 : 0;
 					sendData[jRotScalePython] = _doRotScalePython ? 1 : 0;
-					sendData[jSkipValidation] = _skipValidation ? 1 : 0;
 					sendData[jScalingModifier] = _scalingModifier;
 					sendData[jResX] = _remoteInfo.imgResolution.x();
 					sendData[jResY] = _remoteInfo.imgResolution.y();
@@ -100,12 +97,13 @@ void sibr::RemotePointView::send_receive()
 		}
 		catch (...)
 		{
-			std::cout << "Connection dropped" << std::endl;
+			SIBR_LOG << "Connection dropped" << std::endl;
 		}
 	}
 }
 
-sibr::RemotePointView::RemotePointView() : sibr::ViewBase(0, 0)
+sibr::RemotePointView::RemotePointView(std::string ip, uint port) : sibr::ViewBase(0, 0),
+_ip(ip), _port(port)
 {
 	_pointbasedrenderer.reset(new PointBasedRenderer());
 	_copyRenderer.reset(new CopyRenderer());
@@ -176,7 +174,7 @@ void sibr::RemotePointView::onRenderIBR(sibr::IRenderTarget & dst, const sibr::C
 				glBindTexture(GL_TEXTURE_2D, 0);
 				_imageResize = false;
 			}
-			if (_imageDirty)
+			if (_imageDirty && _imageData.size() == 3 * _resolution.x() * _resolution.y())
 			{
 				glTextureSubImage2D(_imageTexture, 0, 0, 0, _resolution.x(), _resolution.y(), GL_RGB, GL_UNSIGNED_BYTE, _imageData.data());
 				_imageDirty = false;
@@ -191,12 +189,11 @@ void sibr::RemotePointView::onGUI()
 	const std::string guiName = "Remote Viewer Settings (" + name() + ")";
 	if (ImGui::Begin(guiName.c_str())) 
 	{
-		ImGui::Checkbox("Show SfM", &_showSfM);
-		ImGui::Checkbox("Show SfM during Motion", &_renderSfMInMotion);
+		ImGui::Checkbox("Show Input Points", &_showSfM);
+		ImGui::Checkbox("Show Input Points during Motion", &_renderSfMInMotion);
 		ImGui::Checkbox("Train", &_doTrainingBool);
 		ImGui::Checkbox("SHs Python", &_doSHsPython);
 		ImGui::Checkbox("Rot-Scale Python", &_doRotScalePython);
-		ImGui::Checkbox("Skip Validation", &_skipValidation);
 		ImGui::Checkbox("Keep model alive (after training)", &_keepAlive);
 		ImGui::SliderFloat("Scaling Modifier", &_scalingModifier, 0.001f, 1.0f);
 	}

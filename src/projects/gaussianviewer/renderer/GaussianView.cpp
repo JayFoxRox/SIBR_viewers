@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020, Inria
+ * Copyright (C) 2023, Inria
  * GRAPHDECO research group, https://team.inria.fr/graphdeco
  * All rights reserved.
  *
@@ -56,7 +56,7 @@ int loadPly(const char* filename,
 	std::ifstream infile(filename, std::ios_base::binary);
 
 	if (!infile.good())
-		throw std::runtime_error("File not found!");
+		SIBR_ERR << "Unable to find model's PLY file, attempted:\n" << filename << std::endl;
 
 	// "Parse" header (it has to be a specific format anyway)
 	std::string buff;
@@ -70,7 +70,7 @@ int loadPly(const char* filename,
 	ss >> dummy >> dummy >> count;
 
 	// Output number of Gaussians contained
-	std::cout << count << std::endl;
+	SIBR_LOG << "Loading " << count << " Gaussian splats" << std::endl;
 
 	while (std::getline(infile, buff))
 		if (buff.compare("end_header") == 0)
@@ -125,11 +125,22 @@ int loadPly(const char* filename,
 	{
 		int i = mapp[k].second;
 		pos[k] = points[i].pos;
-		rot[k] = points[i].rot;
-		// We have exp activation on scale, but it's done by the rasterizer
-		scales[k] = points[i].scale;
-		// We have sigmoid activation on opacities, not done by rasterizer
+
+		// Normalize quaternion
+		float length2 = 0;
+		for (int j = 0; j < 4; j++)
+			length2 += points[i].rot.rot[j] * points[i].rot.rot[j];
+		float length = sqrt(length2);
+		for (int j = 0; j < 4; j++)
+			rot[k].rot[j] = points[i].rot.rot[j] / length;
+
+		// Exponentiate scale
+		for(int j = 0; j < 3; j++)
+			scales[k].scale[j] = exp(points[i].scale.scale[j]);
+
+		// Activate alpha
 		opacities[k] = sigmoid(points[i].opacity);
+
 		shs[k].shs[0] = points[i].shs.shs[0];
 		shs[k].shs[1] = points[i].shs.shs[1];
 		shs[k].shs[2] = points[i].shs.shs[2];
@@ -305,7 +316,7 @@ void sibr::GaussianView::onRenderIBR(sibr::IRenderTarget & dst, const sibr::Came
 	{
 		_gaussianRenderer->process(count, *gData, eye, dst, 0.2f);
 	}
-	else if (currMode == "SfM Points")
+	else if (currMode == "Initial Points")
 	{
 		_pointbasedrenderer->process(_scene->proxies()->proxy(), eye, dst);
 	}
@@ -379,8 +390,8 @@ void sibr::GaussianView::onGUI()
 		{
 			if (ImGui::Selectable("Splats"))
 				currMode = "Splats";
-			if (ImGui::Selectable("SfM Points"))
-				currMode = "SfM Points";
+			if (ImGui::Selectable("Initial Points"))
+				currMode = "Initial Points";
 			if (ImGui::Selectable("Ellipsoids"))
 				currMode = "Ellipsoids";
 			ImGui::EndCombo();

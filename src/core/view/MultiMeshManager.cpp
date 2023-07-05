@@ -250,7 +250,7 @@ namespace sibr {
 	void ColorMeshShader::initShader(const std::string & name, const std::string & vert, const std::string & frag, const std::string & geom)
 	{
 		ShaderAlphaMVP::initShader(name, vert, frag, geom);
-		user_color.init(shader, "user_color");
+		//user_color.init(shader, "user_color");
 	}
 
 	void ColorMeshShader::setUniforms(const Camera & eye, const MeshData & data)

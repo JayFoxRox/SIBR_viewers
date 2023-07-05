@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020, Inria
+ * Copyright (C) 2023, Inria
  * GRAPHDECO research group, https://team.inria.fr/graphdeco
  * All rights reserved.
  *
@@ -42,6 +42,9 @@ namespace sibr {
 	/// Arguments for all ULR applications.
 	struct RemoteAppArgs :
 		virtual BasicIBRAppArgs {
+		Arg<bool> loadImages = { "load_images", "Whether or not to load images for scene overview" };
+		Arg<std::string> ip = { "ip", "127.0.0.1", "Target IP to connect to (default localhost)"};
+		Arg<uint> port = { "port", 6009, "Port to use for connection" };
 	};
 
 }

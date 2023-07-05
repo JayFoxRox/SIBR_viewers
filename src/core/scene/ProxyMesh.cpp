@@ -30,7 +30,6 @@ namespace sibr {
 			}
 		}
 		if (!_proxy->hasNormals()) {
-			SIBR_WRG << "generating normals for the proxy (no normals found in the proxy file)" << std::endl;
 			_proxy->generateNormals();
 		}
 	}
@@ -47,7 +46,6 @@ namespace sibr {
 		// Used by inputImageRT init() and debug rendering
 		if (!_proxy->hasNormals())
 		{
-			SIBR_WRG << "generating normals for the proxy (no normals found in the proxy file)" << std::endl;
 			_proxy->generateNormals();
 		}
 
