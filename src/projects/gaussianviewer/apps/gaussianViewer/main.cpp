@@ -75,7 +75,6 @@ int main(int ac, char** av)
 	GaussianAppArgs myArgs;
 	myArgs.displayHelpIfRequired();
 
-	const bool doVSync = !myArgs.vsync;
 	// rendering size
 	uint rendering_width = myArgs.rendering_size.get()[0];
 	uint rendering_height = myArgs.rendering_size.get()[1];
