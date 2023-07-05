@@ -106,7 +106,7 @@ int main(int ac, char** av)
 	bool white_background = cfgLine.substr(rng.first, rng.second - rng.first).find("True") != -1;
 
 	BasicIBRScene::SceneOptions myOpts;
-	myOpts.renderTargets = false;
+	myOpts.renderTargets = myArgs.loadImages;
 	myOpts.mesh = true;
 	myOpts.images = myArgs.loadImages;
 	myOpts.cameras = true;

@@ -39,7 +39,7 @@ void resetScene(RemoteAppArgs myArgs,
 	}
 
 	BasicIBRScene::SceneOptions myOpts;
-	myOpts.renderTargets = false;
+	myOpts.renderTargets = myArgs.loadImages;
 	myOpts.mesh = true;
 	myOpts.images = myArgs.loadImages;
 	myOpts.cameras = true;

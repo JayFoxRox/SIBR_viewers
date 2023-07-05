@@ -44,7 +44,7 @@ namespace sibr {
 		virtual BasicIBRAppArgs {
 		RequiredArg<std::string> modelPath = { "model-path", "Model directory" };
 		RequiredArg<std::string> iteration = { "iteration", "Iteration to load from model" };
-		Arg<bool> loadImages = { "load_images", "Whether or not to load images for scene overview"};
+		Arg<bool> loadImages = { "load_images", "Whether or not to load images for scene overview."};
 	};
 
 }
