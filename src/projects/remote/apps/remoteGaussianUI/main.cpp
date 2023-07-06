@@ -101,7 +101,7 @@ void resetScene(RemoteAppArgs myArgs,
 	multiViewManager.addSubView("Top view", topView, usedResolution);
 	topView->active(false);
 
-	multiViewManager.addIBRSubView("Point view", pointBasedView, { sceneResWidth, sceneResHeight });
+	multiViewManager.addIBRSubView("Point view", pointBasedView, { sceneResWidth, sceneResHeight }, ImGuiWindowFlags_NoBringToFrontOnFocus);
 	multiViewManager.addCameraForView("Point view", generalCamera);
 
 	CHECK_GL_ERROR;
