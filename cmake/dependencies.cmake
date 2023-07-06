@@ -285,7 +285,7 @@ find_package(glfw3 REQUIRED)
 
 sibr_gitlibrary(TARGET imgui
     GIT_REPOSITORY 	"https://gitlab.inria.fr/sibr/libs/imgui.git"
-    GIT_TAG			"90acee4883a56f22992d2a86e0c7c7568d277a82"
+    GIT_TAG			"741fb3ab6c7e1f7cef23ad0501a06b7c2b354944"
 )
 
 ## FOR CLUSTER COMMENT OUT nativefiledialog
