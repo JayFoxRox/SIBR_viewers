@@ -77,8 +77,8 @@ int main(int ac, char** av)
 	
 	if(!myArgs.modelPath.isInit() && myArgs.modelPathShort.isInit())
 		myArgs.modelPath = myArgs.modelPathShort.get();
-	if(!myArgs.path.isInit() && myArgs.pathShort.isInit())
-		myArgs.path = myArgs.pathShort.get();
+	if(!myArgs.dataset_path.isInit() && myArgs.pathShort.isInit())
+		myArgs.dataset_path = myArgs.pathShort.get();
 
 	// rendering size
 	uint rendering_width = myArgs.rendering_size.get()[0];
