@@ -23,6 +23,7 @@
 #include <map>
 #include "core/system/String.hpp"
 #include "core/graphics/Mesh.hpp"
+#include "core/system/Utils.hpp"
 #include <algorithm>
 
 using namespace boost::algorithm;
@@ -39,10 +40,10 @@ namespace sibr {
 
 		// read number of images
 		std::string line;
-		getline(bundle_file, line);	// ignore first line - contains version
+		safeGetline(bundle_file, line);	// ignore first line - contains version
 
 		bundle_file >> _numCameras;	// read first value (number of images)
-		getline(bundle_file, line);	// ignore the rest of the line
+		safeGetline(bundle_file, line);	// ignore the rest of the line
 
 		//_outputCamsMatrix.resize(_numCameras);
 		_camInfos.resize(_numCameras);
@@ -90,18 +91,20 @@ namespace sibr {
 		}
 
 		uint camId = 0;
-		while (getline(scene_metadata, line))
+
+		while (safeGetline(scene_metadata, line))
+
 		{
-			//std::cout << line << '\n';
-			if (line.compare("[list_images]") == 0) {
-				getline(scene_metadata, line);	// ignore template specification line
+			if (line.compare("[list_images]") == 0 )
+			{
+				safeGetline(scene_metadata, line);	// ignore template specification line
 				ImageListFile::Infos infos;
 				int id;
-				while (getline(scene_metadata, line))
+				while (safeGetline(scene_metadata, line))
 				{
-					//std::cout << line << std::endl;
+//					std::cerr << line << std::endl;
 					split(splitS, line, is_any_of(" "));
-					//std::cout << splitS.size() << std::endl;
+//					std::cerr << splitS.size() << std::endl;
 					if (splitS.size() > 1) {
 						infos.filename = splitS[0];
 						infos.width = stoi(splitS[1]);
@@ -129,14 +132,14 @@ namespace sibr {
 			}
 			else if (line.compare("[active_images]") == 0) {
 
-				getline(scene_metadata, line);	// ignore template specification line
+				safeGetline(scene_metadata, line);	// ignore template specification line
 
 				_activeImages.resize(_imgInfos.size());
 
 				for (int i = 0; i < _imgInfos.size(); i++)
 					_activeImages[i] = false;
 
-				while (getline(scene_metadata, line))
+				while (safeGetline(scene_metadata, line))
 				{
 					split(splitS, line, is_any_of(" "));
 					//std::cout << splitS.size() << std::endl;
@@ -153,14 +156,14 @@ namespace sibr {
 			}
 			else if (line.compare("[exclude_images]") == 0) {
 
-				getline(scene_metadata, line);	// ignore template specification line
+				safeGetline(scene_metadata, line);	// ignore template specification line
 
 				_activeImages.resize(_imgInfos.size());
 
 				for (int i = 0; i < _imgInfos.size(); i++)
 					_activeImages[i] = true;
 
-				while (getline(scene_metadata, line))
+				while (safeGetline(scene_metadata, line))
 				{
 					split(splitS, line, is_any_of(" "));
 					if (splitS.size() >= 1) {
@@ -176,7 +179,8 @@ namespace sibr {
 			}
 			else if (line == "[proxy]") {
 				// Read the relative path of the mesh to load.
-				getline(scene_metadata, line);
+				safeGetline(scene_metadata, line);
+
 				_meshPath = _basePathName + "/" + line;
 			}
 		}
@@ -399,9 +403,10 @@ namespace sibr {
 		if (sibr::fileExists(blackListFile)) {
 			std::string line;
 			std::vector<std::string> splitS;
-			std::ifstream blackListFile(blackListFile);
-			if (blackListFile.is_open()) {
-				while (std::getline(blackListFile, line)) {
+			std::ifstream blackListFileF(blackListFile);
+			if (blackListFileF.is_open()) {
+				while (safeGetline(blackListFileF, line)) {
+
 					split(splitS, line, is_any_of(" "));
 					//std::cout << splitS.size() << std::endl;
 					if (splitS.size() > 0) {

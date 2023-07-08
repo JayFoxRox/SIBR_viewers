@@ -20,6 +20,7 @@ include_directories(
 	${Boost_INCLUDE_DIRS}
 	${nanoflann_INCLUDE_DIRS}
 )
+if(WIN32)
 target_link_libraries(${PROJECT_NAME}
 	OpenMP::OpenMP_CXX
 	embree3
@@ -27,6 +28,17 @@ target_link_libraries(${PROJECT_NAME}
 	sibr_assets
 	nanoflann
 )
+else()
+target_link_libraries(${PROJECT_NAME}
+	OpenMP::OpenMP_CXX
+	embree
+# CLUSTER
+#	/data/graphdeco/share/tbb/lib64/libtbb.so
+	sibr_graphics
+	sibr_assets
+	nanoflann
+)
+endif()
 
 add_definitions( -DSIBR_RAYCASTER_EXPORTS -DBOOST_ALL_DYN_LINK  )
 

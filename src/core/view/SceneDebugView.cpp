@@ -192,6 +192,7 @@ namespace sibr
 	SceneDebugView::SceneDebugView(const IIBRScene::Ptr & scene, 
 		const InteractiveCameraHandler::Ptr & camHandler, const BasicDatasetArgs & myArgs)
 	{
+
 		initImageCamShaders();
 		setupLabelsManagerShader();
 

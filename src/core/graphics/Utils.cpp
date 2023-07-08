@@ -24,10 +24,11 @@ namespace sibr
 
 	sibr::Vector3ub getLinearColorFromProbaV(double proba) {
 		const double scProba = 3.0 * proba;
-		const double red = sibr::clamp(scProba, 0.0, 1.0);
-		const double green = sibr::clamp(scProba - 1, 0.0, 1.0);
-		const double blue = sibr::clamp(scProba - 2, 0.0, 1.0);
-		return sibr::Vector3ub(unsigned char(red * 255), unsigned char(green * 255), unsigned char(blue * 255));
+		const unsigned char red = double(sibr::clamp(scProba, 0.0, 1.0)) * 255;
+		const unsigned char green = double(sibr::clamp(scProba - 1, 0.0, 1.0)) * 255;
+		const unsigned char blue = double(sibr::clamp(scProba - 2, 0.0, 1.0)) * 255;
+
+		return sibr::Vector3ub(red, green, blue);
 	}
 
 	double getProbaFromLinearColor(const sibr::Vector3ub & color) {

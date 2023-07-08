@@ -28,10 +28,10 @@ Usage: python simplify_mesh.py --inputMesh <the mesh to simplify>
 
 import os, sys
 import argparse
-from utils.commands import runCommand
+from utils.commands import runCommand, getMeshlabServer
 from utils.paths import getMeshlabPath
 
-def simplifyMesh(inputMesh, outputMesh, meshsize="", meshlabPath = getMeshlabPath(), meshlabServerExe = 'meshlabserver.exe'):
+def simplifyMesh(inputMesh, outputMesh, meshsize="", meshlabPath = getMeshlabPath()):
     mlxFileEnd = 'meshlab/simplify.mlx'
 
     if( meshsize != "" ):
@@ -49,14 +49,12 @@ def simplifyMesh(inputMesh, outputMesh, meshsize="", meshlabPath = getMeshlabPat
 
     mlxFile = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(__file__)), mlxFileEnd))
 
-    return runCommand(os.path.abspath(os.path.join(meshlabPath, meshlabServerExe)), ['-i', inputMesh,
-                                                                              '-o', outputMesh,
-                                                                              '-s', mlxFile])
+    return runCommand(getMeshlabServer(meshlabPath), ['-i', inputMesh,
+                                                      '-o', outputMesh,
+                                                      '-s', mlxFile])
 
 def main():
     parser = argparse.ArgumentParser()
-
-    meshlabPath = os.environ['MESHLAB_PATH'] if 'MESHLAB_PATH' in os.environ else "C:\\Program Files\\VCG\\Meshlab"
 
     # common arguments
     parser.add_argument("--inputMesh", type=str, required=True, help="the mesh to simplify")

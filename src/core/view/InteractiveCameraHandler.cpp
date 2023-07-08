@@ -321,7 +321,7 @@ namespace sibr {
 	void InteractiveCameraHandler::snapToCamera(const int i) {
 		if (!_interpPath.empty()) {
 			unsigned int nearestCam = (i == -1 ? findNearestCamera(_interpPath) : i);
-			nearestCam = sibr::clamp(nearestCam, unsigned int(0), unsigned int(_interpPath.size() - 1));
+			nearestCam = sibr::clamp(nearestCam, (unsigned int)(0), (unsigned int)(_interpPath.size() - 1));
 			fromCamera(*_interpPath[nearestCam], true, false);
 		}
 	}
@@ -377,7 +377,7 @@ namespace sibr {
 					std::string pathOutView;
 					for (uint i = 0; i < 10; ++i) std::cout << std::endl;
 					std::cout << "Enter path to output the frames:" << std::endl;
-					std::getline(std::cin, pathOutView);
+					safeGetline(std::cin, pathOutView);
 
 					if (!pathOutView.empty()) {
 						_cameraRecorder.saving(pathOutView + "/");
@@ -398,7 +398,7 @@ namespace sibr {
 				int w, h;
 				for (uint i = 0; i < 10; ++i) std::cout << std::endl;
 				std::cout << "Enter a filename for loading a camera path:" << std::endl;
-				std::getline(std::cin, filename);
+				safeGetline(std::cin, filename);
 				std::cout << "Enter width for camera" << std::endl;
 				std::cin >> w;
 				std::cout << "Enter height for camera" << std::endl;
@@ -417,7 +417,7 @@ namespace sibr {
 				std::string filename;
 				for (uint i = 0; i < 10; ++i) std::cout << std::endl;
 				std::cout << "Enter a filename for saving a camera path:" << std::endl;
-				std::getline(std::cin, filename);
+				safeGetline(std::cin, filename);
 				_cameraRecorder.save(filename);
 				_cameraRecorder.saveAsBundle(filename + ".out", _currentCamera.h());
 				_cameraRecorder.saveAsLookAt(filename + ".lookat");
@@ -436,7 +436,7 @@ namespace sibr {
 				std::string filename;
 				for (uint i = 0; i < 10; ++i) std::cout << std::endl;
 				std::cout << "Enter a filename for saving a camera path:" << std::endl;
-				std::getline(std::cin, filename);
+				safeGetline(std::cin, filename);
 				_cameraRecorder.playback();
 				_cameraRecorder.saveAsBundle(filename + ".out", _currentCamera.h());
 				_cameraRecorder.saveAsLookAt(filename + ".lookat");

@@ -12,6 +12,7 @@
 
 
 #include "core/graphics/Texture.hpp"
+#define HEADLESS
 
 namespace sibr
 {
@@ -24,6 +25,10 @@ namespace sibr
 
 		SIBR_ASSERT(glCheckFramebufferStatus(GL_READ_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
+#ifdef HEADLESS
+
+		SIBR_ERR << "No named frame buffers in headless " << std::endl;
+#else
 		glBlitNamedFramebuffer(
 			sourceFrameBuffer, dst.fbo(),
 			0, 0, src.w(), src.h(),
@@ -31,6 +36,7 @@ namespace sibr
 			mask, filter);
 
 		glDeleteFramebuffers(1, &sourceFrameBuffer);
+#endif
 	}
 
 	void			blit_and_flip(const ITexture2D& src, const IRenderTarget& dst, GLbitfield mask, GLenum filter)
@@ -52,6 +58,9 @@ namespace sibr
 
 		SIBR_ASSERT(glCheckFramebufferStatus(GL_READ_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
+#ifdef HEADLESS
+		SIBR_ERR << "No named frame buffers in headless " << std::endl;
+#else
 		glBlitNamedFramebuffer(
 			sourceFrameBuffer, dst.fbo(),
 			0, 0, src.w(), src.h(),
@@ -59,6 +68,7 @@ namespace sibr
 			GL_COLOR_BUFFER_BIT, filter);
 
 		glDeleteFramebuffers(1, &sourceFrameBuffer);
+#endif
 
 		// Restore the drawbuffers.
 		// We use bind() as it guarantees that all color buffers will be bound.
@@ -75,12 +85,16 @@ namespace sibr
 
 		SIBR_ASSERT(glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
+#ifdef HEADLESS
+		SIBR_ERR << "No named frame buffers in headless " << std::endl;
+#else
 		glBlitNamedFramebuffer(
 			src.fbo(), dstFrameBuffer,
 			0, 0, src.w(), src.h(),
 			0, 0, dst.w(), dst.h(),
 			mask, filter);
 		glDeleteFramebuffers(1, &dstFrameBuffer);
+#endif
 	}
 
 	void			blit(const ITexture2D& src, const ITexture2D& dst, GLbitfield mask, GLenum filter)
@@ -95,12 +109,16 @@ namespace sibr
 		SIBR_ASSERT(glCheckFramebufferStatus(GL_READ_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 		SIBR_ASSERT(glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
+#ifdef HEADLESS
+		SIBR_ERR << "No named frame buffers in headless " << std::endl;
+#else
 		glBlitNamedFramebuffer(
 			fbo[0], fbo[1],
 			0, 0, src.w(), src.h(),
 			0, 0, dst.w(), dst.h(),
 			mask, filter);
 		glDeleteFramebuffers(2, fbo);
+#endif
 	}
 
 } // namespace sibr

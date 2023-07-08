@@ -20,6 +20,7 @@ include_directories(
 	${Boost_INCLUDE_DIRS}
 	${mrf_INCLUDE_DIRS}
 )
+if(WIN32)
 target_link_libraries(${PROJECT_NAME}
 	${Boost_LIBRARIES}
 	${OpenCV_LIBRARIES}
@@ -31,6 +32,19 @@ target_link_libraries(${PROJECT_NAME}
 	sibr_assets
 	sibr_raycaster
 )
+else()
+target_link_libraries(${PROJECT_NAME}
+	${Boost_LIBRARIES}
+	${OpenCV_LIBRARIES}
+	OpenMP::OpenMP_CXX
+	${GLFW_LIBRARY}
+	mrf
+	sibr_system
+	sibr_graphics
+	sibr_assets
+	sibr_raycaster
+)
+endif()
 
 if (NOT WIN32)
 	target_link_libraries(${PROJECT_NAME}

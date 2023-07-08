@@ -15,10 +15,10 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
-#include <nfd.h>
 #include "core/system/Utils.hpp"
 
 #ifdef SIBR_OS_WINDOWS 
+	#include <nfd.h>
 	#include <Windows.h>
 	#include <shlobj.h>
 	#include <stdio.h>
@@ -27,6 +27,11 @@
 	#define ENABLE_VIRTUAL_TERMINAL_PROCESSING  0x0004
 	#endif
 #else
+#ifdef USE_NFD
+		#include <nfd.h>
+#endif
+	#include <libgen.h>
+	#include <linux/limits.h>
 	#include <unistd.h>
 	#include <sys/types.h>
 	#include <pwd.h>
@@ -322,11 +327,28 @@ namespace sibr
 	{
 		char exePath[4095];
 
+#ifdef SIBR_OS_WINDOWS 
 		unsigned int len = GetModuleFileNameA(GetModuleHandleA(0x0), exePath, MAX_PATH);
 
 		std::string installDirectory = parentDirectory(parentDirectory(exePath));
+#else
+		unsigned int len=0;
 
-		if (len == 0 && !directoryExists(installDirectory + "/bin")) // memory not sufficient or general error occured
+		char result[PATH_MAX];
+		ssize_t c = readlink("/proc/self/exe", result, PATH_MAX);
+		len = c;
+		const char* path;
+		if( c != -1 )
+			path = dirname(result);
+		else
+			SIBR_ERR  << "Cant find executable path  "<< std::endl;
+
+
+		std::string installDirectory(parentDirectory(path));
+#endif
+
+		if (len == 0 && 
+		!directoryExists(installDirectory + "/bin")) // memory not sufficient or general error occured
 		{
 			SIBR_ERR << "Can't find install folder! Please specify as command-line option using --appPath option!" << std::endl;
 		}
@@ -379,7 +401,7 @@ namespace sibr
 		CoTaskMemFree(path_tmp);
 #else
 		struct passwd *pw = getpwuid(getuid());
-		appDataDirectory += pw->pw_dir + "/.sibr";
+		appDataDirectory += pw->pw_dir + std::string("/.sibr");
 #endif
 
 		makeDirectory(appDataDirectory);
@@ -394,7 +416,10 @@ namespace sibr
 
 		if(!directoryExists(installSubDirectory))
 		{
-			SIBR_ERR << "Can't find subfolder" << subfolder << ". Please specify correct app folder as command-line option using --appPath option!" << std::endl;
+			// try subdirs GD LINUX issue
+			installSubDirectory = installDirectory + "/install/" + subfolder;
+			if(!directoryExists(installSubDirectory))
+				SIBR_ERR << "Can't find subfolder " << subfolder << " in " << installDirectory << ". Please specify correct app folder as command-line option using --appPath option!" << std::endl;
 		}
 
 		return installSubDirectory;
@@ -428,6 +453,44 @@ namespace sibr
 		free(outPath);
 		return false;
 
+	}
+
+	SIBR_SYSTEM_EXPORT std::istream& safeGetline(std::istream& is, std::string& t)
+	{
+#ifdef SIBR_OS_WINDOWS
+		return std::getline(is, t);
+#else
+	    t.clear();
+
+	    // The characters in the stream are read one-by-one using a std::streambuf.
+	    // That is faster than reading them one-by-one using the std::istream.
+	    // Code that uses streambuf this way must be guarded by a sentry object.
+	    // The sentry object performs various tasks,
+	    // such as thread synchronization and updating the stream state.
+
+	    std::istream::sentry se(is, true);
+	    std::streambuf* sb = is.rdbuf();
+
+	    for(;;) {
+		int c = sb->sbumpc();
+		switch (c) {
+		case '\n':
+		    return is;
+		case '\r':
+		    if(sb->sgetc() == '\n')
+			sb->sbumpc();
+		    return is;
+		case std::streambuf::traits_type::eof():
+		    // Also handle the case when the last line has no line ending
+			is.setstate(std::ios::eofbit);
+			// this helps ignore the last line if it's empty (otherwise it's a different behavior from std::get_line)
+			if (t.empty()) is.setstate(std::ios::badbit);
+		    return is;
+		default:
+		    t += (char)c;
+		}
+	    }
+#endif
 	}
 
 } // namespace sirb
