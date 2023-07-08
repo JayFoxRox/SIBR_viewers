@@ -94,7 +94,7 @@ void resetScene(RemoteAppArgs myArgs,
 
 	// Camera handler for main view.
 	sibr::InteractiveCameraHandler::Ptr generalCamera(new InteractiveCameraHandler());
-	generalCamera->setup(scene->cameras()->inputCameras(), Viewport(0, 0, (float)usedResolution.x(), (float)usedResolution.y()), raycaster);
+	generalCamera->setup(scene->cameras()->inputCameras(), Viewport(0, 0, (float)usedResolution.x(), (float)usedResolution.y()), nullptr);
 
 	// Top view
 	topView.reset(new sibr::SceneDebugView(scene, generalCamera, myArgs));

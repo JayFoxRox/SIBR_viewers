@@ -92,6 +92,7 @@ namespace sibr {
 	{
 		_raycaster = raycaster;
 		_viewport = viewport;
+		_radius = areaOfInterest.diagonal().norm();
 		// Use the trackball to compute an initial camera.
 		_trackball.fromBoundingBox(areaOfInterest, viewport);
 		fromCamera(_trackball.getCamera(), false);
@@ -104,6 +105,20 @@ namespace sibr {
 			setupInterpolationPath(cams);
 		}
 		// Update the near and far planes.
+
+		sibr::Vector3f center(0, 0, 0);
+		for (const auto& cam : cams) {
+			center += cam->transform().position();
+		}
+		center /= cams.size();
+
+		float avgDist = 0;
+		for (const auto& cam : cams) {
+			avgDist += (cam->transform().position() - center).norm();
+		}
+		avgDist /= cams.size();
+		_radius = avgDist;
+
 		sibr::InputCamera idealCam = *cams[0];
 		if(clippingPlanes[0] < 0.0f || clippingPlanes[1] < 0.0f) {
 			float zFar = -1.0f, zNear = -1.0f;
