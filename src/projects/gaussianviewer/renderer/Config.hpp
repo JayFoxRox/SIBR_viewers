@@ -43,7 +43,10 @@ namespace sibr {
 	struct GaussianAppArgs :
 		virtual BasicIBRAppArgs {
 		RequiredArg<std::string> modelPath = { "model-path", "Model directory" };
+		RequiredArg<std::string> modelPathShort = { "m", "Model directory" };
 		RequiredArg<std::string> iteration = { "iteration", "Iteration to load from model" };
+		RequiredArg<std::string> pathShort = {"s", "path to the dataset root"};
+		Arg<int> device = {"device", 0, "CUDA device index"};
 		Arg<bool> loadImages = { "load_images", "Whether or not to load images for scene overview."};
 	};
 

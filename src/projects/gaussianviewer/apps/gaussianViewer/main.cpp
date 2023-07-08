@@ -74,6 +74,11 @@ int main(int ac, char** av)
 	CommandLineArgs::parseMainArgs(ac, av);
 	GaussianAppArgs myArgs;
 	myArgs.displayHelpIfRequired();
+	
+	if(!myArgs.modelPath.isInit() && myArgs.modelPathShort.isInit())
+		myArgs.modelPath = myArgs.modelPathShort.get();
+	if(!myArgs.path.isInit() && myArgs.pathShort.isInit())
+		myArgs.path = myArgs.pathShort.get();
 
 	// rendering size
 	uint rendering_width = myArgs.rendering_size.get()[0];

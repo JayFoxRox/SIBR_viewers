@@ -226,10 +226,19 @@ std::function<char* (size_t N)> resizeFunctional(void** ptr, size_t& S) {
 	return lambda;
 }
 
-sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint render_w, uint render_h, const char* file, bool white_bg) :
+sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint render_w, uint render_h, const char* file, bool white_bg, int device) :
 	_scene(ibrScene),
 	sibr::ViewBase(render_w, render_h)
 {
+	_device = device;
+	cudaSetDevice(device);
+	cudaDeviceProp prop;
+    cudaGetDeviceProperties(&prop, device);
+	if (prop.major < 7)
+	{
+		SIBR_ERR << "Sorry, need at least compute capability 7.0+!";
+	}
+
 	_pointbasedrenderer.reset(new PointBasedRenderer());
 	_copyRenderer = new BufferCopyRenderer();
 	_copyRenderer->flip() = true;
