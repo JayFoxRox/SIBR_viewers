@@ -123,6 +123,9 @@ int main(int ac, char** av) {
 	RemoteAppArgs myArgs;
 	myArgs.displayHelpIfRequired();
 
+	if(!myArgs.dataset_path.isInit() && myArgs.pathShort.isInit())
+		myArgs.dataset_path = myArgs.pathShort.get();
+
 	const bool doVSync = !myArgs.vsync;
 	// rendering size
 	uint rendering_width = myArgs.rendering_size.get()[0];
