@@ -281,6 +281,7 @@ sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint
 	cudaMalloc((void**)&proj_cuda, sizeof(sibr::Matrix4f));
 	cudaMalloc((void**)&cam_pos_cuda, 3 * sizeof(float));
 	cudaMalloc((void**)&background_cuda, 3 * sizeof(float));
+	cudaMalloc((void**)&rect_cuda, 2 * P * sizeof(int));
 
 	float bg[3] = { white_bg ? 1.f : 0.f, white_bg ? 1.f : 0.f, white_bg ? 1.f : 0.f };
 	cudaMemcpy(background_cuda, bg, 3 * sizeof(float), cudaMemcpyHostToDevice);
@@ -354,6 +355,7 @@ void sibr::GaussianView::onRenderIBR(sibr::IRenderTarget & dst, const sibr::Came
 		cudaGraphicsResourceGetMappedPointer((void**)&image_cuda, &bytes, imageBufferCuda);
 
 		// Rasterize
+		int* rects = _fastCulling ? rect_cuda : nullptr;
 		CudaRasterizer::Rasterizer::forward(
 			geomBufferFunc,
 			binningBufferFunc,
@@ -375,7 +377,9 @@ void sibr::GaussianView::onRenderIBR(sibr::IRenderTarget & dst, const sibr::Came
 			tan_fovx,
 			tan_fovy,
 			false,
-			image_cuda
+			image_cuda,
+			nullptr,
+			rects
 		);
 
 		// Unmap OpenGL resource for use with OpenGL
@@ -410,6 +414,7 @@ void sibr::GaussianView::onGUI()
 	{
 		ImGui::SliderFloat("Scaling Modifier", &_scalingModifier, 0.001f, 1.0f);
 	}
+	ImGui::Checkbox("Fast culling", &_fastCulling);
 	ImGui::End();
 }
 
@@ -426,6 +431,7 @@ sibr::GaussianView::~GaussianView()
 	cudaFree(proj_cuda);
 	cudaFree(cam_pos_cuda);
 	cudaFree(background_cuda);
+	cudaFree(rect_cuda);
 
 	cudaGraphicsUnregisterResource(imageBufferCuda);
 	glDeleteBuffers(1, &imageBuffer);

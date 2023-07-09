@@ -85,6 +85,7 @@ namespace sibr {
 
 		std::string currMode = "Splats";
 
+		bool _fastCulling = true;
 		int _device = 0;
 
 		int count;
@@ -93,6 +94,7 @@ namespace sibr {
 		float* scale_cuda;
 		float* opacity_cuda;
 		float* shs_cuda;
+		int* rect_cuda;
 
 		GLuint imageBuffer;
 		cudaGraphicsResource_t imageBufferCuda;
