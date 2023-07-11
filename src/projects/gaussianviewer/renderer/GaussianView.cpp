@@ -45,6 +45,18 @@ float sigmoid(const float m1)
 	return 1.0f / (1.0f + exp(-m1));
 }
 
+# define CUDA_SAFE_CALL_ALWAYS(A) \
+A; \
+cudaDeviceSynchronize(); \
+if (cudaPeekAtLastError() != cudaSuccess) \
+SIBR_ERR << cudaGetErrorString(cudaGetLastError());
+
+#if DEBUG || _DEBUG
+# define CUDA_SAFE_CALL(A) CUDA_SAFE_CALL_ALWAYS(A)
+#else
+# define CUDA_SAFE_CALL(A) A
+#endif
+
 // Load the Gaussians from the given file.
 int loadPly(const char* filename,
 	std::vector<Pos>& pos,
@@ -217,8 +229,8 @@ std::function<char* (size_t N)> resizeFunctional(void** ptr, size_t& S) {
 		if (N > S)
 		{
 			if (*ptr)
-				cudaFree(*ptr);
-			cudaMalloc(ptr, 2 * N);
+				CUDA_SAFE_CALL(cudaFree(*ptr));
+			CUDA_SAFE_CALL(cudaMalloc(ptr, 2 * N));
 			S = 2 * N;
 		}
 		return reinterpret_cast<char*>(*ptr);
@@ -230,10 +242,19 @@ sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint
 	_scene(ibrScene),
 	sibr::ViewBase(render_w, render_h)
 {
+	int num_devices;
+	CUDA_SAFE_CALL_ALWAYS(cudaGetDeviceCount(&num_devices));
 	_device = device;
-	cudaSetDevice(device);
+	if (device >= num_devices)
+	{
+		if (num_devices == 0)
+			SIBR_ERR << "No CUDA devices detected!";
+		else
+			SIBR_ERR << "Provided device index exceeds number of available CUDA devices!";
+	}
+	CUDA_SAFE_CALL_ALWAYS(cudaSetDevice(device));
 	cudaDeviceProp prop;
-    cudaGetDeviceProperties(&prop, device);
+	CUDA_SAFE_CALL_ALWAYS(cudaGetDeviceProperties(&prop, device));
 	if (prop.major < 7)
 	{
 		SIBR_ERR << "Sorry, need at least compute capability 7.0+!";
@@ -265,26 +286,26 @@ sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint
 	int P = count;
 
 	// Allocate and fill the GPU data
-	cudaMalloc((void**)&pos_cuda, sizeof(Pos) * P);
-	cudaMemcpy(pos_cuda, pos.data(), sizeof(Pos) * P, cudaMemcpyHostToDevice);
-	cudaMalloc((void**)&rot_cuda, sizeof(Rot) * P);
-	cudaMemcpy(rot_cuda, rot.data(), sizeof(Rot) * P, cudaMemcpyHostToDevice);
-	cudaMalloc((void**)&shs_cuda, sizeof(SHs) * P);
-	cudaMemcpy(shs_cuda, shs.data(), sizeof(SHs) * P, cudaMemcpyHostToDevice);
-	cudaMalloc((void**)&opacity_cuda, sizeof(float) * P);
-	cudaMemcpy(opacity_cuda, opacity.data(), sizeof(float) * P, cudaMemcpyHostToDevice);
-	cudaMalloc((void**)&scale_cuda, sizeof(Scale) * P);
-	cudaMemcpy(scale_cuda, scale.data(), sizeof(Scale) * P, cudaMemcpyHostToDevice);
+	CUDA_SAFE_CALL_ALWAYS(cudaMalloc((void**)&pos_cuda, sizeof(Pos) * P));
+	CUDA_SAFE_CALL_ALWAYS(cudaMemcpy(pos_cuda, pos.data(), sizeof(Pos) * P, cudaMemcpyHostToDevice));
+	CUDA_SAFE_CALL_ALWAYS(cudaMalloc((void**)&rot_cuda, sizeof(Rot) * P));
+	CUDA_SAFE_CALL_ALWAYS(cudaMemcpy(rot_cuda, rot.data(), sizeof(Rot) * P, cudaMemcpyHostToDevice));
+	CUDA_SAFE_CALL_ALWAYS(cudaMalloc((void**)&shs_cuda, sizeof(SHs) * P));
+	CUDA_SAFE_CALL_ALWAYS(cudaMemcpy(shs_cuda, shs.data(), sizeof(SHs) * P, cudaMemcpyHostToDevice));
+	CUDA_SAFE_CALL_ALWAYS(cudaMalloc((void**)&opacity_cuda, sizeof(float) * P));
+	CUDA_SAFE_CALL_ALWAYS(cudaMemcpy(opacity_cuda, opacity.data(), sizeof(float) * P, cudaMemcpyHostToDevice));
+	CUDA_SAFE_CALL_ALWAYS(cudaMalloc((void**)&scale_cuda, sizeof(Scale) * P));
+	CUDA_SAFE_CALL_ALWAYS(cudaMemcpy(scale_cuda, scale.data(), sizeof(Scale) * P, cudaMemcpyHostToDevice));
 
 	// Create space for view parameters
-	cudaMalloc((void**)&view_cuda, sizeof(sibr::Matrix4f));
-	cudaMalloc((void**)&proj_cuda, sizeof(sibr::Matrix4f));
-	cudaMalloc((void**)&cam_pos_cuda, 3 * sizeof(float));
-	cudaMalloc((void**)&background_cuda, 3 * sizeof(float));
-	cudaMalloc((void**)&rect_cuda, 2 * P * sizeof(int));
+	CUDA_SAFE_CALL_ALWAYS(cudaMalloc((void**)&view_cuda, sizeof(sibr::Matrix4f)));
+	CUDA_SAFE_CALL_ALWAYS(cudaMalloc((void**)&proj_cuda, sizeof(sibr::Matrix4f)));
+	CUDA_SAFE_CALL_ALWAYS(cudaMalloc((void**)&cam_pos_cuda, 3 * sizeof(float)));
+	CUDA_SAFE_CALL_ALWAYS(cudaMalloc((void**)&background_cuda, 3 * sizeof(float)));
+	CUDA_SAFE_CALL_ALWAYS(cudaMalloc((void**)&rect_cuda, 2 * P * sizeof(int)));
 
 	float bg[3] = { white_bg ? 1.f : 0.f, white_bg ? 1.f : 0.f, white_bg ? 1.f : 0.f };
-	cudaMemcpy(background_cuda, bg, 3 * sizeof(float), cudaMemcpyHostToDevice);
+	CUDA_SAFE_CALL_ALWAYS(cudaMemcpy(background_cuda, bg, 3 * sizeof(float), cudaMemcpyHostToDevice));
 
 	gData = new GaussianData(P, 
 		(float*)pos.data(),
@@ -298,11 +319,16 @@ sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint
 	// Create GL buffer ready for CUDA/GL interop
 	glCreateBuffers(1, &imageBuffer);
 	glNamedBufferStorage(imageBuffer, render_w * render_h * 3 * sizeof(float), nullptr, GL_DYNAMIC_STORAGE_BIT);
-	cudaGraphicsGLRegisterBuffer(&imageBufferCuda, imageBuffer, cudaGraphicsRegisterFlagsWriteDiscard);
+	CUDA_SAFE_CALL_ALWAYS(cudaGraphicsGLRegisterBuffer(&imageBufferCuda, imageBuffer, cudaGraphicsRegisterFlagsWriteDiscard));
 
 	geomBufferFunc = resizeFunctional(&geomPtr, allocdGeom);
 	binningBufferFunc = resizeFunctional(&binningPtr, allocdBinning);
 	imgBufferFunc = resizeFunctional(&imgPtr, allocdImg);
+
+	if (cudaPeekAtLastError() != cudaSuccess)
+	{
+		SIBR_ERR << "A CUDA error occurred in setup:" << cudaGetErrorString(cudaGetLastError()) << ". Please rerun in Debug to find the exact line!";
+	}
 }
 
 void sibr::GaussianView::setScene(const sibr::BasicIBRScene::Ptr & newScene)
@@ -344,15 +370,15 @@ void sibr::GaussianView::onRenderIBR(sibr::IRenderTarget & dst, const sibr::Came
 		float tan_fovx = tan_fovy * eye.aspect();
 
 		// Copy frame-dependent data to GPU
-		cudaMemcpy(view_cuda, view_mat.data(), sizeof(sibr::Matrix4f), cudaMemcpyHostToDevice);
-		cudaMemcpy(proj_cuda, proj_mat.data(), sizeof(sibr::Matrix4f), cudaMemcpyHostToDevice);
-		cudaMemcpy(cam_pos_cuda, &eye.position(), sizeof(float) * 3, cudaMemcpyHostToDevice);
+		CUDA_SAFE_CALL(cudaMemcpy(view_cuda, view_mat.data(), sizeof(sibr::Matrix4f), cudaMemcpyHostToDevice));
+		CUDA_SAFE_CALL(cudaMemcpy(proj_cuda, proj_mat.data(), sizeof(sibr::Matrix4f), cudaMemcpyHostToDevice));
+		CUDA_SAFE_CALL(cudaMemcpy(cam_pos_cuda, &eye.position(), sizeof(float) * 3, cudaMemcpyHostToDevice));
 
 		// Map OpenGL buffer resource for use with CUDA
 		float* image_cuda;
 		size_t bytes;
-		cudaGraphicsMapResources(1, &imageBufferCuda);
-		cudaGraphicsResourceGetMappedPointer((void**)&image_cuda, &bytes, imageBufferCuda);
+		CUDA_SAFE_CALL(cudaGraphicsMapResources(1, &imageBufferCuda));
+		CUDA_SAFE_CALL(cudaGraphicsResourceGetMappedPointer((void**)&image_cuda, &bytes, imageBufferCuda));
 
 		// Rasterize
 		int* rects = _fastCulling ? rect_cuda : nullptr;
@@ -383,9 +409,14 @@ void sibr::GaussianView::onRenderIBR(sibr::IRenderTarget & dst, const sibr::Came
 		);
 
 		// Unmap OpenGL resource for use with OpenGL
-		cudaGraphicsUnmapResources(1, &imageBufferCuda);
+		CUDA_SAFE_CALL(cudaGraphicsUnmapResources(1, &imageBufferCuda));
 		// Copy image contents to framebuffer
 		_copyRenderer->process(imageBuffer, dst, _resolution.x(), _resolution.y());
+	}
+
+	if (cudaPeekAtLastError() != cudaSuccess)
+	{
+		SIBR_ERR << "A CUDA error occurred during rendering:" << cudaGetErrorString(cudaGetLastError()) << ". Please rerun in Debug to find the exact line!";
 	}
 }
 
