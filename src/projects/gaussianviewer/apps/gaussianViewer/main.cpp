@@ -83,7 +83,7 @@ static void User_ReadLine(ImGuiContext*, ImGuiSettingsHandler* handler, void*, c
 			*((bool*)handler->UserData) = true;
 			return;
 		}
-	((sibr::GaussianView*)handler->UserData)->_dontshow = false;
+	*((sibr::GaussianView*)handler->UserData)->_dontshow = false;
 }
 
 static void User_WriteAll(ImGuiContext* imgui_ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf)
