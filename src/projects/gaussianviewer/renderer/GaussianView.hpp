@@ -52,7 +52,7 @@ namespace sibr {
 		 * \param render_w rendering width
 		 * \param render_h rendering height
 		 */
-		GaussianView(const sibr::BasicIBRScene::Ptr& ibrScene, uint render_w, uint render_h, const char* file, bool white_bg = false, int device = 0);
+		GaussianView(const sibr::BasicIBRScene::Ptr& ibrScene, uint render_w, uint render_h, const char* file, bool* message_read, bool white_bg = false, int device = 0);
 
 		/** Replace the current scene.
 		 *\param newScene the new scene to render */
@@ -80,6 +80,8 @@ namespace sibr {
 		const std::shared_ptr<sibr::BasicIBRScene> & getScene() const { return _scene; }
 
 		virtual ~GaussianView() override;
+
+		bool* _dontshow;
 
 	protected:
 
@@ -110,6 +112,12 @@ namespace sibr {
 
 		float _scalingModifier = 1.0f;
 		GaussianData* gData;
+
+		bool _interop_failed = false;
+		std::vector<char> fallback_bytes;
+		float* fallbackBufferCuda = nullptr;
+		bool accepted = false;
+
 
 		std::shared_ptr<sibr::BasicIBRScene> _scene; ///< The current scene.
 		PointBasedRenderer::Ptr _pointbasedrenderer;

@@ -14,6 +14,7 @@
 #include <thread>
 #include <boost/asio.hpp>
 #include <rasterizer.h>
+#include <imgui_internal.h>
 
 // Define the types and sizes that make up the contents of each Gaussian 
 // in the trained model.
@@ -238,8 +239,9 @@ std::function<char* (size_t N)> resizeFunctional(void** ptr, size_t& S) {
 	return lambda;
 }
 
-sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint render_w, uint render_h, const char* file, bool white_bg, int device) :
+sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint render_w, uint render_h, const char* file, bool* messageRead, bool white_bg, int device) :
 	_scene(ibrScene),
+	_dontshow(messageRead),
 	sibr::ViewBase(render_w, render_h)
 {
 	int num_devices;
@@ -319,16 +321,23 @@ sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint
 	// Create GL buffer ready for CUDA/GL interop
 	glCreateBuffers(1, &imageBuffer);
 	glNamedBufferStorage(imageBuffer, render_w * render_h * 3 * sizeof(float), nullptr, GL_DYNAMIC_STORAGE_BIT);
-	CUDA_SAFE_CALL_ALWAYS(cudaGraphicsGLRegisterBuffer(&imageBufferCuda, imageBuffer, cudaGraphicsRegisterFlagsWriteDiscard));
-
-	geomBufferFunc = resizeFunctional(&geomPtr, allocdGeom);
-	binningBufferFunc = resizeFunctional(&binningPtr, allocdBinning);
-	imgBufferFunc = resizeFunctional(&imgPtr, allocdImg);
 
 	if (cudaPeekAtLastError() != cudaSuccess)
 	{
 		SIBR_ERR << "A CUDA error occurred in setup:" << cudaGetErrorString(cudaGetLastError()) << ". Please rerun in Debug to find the exact line!";
 	}
+	
+	cudaGraphicsGLRegisterBuffer(&imageBufferCuda, imageBuffer, cudaGraphicsRegisterFlagsWriteDiscard);
+	if (cudaGetLastError() != cudaSuccess)
+	{
+		fallback_bytes.resize(render_w * render_h * 3 * sizeof(float));
+		cudaMalloc(&fallbackBufferCuda, fallback_bytes.size());
+		_interop_failed = true;
+	}
+
+	geomBufferFunc = resizeFunctional(&geomPtr, allocdGeom);
+	binningBufferFunc = resizeFunctional(&binningPtr, allocdBinning);
+	imgBufferFunc = resizeFunctional(&imgPtr, allocdImg);
 }
 
 void sibr::GaussianView::setScene(const sibr::BasicIBRScene::Ptr & newScene)
@@ -374,11 +383,18 @@ void sibr::GaussianView::onRenderIBR(sibr::IRenderTarget & dst, const sibr::Came
 		CUDA_SAFE_CALL(cudaMemcpy(proj_cuda, proj_mat.data(), sizeof(sibr::Matrix4f), cudaMemcpyHostToDevice));
 		CUDA_SAFE_CALL(cudaMemcpy(cam_pos_cuda, &eye.position(), sizeof(float) * 3, cudaMemcpyHostToDevice));
 
-		// Map OpenGL buffer resource for use with CUDA
-		float* image_cuda;
-		size_t bytes;
-		CUDA_SAFE_CALL(cudaGraphicsMapResources(1, &imageBufferCuda));
-		CUDA_SAFE_CALL(cudaGraphicsResourceGetMappedPointer((void**)&image_cuda, &bytes, imageBufferCuda));
+		float* image_cuda = nullptr;
+		if (!_interop_failed)
+		{
+			// Map OpenGL buffer resource for use with CUDA
+			size_t bytes;
+			CUDA_SAFE_CALL(cudaGraphicsMapResources(1, &imageBufferCuda));
+			CUDA_SAFE_CALL(cudaGraphicsResourceGetMappedPointer((void**)&image_cuda, &bytes, imageBufferCuda));
+		}
+		else
+		{
+			image_cuda = fallbackBufferCuda;
+		}
 
 		// Rasterize
 		int* rects = _fastCulling ? rect_cuda : nullptr;
@@ -408,8 +424,16 @@ void sibr::GaussianView::onRenderIBR(sibr::IRenderTarget & dst, const sibr::Came
 			rects
 		);
 
-		// Unmap OpenGL resource for use with OpenGL
-		CUDA_SAFE_CALL(cudaGraphicsUnmapResources(1, &imageBufferCuda));
+		if (!_interop_failed)
+		{
+			// Unmap OpenGL resource for use with OpenGL
+			CUDA_SAFE_CALL(cudaGraphicsUnmapResources(1, &imageBufferCuda));
+		}
+		else
+		{
+			CUDA_SAFE_CALL(cudaMemcpy(fallback_bytes.data(), fallbackBufferCuda, fallback_bytes.size(), cudaMemcpyDeviceToHost));
+			glNamedBufferSubData(imageBuffer, 0, fallback_bytes.size(), fallback_bytes.data());
+		}
 		// Copy image contents to framebuffer
 		_copyRenderer->process(imageBuffer, dst, _resolution.x(), _resolution.y());
 	}
@@ -446,7 +470,35 @@ void sibr::GaussianView::onGUI()
 		ImGui::SliderFloat("Scaling Modifier", &_scalingModifier, 0.001f, 1.0f);
 	}
 	ImGui::Checkbox("Fast culling", &_fastCulling);
+
 	ImGui::End();
+
+	if(!*_dontshow && !accepted && _interop_failed)
+		ImGui::OpenPopup("Error Using Interop");
+
+	if (!*_dontshow && !accepted && _interop_failed && ImGui::BeginPopupModal("Error Using Interop", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+		ImGui::SetItemDefaultFocus();
+		ImGui::SetWindowFontScale(2.0f);
+		ImGui::Text("This application tries to use CUDA/OpenGL interop.\n"\
+			" It did NOT work for your current configuration.\n"\
+			" For highest performance, OpenGL and CUDA must run on the same\n"\
+			" GPU on an OS that supports interop.You can try to pass a\n"\
+			" non-zero index via --device on a multi-GPU system, and/or try\n" \
+			" attaching the monitors to the main CUDA card.\n"\
+			" On a laptop with one integrated and one dedicated GPU, you can try\n"\
+			" to set the preferred GPU via your operating system.\n\n"\
+			" FALLING BACK TO SLOWER RENDERING WITH CPU ROUNDTRIP\n");
+
+		ImGui::Separator();
+
+		if (ImGui::Button("  OK  ")) {
+			ImGui::CloseCurrentPopup();
+			accepted = true;
+		}
+		ImGui::SameLine();
+		ImGui::Checkbox("Don't show this message again", _dontshow);
+		ImGui::EndPopup();
+	}
 }
 
 sibr::GaussianView::~GaussianView()
@@ -464,7 +516,14 @@ sibr::GaussianView::~GaussianView()
 	cudaFree(background_cuda);
 	cudaFree(rect_cuda);
 
-	cudaGraphicsUnregisterResource(imageBufferCuda);
+	if (!_interop_failed)
+	{
+		cudaGraphicsUnregisterResource(imageBufferCuda);
+	}
+	else
+	{
+		cudaFree(fallbackBufferCuda);
+	}
 	glDeleteBuffers(1, &imageBuffer);
 
 	if (geomPtr)

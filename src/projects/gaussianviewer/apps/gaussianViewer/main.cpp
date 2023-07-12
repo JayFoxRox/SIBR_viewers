@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <boost/filesystem.hpp>
 #include <regex>
+#include <imgui/imgui_internal.h>
 
 namespace fs = boost::filesystem;
 
@@ -68,6 +69,32 @@ std::pair<int, int> findArg(const std::string& line, const std::string& name)
 	return std::make_pair(start, end);
 }
 
+static void* User_ReadOpen(ImGuiContext*, ImGuiSettingsHandler*, const char* name)
+{
+	return (void*)0x1;
+}
+
+static void User_ReadLine(ImGuiContext*, ImGuiSettingsHandler* handler, void*, const char* line)
+{
+	int i;
+	if (sscanf(line, "DontShow=%d", &i) == 1)
+		if (i)
+		{
+			*((bool*)handler->UserData) = true;
+			return;
+		}
+	((sibr::GaussianView*)handler->UserData)->_dontshow = false;
+}
+
+static void User_WriteAll(ImGuiContext* imgui_ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf)
+{
+	// Write a buffer
+	// If a window wasn't opened in this session we preserve its settings
+	buf->reserve(buf->size() + 96); // ballpark reserve
+	buf->appendf("[UserData][UserData]\nDontShow=%d\n", *((bool*)handler->UserData) ? 1 : 0);
+	buf->appendf("\n");
+}
+
 int main(int ac, char** av) 
 {
 	// Parse Command-line Args
@@ -79,6 +106,8 @@ int main(int ac, char** av)
 		myArgs.modelPath = myArgs.modelPathShort.get();
 	if(!myArgs.dataset_path.isInit() && myArgs.pathShort.isInit())
 		myArgs.dataset_path = myArgs.pathShort.get();
+
+	int device = myArgs.device;
 
 	// rendering size
 	uint rendering_width = myArgs.rendering_size.get()[0];
@@ -92,6 +121,17 @@ int main(int ac, char** av)
 
 	// Window setup
 	sibr::Window		window(PROGRAM_NAME, sibr::Vector2i(50, 50), myArgs, getResourcesDirectory() + "/gaussians/" + PROGRAM_NAME + ".ini");
+
+	bool messageRead = false;
+	ImGuiSettingsHandler ini_handler;
+	ini_handler.TypeName = "UserData";
+	ini_handler.UserData = &messageRead;
+	ini_handler.TypeHash = ImHash("UserData", 0, 0);
+	ini_handler.ReadOpenFn = User_ReadOpen;
+	ini_handler.ReadLineFn = User_ReadLine;
+	ini_handler.WriteAllFn = User_WriteAll;
+	ImGui::GetCurrentContext()->SettingsHandlers.push_back(ini_handler);
+	window.loadSettings();
 
 	std::string cfgLine;
 	if (!myArgs.dataset_path.isInit())
@@ -168,7 +208,7 @@ int main(int ac, char** av)
 	const unsigned int sceneResHeight = usedResolution.y();
 
 	// Create the ULR view.
-	GaussianView::Ptr	gaussianView(new GaussianView(scene, sceneResWidth, sceneResHeight, plyfile.c_str(), white_background));
+	GaussianView::Ptr	gaussianView(new GaussianView(scene, sceneResWidth, sceneResHeight, plyfile.c_str(), &messageRead, white_background, device));
 
 	// Raycaster.
 	std::shared_ptr<sibr::Raycaster> raycaster = std::make_shared<sibr::Raycaster>();
