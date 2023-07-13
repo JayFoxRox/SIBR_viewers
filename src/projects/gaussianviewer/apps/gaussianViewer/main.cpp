@@ -208,7 +208,7 @@ int main(int ac, char** av)
 	const unsigned int sceneResHeight = usedResolution.y();
 
 	// Create the ULR view.
-	GaussianView::Ptr	gaussianView(new GaussianView(scene, sceneResWidth, sceneResHeight, plyfile.c_str(), &messageRead, white_background, device));
+	GaussianView::Ptr	gaussianView(new GaussianView(scene, sceneResWidth, sceneResHeight, plyfile.c_str(), &messageRead, white_background, !myArgs.noInterop, device));
 
 	// Raycaster.
 	std::shared_ptr<sibr::Raycaster> raycaster = std::make_shared<sibr::Raycaster>();

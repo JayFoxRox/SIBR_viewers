@@ -48,6 +48,7 @@ namespace sibr {
 		RequiredArg<std::string> pathShort = {"s", "path to the dataset root"};
 		Arg<int> device = {"device", 0, "CUDA device index"};
 		Arg<bool> loadImages = { "load_images", "Whether or not to load images for scene overview."};
+		Arg<bool> noInterop = { "no_interop", "Don't try to use interop (may be required for unconventional OpenGL setups, like WSL)" };
 	};
 
 }

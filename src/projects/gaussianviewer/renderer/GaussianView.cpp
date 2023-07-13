@@ -239,7 +239,7 @@ std::function<char* (size_t N)> resizeFunctional(void** ptr, size_t& S) {
 	return lambda;
 }
 
-sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint render_w, uint render_h, const char* file, bool* messageRead, bool white_bg, int device) :
+sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint render_w, uint render_h, const char* file, bool* messageRead, bool white_bg, bool useInterop, int device) :
 	_scene(ibrScene),
 	_dontshow(messageRead),
 	sibr::ViewBase(render_w, render_h)
@@ -322,13 +322,16 @@ sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint
 	glCreateBuffers(1, &imageBuffer);
 	glNamedBufferStorage(imageBuffer, render_w * render_h * 3 * sizeof(float), nullptr, GL_DYNAMIC_STORAGE_BIT);
 
-	if (cudaPeekAtLastError() != cudaSuccess)
+	if (useInterop)
 	{
-		SIBR_ERR << "A CUDA error occurred in setup:" << cudaGetErrorString(cudaGetLastError()) << ". Please rerun in Debug to find the exact line!";
+		if (cudaPeekAtLastError() != cudaSuccess)
+		{
+			SIBR_ERR << "A CUDA error occurred in setup:" << cudaGetErrorString(cudaGetLastError()) << ". Please rerun in Debug to find the exact line!";
+		}
+		cudaGraphicsGLRegisterBuffer(&imageBufferCuda, imageBuffer, cudaGraphicsRegisterFlagsWriteDiscard);
+		useInterop &= (cudaGetLastError() == cudaSuccess);
 	}
-	
-	cudaGraphicsGLRegisterBuffer(&imageBufferCuda, imageBuffer, cudaGraphicsRegisterFlagsWriteDiscard);
-	if (cudaGetLastError() != cudaSuccess)
+	if (!useInterop)
 	{
 		fallback_bytes.resize(render_w * render_h * 3 * sizeof(float));
 		cudaMalloc(&fallbackBufferCuda, fallback_bytes.size());
