@@ -83,7 +83,7 @@ namespace sibr {
 		\param frame the frame to encode
 		\return a success flag.
 		*/
-#define HEADLESS
+//#define HEADLESS
 #ifndef HEADLESS
 		bool encode(AVFrame *frame);
 #endif 

@@ -12,7 +12,7 @@
 
 
 #include "core/graphics/Texture.hpp"
-#define HEADLESS
+//#define HEADLESS
 
 namespace sibr
 {

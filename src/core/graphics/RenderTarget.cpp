@@ -12,7 +12,7 @@
 
 
 #include "core/graphics/RenderTarget.hpp"
-#define HEADLESS
+//#define HEADLESS
 
 namespace sibr
 {
