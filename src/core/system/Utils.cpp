@@ -27,9 +27,7 @@
 	#define ENABLE_VIRTUAL_TERMINAL_PROCESSING  0x0004
 	#endif
 #else
-#ifdef USE_NFD
-		#include <nfd.h>
-#endif
+	#include <nfd.h>
 	#include <libgen.h>
 	#include <linux/limits.h>
 	#include <unistd.h>
@@ -428,7 +426,7 @@ namespace sibr
 	bool showFilePicker(std::string & selectedElement,
 
 		const FilePickerMode mode, const std::string & directoryPath, const std::string & extensionsAllowed) {
-#if defined(USE_NFD) || defined(SIBR_OS_WINDOWS)
+
 		nfdchar_t *outPath = NULL;
 		nfdresult_t result = NFD_CANCEL;
 		
@@ -453,7 +451,6 @@ namespace sibr
 			std::cout << std::string(NFD_GetError()) << std::endl;
 		}
 		free(outPath);
-#endif
 
 		return false;
 
