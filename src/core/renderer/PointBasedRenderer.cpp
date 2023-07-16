@@ -26,6 +26,7 @@ namespace sibr {
 
 	void	PointBasedRenderer::process(const Mesh& mesh, const Camera& eye, IRenderTarget& dst, bool backfaceCull)
 	{
+		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_PROGRAM_POINT_SIZE);
 		dst.bind();
 		_shader.begin();
@@ -38,11 +39,12 @@ namespace sibr {
 		_shader.end();
 		dst.unbind();
 		glDisable(GL_PROGRAM_POINT_SIZE);
-
+		glDisable(GL_DEPTH_TEST);
 	}
 
 	void	PointBasedRenderer::process(const Mesh& mesh, const Camera& eye, const sibr::Matrix4f& model, IRenderTarget& dst, bool backfaceCull)
 	{
+		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_PROGRAM_POINT_SIZE);
 		dst.bind();
 		_shader.begin();
@@ -54,7 +56,7 @@ namespace sibr {
 		_shader.end();
 		dst.unbind();
 		glDisable(GL_PROGRAM_POINT_SIZE);
-
+		glDisable(GL_DEPTH_TEST);
 	}
 
 } /*namespace sibr*/
