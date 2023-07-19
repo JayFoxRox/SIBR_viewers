@@ -19,9 +19,10 @@
 // Define the types and sizes that make up the contents of each Gaussian 
 // in the trained model.
 typedef sibr::Vector3f Pos;
+template<int D>
 struct SHs
 {
-	float shs[48];
+	float shs[(D+1)*(D+1)*3];
 };
 struct Scale
 {
@@ -31,11 +32,12 @@ struct Rot
 {
 	float rot[4];
 };
+template<int D>
 struct RichPoint
 {
 	Pos pos;
 	float n[3];
-	SHs shs;
+	SHs<D> shs;
 	float opacity;
 	Scale scale;
 	Rot rot;
@@ -59,9 +61,10 @@ SIBR_ERR << cudaGetErrorString(cudaGetLastError());
 #endif
 
 // Load the Gaussians from the given file.
+template<int D>
 int loadPly(const char* filename,
 	std::vector<Pos>& pos,
-	std::vector<SHs>& shs,
+	std::vector<SHs<3>>& shs,
 	std::vector<float>& opacities,
 	std::vector<Scale>& scales,
 	std::vector<Rot>& rot)
@@ -90,8 +93,8 @@ int loadPly(const char* filename,
 			break;
 
 	// Read all Gaussians at once (AoS)
-	std::vector<RichPoint> points(count);
-	infile.read((char*)points.data(), count * sizeof(RichPoint));
+	std::vector<RichPoint<D>> points(count);
+	infile.read((char*)points.data(), count * sizeof(RichPoint<D>));
 
 	// Resize our SoA data
 	pos.resize(count);
@@ -134,6 +137,7 @@ int loadPly(const char* filename,
 	std::sort(mapp.begin(), mapp.end(), sorter);
 
 	// Move data from AoS to SoA
+	int SH_N = (D + 1) * (D + 1);
 	for (int k = 0; k < count; k++)
 	{
 		int i = mapp[k].second;
@@ -157,11 +161,11 @@ int loadPly(const char* filename,
 		shs[k].shs[0] = points[i].shs.shs[0];
 		shs[k].shs[1] = points[i].shs.shs[1];
 		shs[k].shs[2] = points[i].shs.shs[2];
-		for (int j = 1; j < 16; j++)
+		for (int j = 1; j < SH_N; j++)
 		{
 			shs[k].shs[j * 3 + 0] = points[i].shs.shs[(j - 1) + 3];
-			shs[k].shs[j * 3 + 1] = points[i].shs.shs[(j - 1) + 18];
-			shs[k].shs[j * 3 + 2] = points[i].shs.shs[(j - 1) + 33];
+			shs[k].shs[j * 3 + 1] = points[i].shs.shs[(j - 1) + SH_N + 2];
+			shs[k].shs[j * 3 + 2] = points[i].shs.shs[(j - 1) + 2 * SH_N + 1];
 		}
 	}
 	return count;
@@ -239,9 +243,10 @@ std::function<char* (size_t N)> resizeFunctional(void** ptr, size_t& S) {
 	return lambda;
 }
 
-sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint render_w, uint render_h, const char* file, bool* messageRead, bool white_bg, bool useInterop, int device) :
+sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint render_w, uint render_h, const char* file, bool* messageRead, int sh_degree, bool white_bg, bool useInterop, int device) :
 	_scene(ibrScene),
 	_dontshow(messageRead),
+	_sh_degree(sh_degree),
 	sibr::ViewBase(render_w, render_h)
 {
 	int num_devices;
@@ -282,8 +287,19 @@ sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint
 	std::vector<Rot> rot;
 	std::vector<Scale> scale;
 	std::vector<float> opacity;
-	std::vector<SHs> shs;
-	count = loadPly(file, pos, shs, opacity, scale, rot);
+	std::vector<SHs<3>> shs;
+	if (sh_degree == 1)
+	{
+		count = loadPly<1>(file, pos, shs, opacity, scale, rot);
+	}
+	else if (sh_degree == 2)
+	{
+		count = loadPly<2>(file, pos, shs, opacity, scale, rot);
+	}
+	else if (sh_degree == 3)
+	{
+		count = loadPly<3>(file, pos, shs, opacity, scale, rot);
+	}
 
 	int P = count;
 
@@ -292,8 +308,8 @@ sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint
 	CUDA_SAFE_CALL_ALWAYS(cudaMemcpy(pos_cuda, pos.data(), sizeof(Pos) * P, cudaMemcpyHostToDevice));
 	CUDA_SAFE_CALL_ALWAYS(cudaMalloc((void**)&rot_cuda, sizeof(Rot) * P));
 	CUDA_SAFE_CALL_ALWAYS(cudaMemcpy(rot_cuda, rot.data(), sizeof(Rot) * P, cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL_ALWAYS(cudaMalloc((void**)&shs_cuda, sizeof(SHs) * P));
-	CUDA_SAFE_CALL_ALWAYS(cudaMemcpy(shs_cuda, shs.data(), sizeof(SHs) * P, cudaMemcpyHostToDevice));
+	CUDA_SAFE_CALL_ALWAYS(cudaMalloc((void**)&shs_cuda, sizeof(SHs<3>) * P));
+	CUDA_SAFE_CALL_ALWAYS(cudaMemcpy(shs_cuda, shs.data(), sizeof(SHs<3>) * P, cudaMemcpyHostToDevice));
 	CUDA_SAFE_CALL_ALWAYS(cudaMalloc((void**)&opacity_cuda, sizeof(float) * P));
 	CUDA_SAFE_CALL_ALWAYS(cudaMemcpy(opacity_cuda, opacity.data(), sizeof(float) * P, cudaMemcpyHostToDevice));
 	CUDA_SAFE_CALL_ALWAYS(cudaMalloc((void**)&scale_cuda, sizeof(Scale) * P));
@@ -405,7 +421,7 @@ void sibr::GaussianView::onRenderIBR(sibr::IRenderTarget & dst, const sibr::Came
 			geomBufferFunc,
 			binningBufferFunc,
 			imgBufferFunc,
-			count, 3, 16,
+			count, _sh_degree, 16,
 			background_cuda,
 			_resolution.x(), _resolution.y(),
 			pos_cuda,

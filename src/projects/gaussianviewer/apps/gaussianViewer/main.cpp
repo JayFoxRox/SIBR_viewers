@@ -146,7 +146,10 @@ int main(int ac, char** av)
 		myArgs.dataset_path = cfgLine.substr(rng.first + 1, rng.second - rng.first - 2);
 	}
 
-	auto rng = findArg(cfgLine, "white_background");
+	auto rng = findArg(cfgLine, "sh_degree");
+	int sh_degree = std::stoi(cfgLine.substr(rng.first, rng.second - rng.first));
+
+	rng = findArg(cfgLine, "white_background");
 	bool white_background = cfgLine.substr(rng.first, rng.second - rng.first).find("True") != -1;
 
 	BasicIBRScene::SceneOptions myOpts;
@@ -208,7 +211,7 @@ int main(int ac, char** av)
 	const unsigned int sceneResHeight = usedResolution.y();
 
 	// Create the ULR view.
-	GaussianView::Ptr	gaussianView(new GaussianView(scene, sceneResWidth, sceneResHeight, plyfile.c_str(), &messageRead, white_background, !myArgs.noInterop, device));
+	GaussianView::Ptr	gaussianView(new GaussianView(scene, sceneResWidth, sceneResHeight, plyfile.c_str(), &messageRead, sh_degree, white_background, !myArgs.noInterop, device));
 
 	// Raycaster.
 	std::shared_ptr<sibr::Raycaster> raycaster = std::make_shared<sibr::Raycaster>();
