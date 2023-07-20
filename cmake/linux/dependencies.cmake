@@ -291,7 +291,7 @@ sibr_gitlibrary(TARGET imgui
 ## FOR CLUSTER COMMENT OUT nativefiledialog
 sibr_gitlibrary(TARGET nativefiledialog
     GIT_REPOSITORY 	"https://gitlab.inria.fr/sibr/libs/nativefiledialog.git"
-    GIT_TAG			"06ffa119a318b46dcb0de82ca7e9f98492013bc3"
+    GIT_TAG			"ae2fab73cf44bebdc08d997e307c8df30bb9acec"
 )
 
 
