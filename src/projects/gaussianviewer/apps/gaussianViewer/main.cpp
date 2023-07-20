@@ -181,7 +181,7 @@ int main(int ac, char** av)
 	}
 	else
 	{
-		plyfile += "/iteration_" + myArgs.iteration.get() + " / point_cloud.ply";
+		plyfile += "/iteration_" + myArgs.iteration.get() + "/point_cloud.ply";
 	}
 
 	// Setup the scene: load the proxy, create the texture arrays.
