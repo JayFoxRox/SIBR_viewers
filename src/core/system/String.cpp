@@ -46,10 +46,16 @@ namespace sibr
 
 	std::string parentDirectory(const std::string & str)
 	{
+		const char kPathSeparator =
+#ifdef _WIN32
+				'\\';
+#else
+				'/';
+#endif
 		const std::string::size_type pos = str.find_last_of("/\\");
 		// If no separator, return empty path.
 		if(pos == std::string::npos) {
-			return "";
+			return str + kPathSeparator + "..";
 		}
 		// If the separator is not trailing, we are done. 
 		if(pos < str.size()-1) {
