@@ -134,14 +134,15 @@ int main(int ac, char** av)
 	window.loadSettings();
 
 	std::string cfgLine;
+	std::ifstream cfgFile(myArgs.modelPath.get() + "/cfg_args");
+	if (!cfgFile.good())
+	{
+		SIBR_ERR << "Could not find config file 'cfg_args' at " << myArgs.modelPath.get();
+	}
+	std::getline(cfgFile, cfgLine);
+
 	if (!myArgs.dataset_path.isInit())
 	{
-		std::ifstream cfgFile(myArgs.modelPath.get() + "/cfg_args");
-		if (!cfgFile.good())
-		{
-			SIBR_ERR << "Could not find config file 'cfg_args' at " << myArgs.modelPath.get();
-		}
-		std::getline(cfgFile, cfgLine);
 		auto rng = findArg(cfgLine, "source_path");
 		myArgs.dataset_path = cfgLine.substr(rng.first + 1, rng.second - rng.first - 2);
 	}
