@@ -48,6 +48,11 @@ float sigmoid(const float m1)
 	return 1.0f / (1.0f + exp(-m1));
 }
 
+float inverse_sigmoid(const float m1)
+{
+	return log(m1 / (1.0f - m1));
+}
+
 # define CUDA_SAFE_CALL_ALWAYS(A) \
 A; \
 cudaDeviceSynchronize(); \
@@ -67,7 +72,9 @@ int loadPly(const char* filename,
 	std::vector<SHs<3>>& shs,
 	std::vector<float>& opacities,
 	std::vector<Scale>& scales,
-	std::vector<Rot>& rot)
+	std::vector<Rot>& rot,
+	sibr::Vector3f& minn,
+	sibr::Vector3f& maxx)
 {
 	std::ifstream infile(filename, std::ios_base::binary);
 
@@ -107,8 +114,8 @@ int loadPly(const char* filename,
 	// them according to 3D Morton order. This means better cache
 	// behavior for reading Gaussians that end up in the same tile 
 	// (close in 3D --> close in 2D).
-	sibr::Vector3f minn(FLT_MAX, FLT_MAX, FLT_MAX);
-	sibr::Vector3f maxx = -minn;
+	minn = sibr::Vector3f(FLT_MAX, FLT_MAX, FLT_MAX);
+	maxx = -minn;
 	for (int i = 0; i < count; i++)
 	{
 		maxx = maxx.cwiseMax(points[i].pos);
@@ -169,6 +176,71 @@ int loadPly(const char* filename,
 		}
 	}
 	return count;
+}
+
+void savePly(const char* filename,
+	const std::vector<Pos>& pos,
+	const std::vector<SHs<3>>& shs,
+	const std::vector<float>& opacities,
+	const std::vector<Scale>& scales,
+	const std::vector<Rot>& rot,
+	const sibr::Vector3f& minn,
+	const sibr::Vector3f& maxx)
+{
+	// Read all Gaussians at once (AoS)
+	int count = 0;
+	for (int i = 0; i < pos.size(); i++)
+	{
+		if (pos[i].x() < minn.x() || pos[i].y() < minn.y() || pos[i].z() < minn.z() ||
+			pos[i].x() > maxx.x() || pos[i].y() > maxx.y() || pos[i].z() > maxx.z())
+			continue;
+		count++;
+	}
+	std::vector<RichPoint<3>> points(count);
+
+	// Output number of Gaussians contained
+	SIBR_LOG << "Saving " << count << " Gaussian splats" << std::endl;
+
+	std::ofstream outfile(filename, std::ios_base::binary);
+
+	outfile << "ply\nformat binary_little_endian 1.0\nelement vertex " << count << "\n";
+
+	std::string props1[] = { "x", "y", "z", "nx", "ny", "nz", "f_dc_0", "f_dc_1", "f_dc_2"};
+	std::string props2[] = { "opacity", "scale_0", "scale_1", "scale_2", "rot_0", "rot_1", "rot_2", "rot_3" };
+
+	for (auto s : props1)
+		outfile << "property float " << s << std::endl;
+	for (int i = 0; i < 45; i++)
+		outfile << "property float f_rest_" << i << std::endl;
+	for (auto s : props2)
+		outfile << "property float " << s << std::endl;
+	outfile << "end_header" << std::endl;
+
+	count = 0;
+	for (int i = 0; i < pos.size(); i++)
+	{
+		if (pos[i].x() < minn.x() || pos[i].y() < minn.y() || pos[i].z() < minn.z() ||
+			pos[i].x() > maxx.x() || pos[i].y() > maxx.y() || pos[i].z() > maxx.z())
+			continue;
+		points[count].pos = pos[i];
+		points[count].rot = rot[i];
+		// Exponentiate scale
+		for (int j = 0; j < 3; j++)
+			points[count].scale.scale[j] = log(scales[i].scale[j]);
+		// Activate alpha
+		points[count].opacity = inverse_sigmoid(opacities[i]);
+		points[count].shs.shs[0] = shs[i].shs[0];
+		points[count].shs.shs[1] = shs[i].shs[1];
+		points[count].shs.shs[2] = shs[i].shs[2];
+		for (int j = 1; j < 16; j++)
+		{
+			points[count].shs.shs[(j - 1) + 3] = shs[i].shs[j * 3 + 0];
+			points[count].shs.shs[(j - 1) + 18] = shs[i].shs[j * 3 + 1];
+			points[count].shs.shs[(j - 1) + 33] = shs[i].shs[j * 3 + 2];
+		}
+		count++;
+	}
+	outfile.write((char*)points.data(), sizeof(RichPoint<3>) * points.size());
 }
 
 namespace sibr
@@ -290,16 +362,19 @@ sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint
 	std::vector<SHs<3>> shs;
 	if (sh_degree == 1)
 	{
-		count = loadPly<1>(file, pos, shs, opacity, scale, rot);
+		count = loadPly<1>(file, pos, shs, opacity, scale, rot, _scenemin, _scenemax);
 	}
 	else if (sh_degree == 2)
 	{
-		count = loadPly<2>(file, pos, shs, opacity, scale, rot);
+		count = loadPly<2>(file, pos, shs, opacity, scale, rot, _scenemin, _scenemax);
 	}
 	else if (sh_degree == 3)
 	{
-		count = loadPly<3>(file, pos, shs, opacity, scale, rot);
+		count = loadPly<3>(file, pos, shs, opacity, scale, rot, _scenemin, _scenemax);
 	}
+
+	_boxmin = _scenemin;
+	_boxmax = _scenemax;
 
 	int P = count;
 
@@ -417,6 +492,8 @@ void sibr::GaussianView::onRenderIBR(sibr::IRenderTarget & dst, const sibr::Came
 
 		// Rasterize
 		int* rects = _fastCulling ? rect_cuda : nullptr;
+		float* boxmin = _cropping ? (float*)&_boxmin : nullptr;
+		float* boxmax = _cropping ? (float*)&_boxmax : nullptr;
 		CudaRasterizer::Rasterizer::forward(
 			geomBufferFunc,
 			binningBufferFunc,
@@ -440,7 +517,9 @@ void sibr::GaussianView::onRenderIBR(sibr::IRenderTarget & dst, const sibr::Came
 			false,
 			image_cuda,
 			nullptr,
-			rects
+			rects,
+			boxmin,
+			boxmax
 		);
 
 		if (!_interop_failed)
@@ -489,6 +568,32 @@ void sibr::GaussianView::onGUI()
 		ImGui::SliderFloat("Scaling Modifier", &_scalingModifier, 0.001f, 1.0f);
 	}
 	ImGui::Checkbox("Fast culling", &_fastCulling);
+
+	ImGui::Checkbox("Crop Box", &_cropping);
+	if (_cropping)
+	{
+		ImGui::SliderFloat("Box Min X", &_boxmin.x(), _scenemin.x(), _scenemax.x());
+		ImGui::SliderFloat("Box Min Y", &_boxmin.y(), _scenemin.y(), _scenemax.y());
+		ImGui::SliderFloat("Box Min Z", &_boxmin.z(), _scenemin.z(), _scenemax.z());
+		ImGui::SliderFloat("Box Max X", &_boxmax.x(), _scenemin.x(), _scenemax.x());
+		ImGui::SliderFloat("Box Max Y", &_boxmax.y(), _scenemin.y(), _scenemax.y());
+		ImGui::SliderFloat("Box Max Z", &_boxmax.z(), _scenemin.z(), _scenemax.z());
+		ImGui::InputText("File", _buff, 512);
+		if (ImGui::Button("Save"))
+		{
+			std::vector<Pos> pos(count);
+			std::vector<Rot> rot(count);
+			std::vector<float> opacity(count);
+			std::vector<SHs<3>> shs(count);
+			std::vector<Scale> scale(count);
+			CUDA_SAFE_CALL_ALWAYS(cudaMemcpy(pos.data(), pos_cuda, sizeof(Pos) * count, cudaMemcpyDeviceToHost));
+			CUDA_SAFE_CALL_ALWAYS(cudaMemcpy(rot.data(), rot_cuda, sizeof(Rot) * count, cudaMemcpyDeviceToHost));
+			CUDA_SAFE_CALL_ALWAYS(cudaMemcpy(opacity.data(), opacity_cuda, sizeof(float) * count, cudaMemcpyDeviceToHost));
+			CUDA_SAFE_CALL_ALWAYS(cudaMemcpy(shs.data(), shs_cuda, sizeof(SHs<3>) * count, cudaMemcpyDeviceToHost));
+			CUDA_SAFE_CALL_ALWAYS(cudaMemcpy(scale.data(), scale_cuda, sizeof(Scale) * count, cudaMemcpyDeviceToHost));
+			savePly(_buff, pos, shs, opacity, scale, rot, _boxmin, _boxmax);
+		}
+	}
 
 	ImGui::End();
 
