@@ -156,4 +156,11 @@ make && DYLD_LIBRARY_PATH=./src/projects/basic/renderer:./src/core/renderer:./sr
 make && DYLD_LIBRARY_PATH=./src/projects/basic/renderer:./src/core/renderer:./src/core/view:./src/core/video:./src/core/scene:./src/core/raycaster:./src/core/assets:../extlibs/xatlas/build:./src/core/graphics:./src/core/system lldb -x ./src/projects/basic/apps/texturedMesh/SIBR_texturedMesh_app -- --path ~/Downloads/tandt_db/tandt/truck/
 
 make && DYLD_LIBRARY_PATH=./src/projects/gaussianviewer/renderer:./src/core/renderer:./src/core/view:./src/core/video:./src/core/scene:./src/core/raycaster:./src/core/assets:../extlibs/xatlas/build:./src/core/graphics:./src/core/system lldb -x ./src/projects/gaussianviewer/apps/gaussianViewer/SIBR_gaussianViewer_app
+
+
+# apitrace
+build % rm *.trace && make && DYLD_INSERT_LIBRARIES=~/Projects/apitrace/build/wrappers/cgltrace.dylib DYLD_LIBRARY_PATH=./src/projects/gaussianviewer/renderer:./src/core/renderer:./src/core/view:./src/core/video:./src/core/scene:./src/core/raycaster:./src/core/assets:../extlibs/xatlas/build:./src/core/graphics:./src/core/system ./src/projects/gaussianviewer/apps/gaussianViewer/SIBR_gaussianViewer_app --model-path ~/Downloads/models/truck/
+
+~/Projects/apitrace/build/qapitrace SIBR_gaussianViewer_app.trace  
+
 ```
