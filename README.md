@@ -140,3 +140,16 @@ Our default interactive viewer has a main view running the algorithm and a top v
 
 Please see the documentation on how to create a dataset from your own scene, and the various other IBR algorithms available.
 
+
+
+
+# Running on macOS
+
+```
+mkdir build
+cd build
+cmake .. -DBUILD_IBR_GAUSSIANVIEWER=OFF -DBUILD_IBR_REMOTE=OFF -DCMAKE_BUILD_TYPE=Debug
+make -j 32
+
+make && DYLD_LIBRARY_PATH=./src/projects/basic/renderer:./src/core/renderer:./src/core/view:./src/core/video:./src/core/scene:./src/core/raycaster:./src/core/assets:../extlibs/xatlas/build:./src/core/graphics:./src/core/system lldb -x ./src/projects/basic/apps/pointBased/SIBR_PointBased_app -- --path ~/Downloads/tandt_db/tandt/truck/
+```
