@@ -28,25 +28,14 @@ extern "C"
 
 namespace sibr {
 
-	bool FFVideoEncoder::ffmpegInitDone = false;
-
 	FFVideoEncoder::FFVideoEncoder(
 		const std::string & _filepath,
 		double _fps,
 		const sibr::Vector2i & size,
 		bool forceResize
 	) : filepath(_filepath), fps(_fps), _forceResize(forceResize)
-	{
+	{		
 #ifndef HEADLESS
-		/** Init FFMPEG, registering available codec plugins. */
-		if (!ffmpegInitDone) {
-			SIBR_LOG << "[FFMPEG] Registering all." << std::endl;
-			// Ignore next line warning.
-#pragma warning(suppress : 4996)
-			av_register_all();
-			ffmpegInitDone = true;
-		}
-		
 		sibr::Vector2i sizeFix = size;
 		bool hadToFix = false;
 		if(sizeFix[0]%2 != 0) {
@@ -79,7 +68,7 @@ namespace sibr {
 		}
 
 		if (video_st) {
-			avcodec_close(video_st->codec);
+			avcodec_close(pCodecCtx);
 			av_free(frameYUV);
 		}
 		avio_close(pFormatCtx->pb);
@@ -136,7 +125,7 @@ namespace sibr {
 			return;
 		}
 
-		pCodecCtx = video_st->codec;
+		pCodecCtx = avcodec_alloc_context3(pCodec);
 		pCodecCtx->codec_id = fmt->video_codec;
 		pCodecCtx->codec_type = AVMEDIA_TYPE_VIDEO;
 		pCodecCtx->pix_fmt = AV_PIX_FMT_YUV420P;
@@ -229,6 +218,7 @@ namespace sibr {
 #ifndef HEADLESS
 	bool FFVideoEncoder::encode(AVFrame * frame)
 	{
+#if 0
 		int got_picture = 0;
 
 		int ret = avcodec_encode_video2(pCodecCtx, pkt, frameYUV, &got_picture);
@@ -237,6 +227,27 @@ namespace sibr {
 			return false;
 		}
 		if (got_picture == 1) {
+			pkt->stream_index = video_st->index;
+			ret = av_write_frame(pFormatCtx, pkt);
+			av_packet_unref(pkt);
+		}
+#endif
+
+		int ret = avcodec_send_frame(pCodecCtx, frameYUV);
+		if (ret < 0) {
+			SIBR_WRG << "[FFMPEG] Failed to encode frame." << std::endl;
+			return false;
+		}
+	
+		while (ret >= 0) {
+			ret = avcodec_receive_packet(pCodecCtx, pkt);
+			if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+				break;
+			else if (ret < 0) {
+				SIBR_WRG << "[FFMPEG] Failed to receive packet." << std::endl;
+				return false;
+			}
+	
 			pkt->stream_index = video_st->index;
 			ret = av_write_frame(pFormatCtx, pkt);
 			av_packet_unref(pkt);
