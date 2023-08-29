@@ -145,6 +145,12 @@ namespace sibr
 				}
 			};
 
+			// Avoid windows line endings
+			std::regex crLfRegex("\r\n");
+			handle(code, crLfRegex, [&](std::smatch& match) -> std::string {
+				return "\n";
+			});
+
 			// Lower GLSL version
 			std::regex versionRegex(R"(#version\s*(\S*)\s*\n)");
 			handle(code, versionRegex, [&](std::smatch& match) -> std::string {
