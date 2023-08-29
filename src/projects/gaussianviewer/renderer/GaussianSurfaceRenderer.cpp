@@ -19,7 +19,7 @@ namespace sibr {
 	GaussianData::GaussianData(int num_gaussians, float* mean_data, float* rot_data, float* scale_data, float* alpha_data, float* color_data)
 	{
 		_num_gaussians = num_gaussians;
-		auto upload = [](GLuint buffer, int n, int components, float* data) {
+		auto upload = [](GLuint& buffer, int n, int components, float* data) {
 #ifdef SSBO
 			glCreateBuffers(1, &buffer);
 			glNamedBufferStorage(buffer, num_gaussians * components * sizeof(float), data, 0);
