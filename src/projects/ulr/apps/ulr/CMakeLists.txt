@@ -22,7 +22,7 @@ target_link_libraries(${PROJECT_NAME}
 
 	${Boost_LIBRARIES}
 	${ASSIMP_LIBRARIES}
-	${GLEW_LIBRARIES}
+	GLEW::GLEW
 	${OPENGL_LIBRARIES}
 	${OpenCV_LIBRARIES}
 	sibr_view

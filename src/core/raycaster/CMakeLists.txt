@@ -37,6 +37,7 @@ target_link_libraries(${PROJECT_NAME}
 	sibr_graphics
 	sibr_assets
 	nanoflann
+	GLEW::GLEW
 )
 endif()
 

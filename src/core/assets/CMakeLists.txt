@@ -26,7 +26,7 @@ include_directories(
 target_link_libraries(${PROJECT_NAME} PRIVATE
     ${Boost_LIBRARIES}
     ${ASSIMP_LIBRARIES}
-    ${GLEW_LIBRARIES}
+    GLEW::GLEW
     ${OPENGL_LIBRARIES}
     ${OpenCV_LIBRARIES}
 	OpenMP::OpenMP_CXX
