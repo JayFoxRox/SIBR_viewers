@@ -356,7 +356,7 @@ glCreateTextures = [&](GLenum target, GLsizei n, GLuint *textures) -> void {
 };
 
 // Emulate glTextureParameteri
-glTextureParameteri = [](GLuint texture, GLenum pname, GLint param) -> void {
+glTextureParameteri = [&](GLuint texture, GLenum pname, GLint param) -> void {
 	// We'll assume this uses TEXTURE_2D as there's no way to query a textures target
 	GLenum target = GL_TEXTURE_2D;
 	GLint previousTexture = getTexture(target);
