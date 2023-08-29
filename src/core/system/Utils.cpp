@@ -29,7 +29,9 @@
 #else
 	#include <nfd.h>
 	#include <libgen.h>
+#ifndef __APPLE__
 	#include <linux/limits.h>
+#endif
 	#include <unistd.h>
 	#include <sys/types.h>
 	#include <pwd.h>
