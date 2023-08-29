@@ -96,6 +96,12 @@ namespace sibr {
 		setBuffer(3, alphaBuffer);
 		setBuffer(4, colorBuffer);
 
+		static GLuint vao = 0;
+		if (vao == 0) {
+			glGenVertexArrays(1, &vao);
+		}
+		glBindVertexArray(vao);
+
 		glDrawArraysInstanced(GL_TRIANGLES, 0, 36, G);
 
 		CHECK_GL_ERROR;
