@@ -15,8 +15,10 @@
 # pragma warning(push, 0)
 #  include <embree4/rtcore.h>
 #  include <embree4/rtcore_ray.h>
+#ifdef __x86_64__
 #  include <xmmintrin.h>	// functions for setting the control register
 #  include <pmmintrin.h>	// functions for setting the control register
+#endif
 # pragma warning(pop)
 
 # include <core/graphics/Mesh.hpp>

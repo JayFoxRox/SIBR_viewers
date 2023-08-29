@@ -50,10 +50,14 @@ namespace sibr
 	{
 		if (!g_device)
 		{
+#ifdef __x86_64__
 			// The two following macros set flagbits on the control register
 			// used by SSE (see http://softpixel.com/~cwright/programming/simd/sse.php)
 			_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);			// Enable 'Flush Zero' bit
 			_MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);	// Enable 'Denormals Zero'bit
+#else
+#warning "BUGBUG"
+#endif
 
 			SIBR_LOG << "Initializing Raycaster" << std::endl;
 
