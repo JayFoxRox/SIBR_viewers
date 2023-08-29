@@ -21,8 +21,10 @@
 # include <core/renderer/PointBasedRenderer.hpp>
 # include <memory>
 # include <core/graphics/Texture.hpp>
+#ifdef ENABLE_CUDA
 #include <cuda_runtime.h>
 #include <cuda_gl_interop.h>
+#endif
 #include <functional>
 # include "GaussianSurfaceRenderer.hpp"
 
@@ -104,7 +106,9 @@ namespace sibr {
 		int* rect_cuda;
 
 		GLuint imageBuffer;
+#ifdef ENABLE_CUDA
 		cudaGraphicsResource_t imageBufferCuda;
+#endif
 
 		size_t allocdGeom = 0, allocdBinning = 0, allocdImg = 0;
 		void* geomPtr = nullptr, * binningPtr = nullptr, * imgPtr = nullptr;
