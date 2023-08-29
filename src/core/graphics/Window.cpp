@@ -329,6 +329,10 @@ namespace sibr
 		(void)glGetError(); // I notice that glew might do wrong things during its init()
 							// some drivers complain about it. So I reset OpenGL's errors to discard this.
 
+// Stub GL_KHR_debug
+glPushDebugGroup = [](unsigned int a, unsigned int b, int c, const char * d) -> void {};
+glPopDebugGroup = []() -> void {};
+
 		glfwSetWindowUserPointer(_glfwWin.get(), this);
 		/// \todo TODO: fix, width and height might be erroneous. SR
 		viewport(Viewport(0.f, 0.f, (float)width, (float)height));	/// \todo TODO: bind both
