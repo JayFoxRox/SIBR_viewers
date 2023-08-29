@@ -272,7 +272,7 @@ namespace sibr
 		*/
 		static std::vector<InputCamera::Ptr> loadLookat(const std::string& lookatPath, const std::vector<sibr::Vector2u>& wh= std::vector<sibr::Vector2u>(),float zNear= -1, float zFar= -1);
 
-		static std::vector<InputCamera::Ptr> InputCamera::loadTransform(const std::string& transformPath, int w, int h, std::string extension, const float zNear = 0.01f, const float zFar = 1000.0f, const int offset = 0, const int fovXfovYFlag = 0);
+		static std::vector<InputCamera::Ptr> loadTransform(const std::string& transformPath, int w, int h, std::string extension, const float zNear = 0.01f, const float zFar = 1000.0f, const int offset = 0, const int fovXfovYFlag = 0);
 
 		/** Load cameras from a Colmap txt file.
 		* \param colmapSparsePath path to the Colmap sparse directory, should contains cameras.txt and images.txt
