@@ -81,7 +81,7 @@ out vec3 ellipsoidScale;
 out mat3 ellipsoidRotation;
 out vec3 colorVert;
 out float alphaVert;
-out flat int boxID;
+flat out int boxID;
 
 void main() {
 	boxID = gl_InstanceID;
