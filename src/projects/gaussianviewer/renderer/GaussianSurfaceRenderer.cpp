@@ -97,6 +97,8 @@ namespace sibr {
 		setBuffer(4, colorBuffer);
 
 		glDrawArraysInstanced(GL_TRIANGLES, 0, 36, G);
+
+		CHECK_GL_ERROR;
 	}
 
 	GaussianSurfaceRenderer::GaussianSurfaceRenderer( void )
@@ -120,6 +122,8 @@ namespace sibr {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glGenFramebuffers(1, &fbo);
 		glGenRenderbuffers(1, &depthBuffer);
+
+		CHECK_GL_ERROR;
 
 		makeFBO(800, 800);
 
@@ -146,6 +150,8 @@ namespace sibr {
 		glShaderSource(clearShader, 1, &clearShaderSrc, nullptr);
 		glAttachShader(clearProg, clearShader);
 		glLinkProgram(clearProg);
+		
+		CHECK_GL_ERROR;
 	}
 
 	void GaussianSurfaceRenderer::makeFBO(int w, int h)
@@ -167,6 +173,8 @@ namespace sibr {
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTexture, 0);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, idTexture, 0);
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuffer);
+
+		CHECK_GL_ERROR;
 	}
 
 	int	GaussianSurfaceRenderer::process(int G, const GaussianData& mesh, const Camera& eye, IRenderTarget& target, float limit, sibr::Mesh::RenderMode mode, bool backFaceCulling)
@@ -215,6 +223,8 @@ namespace sibr {
 			0, 0, resX, resY,
 			0, 0, resX, resY,
 			GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+		CHECK_GL_ERROR;
 
 		return 0;
 	}
