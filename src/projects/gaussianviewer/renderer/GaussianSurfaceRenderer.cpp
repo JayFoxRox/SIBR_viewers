@@ -126,32 +126,6 @@ namespace sibr {
 		CHECK_GL_ERROR;
 
 		makeFBO(800, 800);
-
-		clearProg = glCreateProgram();
-		const char* clearShaderSrc = R"(
-			#version 430
-
-			layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
-
-			layout(std430, binding = 0) buffer IntArray {
-				int arr[];
-			};
-
-			layout(location = 0) uniform int size;
-
-			void main() {
-				uint index = gl_GlobalInvocationID.x;
-				if (index < size) {
-					arr[index] = 0;
-				}
-			} 
-			)";
-		clearShader = glCreateShader(GL_COMPUTE_SHADER);
-		glShaderSource(clearShader, 1, &clearShaderSrc, nullptr);
-		glAttachShader(clearProg, clearShader);
-		glLinkProgram(clearProg);
-		
-		CHECK_GL_ERROR;
 	}
 
 	void GaussianSurfaceRenderer::makeFBO(int w, int h)
