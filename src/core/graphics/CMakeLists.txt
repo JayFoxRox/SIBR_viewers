@@ -52,7 +52,7 @@ endif()
 if (NOT WIN32)
 	target_link_libraries(${PROJECT_NAME}
  		#GLEW
- 		rt m dl X11 pthread Xrandr Xinerama Xxf86vm Xcursor
+ 		#rt m dl X11 pthread Xrandr Xinerama Xxf86vm Xcursor
 		# X11 Xi Xrandr Xxf86vm Xinerama Xcursor dl rt m pthread
 	)
 endif()
