@@ -124,7 +124,7 @@ sibr_addlibrary(
 
 # CLUSTER
 #find_package(embree 3.0 REQUIRED PATHS "/data/graphdeco/share/embree/usr/local/lib64/cmake/" )
-find_package(embree 3.0 )
+find_package(embree 4.0 REQUIRED)
 
 ###################
 ## Find eigen3

@@ -31,7 +31,7 @@ target_link_libraries(${PROJECT_NAME}
 else()
 target_link_libraries(${PROJECT_NAME}
 	OpenMP::OpenMP_CXX
-	embree
+	embree4
 # CLUSTER
 #	/data/graphdeco/share/tbb/lib64/libtbb.so
 	sibr_graphics
