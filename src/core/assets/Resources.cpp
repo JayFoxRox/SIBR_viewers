@@ -99,7 +99,8 @@ namespace sibr
 			return filename;
 		for(std::string rscPath : _rscPaths)
 		{
-			std::string filePathName  = sibr::getInstallDirectory() + "/" + rscPath + "/" + filename;
+			std::string filePathName = installdir + "/" + rscPath + "/" + filename;
+			printf("Checking '%s'\n", filePathName.c_str());
 			std::ifstream rscFile(filePathName);
 			if (success = rscFile.good()) {
 				return filePathName;
