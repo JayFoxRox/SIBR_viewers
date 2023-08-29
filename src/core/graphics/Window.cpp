@@ -258,10 +258,19 @@ namespace sibr
 	void Window::setup(int width, int height, const std::string& title, const WindowArgs & args, const std::string& defaultSettingsFilename) {
 		// IMPORTANT NOTE: if you got compatibility problem with old opengl function,
 		// try to load compat 3.2 instead of core 4.2
-
+		
+#if 1
+		// Best that macOS can do
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+		glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
+		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#else
+		// Windows and Linux get proper context
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
+#endif
 
 #ifdef GLEW_EGL
 		glfwWindowHint(GLFW_CONTEXT_CREATION_API, (args.offscreen) ?
