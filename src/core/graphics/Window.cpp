@@ -333,6 +333,14 @@ namespace sibr
 glPushDebugGroup = [](unsigned int a, unsigned int b, int c, const char * d) -> void {};
 glPopDebugGroup = []() -> void {};
 
+// Emulate glBlitNamedFramebuffer; we avoid named objects, but here it makes sense to abstract it
+glBlitNamedFramebuffer = [](GLuint readFramebuffer, GLuint drawFramebuffer, GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter) -> void {
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, readFramebuffer);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFramebuffer);
+	glBlitFramebuffer(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
+	//FIXME: Restore previous framebuffers
+};
+
 		glfwSetWindowUserPointer(_glfwWin.get(), this);
 		/// \todo TODO: fix, width and height might be erroneous. SR
 		viewport(Viewport(0.f, 0.f, (float)width, (float)height));	/// \todo TODO: bind both
