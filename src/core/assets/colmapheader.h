@@ -168,27 +168,27 @@ void WriteBinaryLittleEndian(std::ostream* stream, const std::vector<T>& data) {
 #include <fstream>
 #include <sstream>
 
-bool IsNotWhiteSpace(const int character) {
+static bool IsNotWhiteSpace(const int character) {
   return character != ' ' && character != '\n' && character != '\r' &&
          character != '\t';
 }
 
-bool StringStartsWith(const std::string& str, const std::string& prefix) {
+static bool StringStartsWith(const std::string& str, const std::string& prefix) {
   return !prefix.empty() && prefix.size() <= str.size() &&
          str.substr(0, prefix.size()) == prefix;
 }
 
-void StringLeftTrim(std::string* str) {
+static void StringLeftTrim(std::string* str) {
   str->erase(str->begin(),
              std::find_if(str->begin(), str->end(), IsNotWhiteSpace));
 }
 
-void StringRightTrim(std::string* str) {
+static void StringRightTrim(std::string* str) {
   str->erase(std::find_if(str->rbegin(), str->rend(), IsNotWhiteSpace).base(),
              str->end());
 }
 
-void StringTrim(std::string* str) {
+static void StringTrim(std::string* str) {
   StringLeftTrim(str);
   StringRightTrim(str);
 }
