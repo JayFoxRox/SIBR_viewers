@@ -82,12 +82,12 @@ namespace sibr {
 	{
 		auto setBuffer = [](int binding, GLuint buffer) {
 #ifdef SSBO
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding, buffer);
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding, buffer);
 #else
-		glActiveTexture(GL_TEXTURE0 + binding);
-		glBindTexture(GL_TEXTURE_2D, buffer);
+			glActiveTexture(GL_TEXTURE0 + binding);
+			glBindTexture(GL_TEXTURE_2D, buffer);
 #endif
-		CHECK_GL_ERROR;
+			CHECK_GL_ERROR;
 		};
 
 		setBuffer(0, meanBuffer);
