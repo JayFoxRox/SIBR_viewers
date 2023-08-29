@@ -160,6 +160,12 @@ namespace sibr
 				return "#version /**/ 410\n";
 			});
 
+			// Lower std430 to std140
+			std::regex std430BindingRegex(R"(layout\s*\(\s*std430\s*([,)]))");
+			handle(code, std430BindingRegex, [&](std::smatch& match) -> std::string {
+				return "layout(std140" + match[1].str();
+			});
+
 			// Emulate layout binding
 			std::regex layoutBindingRegex(R"(layout\s*\(\s*binding\s*=\s*(\S*)\s*\)\s*uniform\s*(\S*)\s*(\S*)\s*;)");
 			handle(code, layoutBindingRegex, [&](std::smatch& match) -> std::string {
