@@ -16,6 +16,45 @@
 # include <iomanip>
 # include "core/system/Config.hpp"
 
+// Apple uses macros for hton / ntoh, which breaks the functions using that name; rewrite the apple macro as function
+#ifdef __APPLE__
+
+#define APPLE_htonll(x) htonll(x)
+#define APPLE_htonl(x) htonl(x)
+#define APPLE_htons(x) htons(x)
+
+#undef htonll
+#undef htonl
+#undef htons
+
+static uint64_t htonll(uint64_t x) {
+	return APPLE_htonll(x);
+} 
+static uint32_t htonl(uint32_t x) {
+	return APPLE_htonl(x);
+} 
+static uint16_t htons(uint16_t x) {
+	return APPLE_htons(x);
+} 
+
+#define APPLE_ntohll(x) ntohll(x)
+#define APPLE_ntohl(x) ntohl(x)
+#define APPLE_ntohs(x) ntohs(x)
+
+#undef ntohll
+#undef ntohl
+#undef ntohs
+
+static uint64_t ntohll(uint64_t x) {
+	return APPLE_ntohll(x);
+} 
+static uint32_t ntohl(uint32_t x) {
+	return APPLE_ntohl(x);
+} 
+static uint16_t ntohs(uint16_t x) {
+	return APPLE_ntohs(x);
+} 
+#endif
 
 namespace sibr
 {

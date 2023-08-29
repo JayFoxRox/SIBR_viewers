@@ -92,6 +92,11 @@ else()
 	endif()
 endif()
 
+if(APPLE)
+set(CXX_STANDARD 17)
+set(CXX_FLAGS -stdlib=libc++)
+endif()
+
 set(INSTALL_STANDALONE ON)
 
 ## Set default build output binaries (used also in sub CMakeLists.txt) :
