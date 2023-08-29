@@ -333,7 +333,7 @@ namespace sibr
 glPushDebugGroup = [](unsigned int a, unsigned int b, int c, const char * d) -> void {};
 glPopDebugGroup = []() -> void {};
 
-getTexture = [](GLenum target) {
+auto getTexture = [](GLenum target) {
 	GLint previousTexture;
 	GLenum getter;
 	if (target == GL_TEXTURE_2D) {
@@ -346,7 +346,7 @@ getTexture = [](GLenum target) {
 };
 
 // Emulate glCreateTextures
-glCreateTextures = [](GLenum target, GLsizei n, GLuint *textures) -> void {
+glCreateTextures = [&](GLenum target, GLsizei n, GLuint *textures) -> void {
 	GLint previousTexture = getTexture(target);
 	glGenTextures(n, textures);
 	for(int i = 0; i < n; i++) {
