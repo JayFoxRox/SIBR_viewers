@@ -145,6 +145,15 @@ namespace sibr
 				}
 			};
 
+			// Lower GLSL version
+			std::regex versionRegex(R"(#version\s*(\S*)\s*\n)");
+			handle(code, versionRegex, [&](std::smatch& match) -> std::string {
+				int version = atoi(match[1].str().c_str());
+				printf("%s: Found version %d\n", codeName.c_str(), version);
+				// Added the `/**/` so we don't rematch; should be fixed in handle loop instead
+				return "#version /**/ 410\n";
+			});
+
 			// Emulate layout binding
 			std::regex layoutBindingRegex(R"(layout\s*\(\s*binding\s*=\s*(\S*)\s*\)\s*uniform\s*(\S*)\s*(\S*)\s*;)");
 			handle(code, layoutBindingRegex, [&](std::smatch& match) -> std::string {
