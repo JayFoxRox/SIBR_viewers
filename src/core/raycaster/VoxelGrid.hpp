@@ -389,7 +389,7 @@ namespace sibr
 		sibr::Mesh::Triangles ts(numTtotal);
 		for (int i = 0; i < numNonZero; ++i) {
 			const auto cell = getCell(cell_ids[i]);
-			const sibr::Vector3f offsetV = cell.cast<float>().array() * getCellSize().array();
+			const sibr::Vector3f offsetV = cell.template cast<float>().array() * getCellSize().array();
 
 			for (int v = 0; v < numV; ++v) {
 				vs[i * numV + v] = baseMesh->vertices()[v] + offsetV;
