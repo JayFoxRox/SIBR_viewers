@@ -355,6 +355,16 @@ glCreateTextures = [](GLenum target, GLsizei n, GLuint *textures) -> void {
 	glBindTexture(target, previousTexture);
 };
 
+// Emulate glTextureParameteri
+glTextureParameteri = [](GLuint texture, GLenum pname, GLint param) -> void {
+	// We'll assume this uses TEXTURE_2D as there's no way to query a textures target
+	GLenum target = GL_TEXTURE_2D;
+	GLint previousTexture = getTexture(target);
+	glBindTexture(target, texture);
+	glTexParameteri(target, pname, param);
+	glBindTexture(target, previousTexture);
+};
+
 		glfwSetWindowUserPointer(_glfwWin.get(), this);
 		/// \todo TODO: fix, width and height might be erroneous. SR
 		viewport(Viewport(0.f, 0.f, (float)width, (float)height));	/// \todo TODO: bind both
