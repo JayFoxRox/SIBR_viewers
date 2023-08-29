@@ -152,4 +152,6 @@ cmake .. -DBUILD_IBR_GAUSSIANVIEWER=OFF -DBUILD_IBR_REMOTE=OFF -DCMAKE_BUILD_TYP
 make -j 32
 
 make && DYLD_LIBRARY_PATH=./src/projects/basic/renderer:./src/core/renderer:./src/core/view:./src/core/video:./src/core/scene:./src/core/raycaster:./src/core/assets:../extlibs/xatlas/build:./src/core/graphics:./src/core/system lldb -x ./src/projects/basic/apps/pointBased/SIBR_PointBased_app -- --path ~/Downloads/tandt_db/tandt/truck/
+
+make && DYLD_LIBRARY_PATH=./src/projects/basic/renderer:./src/core/renderer:./src/core/view:./src/core/video:./src/core/scene:./src/core/raycaster:./src/core/assets:../extlibs/xatlas/build:./src/core/graphics:./src/core/system lldb -x ./src/projects/basic/apps/texturedMesh/SIBR_texturedMesh_app -- --path ~/Downloads/tandt_db/tandt/truck/
 ```
