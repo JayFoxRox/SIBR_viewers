@@ -19,7 +19,7 @@ source_group("Source Files\\shaders" FILES ${SHADERS})
 file(GLOB SOURCES "*.cpp" "*.h" "*.hpp" "shaders/*.frag" "shaders/*.vert" "shaders/*.geom" "shaders/*.fp" "shaders/*.gp" "shaders/*.vp")
 
 ## Specify target rules
-add_library(${PROJECT_NAME} SHARED ${SOURCES})
+add_library(${PROJECT_NAME} STATIC ${SOURCES})
 
 include_directories(${Boost_INCLUDE_DIRS} .)
 if(WIN32)
