@@ -427,11 +427,11 @@ sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint
 
 	_gaussianRenderer = new GaussianSurfaceRenderer();
 
+#ifdef ENABLE_CUDA
 	// Create GL buffer ready for CUDA/GL interop
 	glCreateBuffers(1, &imageBuffer);
 	glNamedBufferStorage(imageBuffer, render_w * render_h * 3 * sizeof(float), nullptr, GL_DYNAMIC_STORAGE_BIT);
 
-#ifdef ENABLE_CUDA
 	if (useInterop)
 	{
 		if (cudaPeekAtLastError() != cudaSuccess)
