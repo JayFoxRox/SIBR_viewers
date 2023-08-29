@@ -148,6 +148,9 @@ namespace sibr {
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, idTexture, 0);
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuffer);
 
+		GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		assert(status == GL_FRAMEBUFFER_COMPLETE);
+
 		CHECK_GL_ERROR;
 	}
 
