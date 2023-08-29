@@ -53,12 +53,10 @@ namespace sibr {
 
 			printf("Uploading as %dx%d texture (%d components)\n", total_cols, total_rows, components);
 
-			glCreateTextures(GL_TEXTURE_2D, 1, &buffer);
-			glTextureParameteri(buffer, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTextureParameteri(buffer, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			CHECK_GL_ERROR;
-
+			glGenTextures(1, &buffer);
 			glBindTexture(GL_TEXTURE_2D, buffer);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			CHECK_GL_ERROR;
 
 			glTexImage2D(GL_TEXTURE_2D, 0, internalformat, total_cols, total_rows, 0, format, type, nullptr);
@@ -112,14 +110,16 @@ namespace sibr {
 		_paramLimit.init(_shader, "alpha_limit");
 		_paramStage.init(_shader, "stage");
 
-		glCreateTextures(GL_TEXTURE_2D, 1, &idTexture);
-		glTextureParameteri(idTexture, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTextureParameteri(idTexture, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glCreateTextures(GL_TEXTURE_2D, 1, &colorTexture);
-		glTextureParameteri(colorTexture, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTextureParameteri(colorTexture, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glCreateFramebuffers(1, &fbo);
-		glCreateRenderbuffers(1, &depthBuffer);
+		glGenTextures(1, &idTexture);
+		glBindTexture(GL_TEXTURE_2D, idTexture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glGenTextures(1, &colorTexture);
+		glBindTexture(GL_TEXTURE_2D, colorTexture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glGenFramebuffers(1, &fbo);
+		glGenRenderbuffers(1, &depthBuffer);
 
 		makeFBO(800, 800);
 
@@ -160,7 +160,8 @@ namespace sibr {
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, resX, resY, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 		glBindTexture(GL_TEXTURE_2D, 0);
 
-		glNamedRenderbufferStorage(depthBuffer, GL_DEPTH_COMPONENT, resX, resY);
+		glBindRenderbuffer(GL_RENDERBUFFER, depthBuffer);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, resX, resY);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTexture, 0);
