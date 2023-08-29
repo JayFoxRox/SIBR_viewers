@@ -47,13 +47,15 @@ layout (binding = 2) uniform sampler2D scales;
 layout (binding = 3) uniform sampler2D alphas;
 layout (binding = 4) uniform sampler2D colors;
 
-#define COORD2(boxID) ivec2(boxID % 4096, boxID / 4096)
+ivec2 COORD2(int boxID) {
+    return ivec2(boxID % 4096, boxID / 4096);
+}
 
 vec3 center(int boxID) { return texelFetch(centers, COORD2(boxID), 0).rgb; }
 vec4 rot(int boxID) { return texelFetch(rots, COORD2(boxID), 0).rgba; }
 vec3 scale(int boxID) { return texelFetch(scales, COORD2(boxID), 0).rgb; }
 float alpha(int boxID) { return texelFetch(alphas, COORD2(boxID), 0).r; }
-vec3 color(int boxID) { return texelFetch(colors, COORD2(boxID), 0).rgb; }
+vec3 color(int boxID) { return texelFetch(colors, COORD2(boxID * (48 / 4)), 0).rgb; }
 
 #endif
 
