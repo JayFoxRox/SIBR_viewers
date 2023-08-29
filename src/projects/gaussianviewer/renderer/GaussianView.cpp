@@ -284,7 +284,12 @@ namespace sibr
 			dst.clear();
 			dst.bind();
 
+#ifdef SSBO
 			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, bufferID);
+#else
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, bufferID);
+#endif
 
 			sibr::RenderUtility::renderScreenQuad();
 
