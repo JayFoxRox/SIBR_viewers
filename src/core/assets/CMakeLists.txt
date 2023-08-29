@@ -30,6 +30,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     ${OPENGL_LIBRARIES}
     ${OpenCV_LIBRARIES}
 	OpenMP::OpenMP_CXX
+    sibr_system
     sibr_graphics
     xatlas
 )

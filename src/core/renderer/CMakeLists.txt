@@ -23,7 +23,7 @@ add_library(${PROJECT_NAME} STATIC ${SOURCES})
 
 include_directories(${Boost_INCLUDE_DIRS} .)
 if(WIN32)
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(${PROJECT_NAME} PRIVATE
 	${Boost_LIBRARIES}
 	${ASSIMP_LIBRARIES}
 	GLEW::GLEW
@@ -36,7 +36,7 @@ target_link_libraries(${PROJECT_NAME}
 	sibr_scene
 )
 else()
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(${PROJECT_NAME} PRIVATE
 	${Boost_LIBRARIES}
 	${ASSIMP_LIBRARIES}
 	GLEW::GLEW
@@ -47,6 +47,8 @@ target_link_libraries(${PROJECT_NAME}
 	sibr_view
 	sibr_assets
 	sibr_scene
+	sibr_video
+	sibr_graphics
 )
 endif()
 

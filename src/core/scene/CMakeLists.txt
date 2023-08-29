@@ -18,7 +18,7 @@ source_group("Source Files" FILES ${SOURCES})
 add_library(${PROJECT_NAME} STATIC ${SOURCES})
 
 include_directories(${Boost_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(${PROJECT_NAME} PRIVATE
     ${Boost_LIBRARIES}
     ${ASSIMP_LIBRARIES}
     GLEW::GLEW
@@ -28,6 +28,7 @@ target_link_libraries(${PROJECT_NAME}
     sibr_assets
     sibr_graphics
     sibr_raycaster
+    sibr_system
 )
 
 add_definitions( -DSIBR_SCENE_EXPORTS -DBOOST_ALL_DYN_LINK  )

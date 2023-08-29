@@ -33,7 +33,7 @@ target_link_libraries(${PROJECT_NAME}
 	sibr_raycaster
 )
 else()
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(${PROJECT_NAME} PRIVATE
 	${Boost_LIBRARIES}
 	${OpenCV_LIBRARIES}
 	OpenMP::OpenMP_CXX

@@ -29,13 +29,14 @@ target_link_libraries(${PROJECT_NAME}
 	nanoflann
 )
 else()
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(${PROJECT_NAME} PRIVATE
 	OpenMP::OpenMP_CXX
 	embree4
 # CLUSTER
 #	/data/graphdeco/share/tbb/lib64/libtbb.so
 	sibr_graphics
 	sibr_assets
+	sibr_system
 	nanoflann
 	GLEW::GLEW
 )

@@ -36,12 +36,14 @@ target_link_libraries(${PROJECT_NAME}
 	sibr_system
 )
 else()
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(${PROJECT_NAME} PUBLIC
+	${OpenCV_LIBRARIES}
+)
+target_link_libraries(${PROJECT_NAME} PRIVATE
 	${Boost_LIBRARIES}
 	${ASSIMP_LIBRARIES}
 	GLEW::GLEW
 	${OPENGL_LIBRARIES}
-	${OpenCV_LIBRARIES}
 	OpenMP::OpenMP_CXX
 	imgui
 	${GLFW_LIBRARY}

@@ -49,6 +49,9 @@ target_link_libraries(${PROJECT_NAME}
 	sibr_view
 	sibr_assets
 	sibr_renderer
+	sibr_graphics
+	sibr_raycaster
+	sibr_scene
 )
 endif()
 
