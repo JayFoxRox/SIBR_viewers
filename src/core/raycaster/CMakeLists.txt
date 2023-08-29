@@ -14,7 +14,7 @@ file(GLOB SOURCES "*.cpp" "*.h" "*.hpp")
 source_group("Source Files" FILES ${SOURCES})
 
 ## Specify target rules
-add_library(${PROJECT_NAME} SHARED ${SOURCES} ${LIBS_SOURCES})
+add_library(${PROJECT_NAME} STATIC ${SOURCES} ${LIBS_SOURCES})
 
 include_directories(
 	${Boost_INCLUDE_DIRS}
@@ -29,14 +29,16 @@ target_link_libraries(${PROJECT_NAME}
 	nanoflann
 )
 else()
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(${PROJECT_NAME} PRIVATE
 	OpenMP::OpenMP_CXX
-	embree
+	embree4
 # CLUSTER
 #	/data/graphdeco/share/tbb/lib64/libtbb.so
 	sibr_graphics
 	sibr_assets
+	sibr_system
 	nanoflann
+	GLEW::GLEW
 )
 endif()
 

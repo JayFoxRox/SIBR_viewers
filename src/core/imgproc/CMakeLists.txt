@@ -14,7 +14,7 @@ file(GLOB SOURCES "*.cpp" "*.h" "*.hpp")
 source_group("Source Files" FILES ${SOURCES})
 
 ## Specify target rules
-add_library(${PROJECT_NAME} SHARED ${SOURCES})
+add_library(${PROJECT_NAME} STATIC ${SOURCES})
 
 include_directories(
 	${Boost_INCLUDE_DIRS}
@@ -33,7 +33,7 @@ target_link_libraries(${PROJECT_NAME}
 	sibr_raycaster
 )
 else()
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(${PROJECT_NAME} PRIVATE
 	${Boost_LIBRARIES}
 	${OpenCV_LIBRARIES}
 	OpenMP::OpenMP_CXX
@@ -49,7 +49,7 @@ endif()
 if (NOT WIN32)
 	target_link_libraries(${PROJECT_NAME}
  		# GLEW
- 		rt m dl X11 pthread Xrandr Xinerama Xxf86vm Xcursor
+ 		#rt m dl X11 pthread Xrandr Xinerama Xxf86vm Xcursor
 		# X11 Xi Xrandr Xxf86vm Xinerama Xcursor dl rt m pthread
 	)
 endif()

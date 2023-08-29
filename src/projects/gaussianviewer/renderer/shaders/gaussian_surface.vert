@@ -16,6 +16,7 @@ uniform mat4 MVP;
 uniform float alpha_limit;
 uniform int stage;
 
+#ifdef SSBO
 layout (std430, binding = 0) buffer BoxCenters {
     float centers[];
 };
@@ -31,6 +32,32 @@ layout (std430, binding = 3) buffer Alphas {
 layout (std430, binding = 4) buffer Colors {
     float colors[];
 };
+
+vec3 center(int boxID) { return vec3(centers[3 * boxID + 0], centers[3 * boxID + 1], centers[3 * boxID + 2]) }
+vec4 rot(int boxID) { return rots(boxID); }
+vec3 scale(int boxID) { return vec3(scales[3 * boxID + 0], scales[3 * boxID + 1], scales[3 * boxID + 2]); }
+float alpha(int boxID) { return alphas[boxID]; }
+vec3 color(int boxID) { return vec3(colors[boxID * 48 + 0], colors[boxID * 48 + 1], colors[boxID * 48 + 2]); }
+
+#else
+
+layout (binding = 0) uniform sampler2D centers;
+layout (binding = 1) uniform sampler2D rots;
+layout (binding = 2) uniform sampler2D scales;
+layout (binding = 3) uniform sampler2D alphas;
+layout (binding = 4) uniform sampler2D colors;
+
+ivec2 COORD2(int boxID) {
+    return ivec2(boxID % 4096, boxID / 4096);
+}
+
+vec3 center(int boxID) { return texelFetch(centers, COORD2(boxID), 0).rgb; }
+vec4 rot(int boxID) { return texelFetch(rots, COORD2(boxID), 0).rgba; }
+vec3 scale(int boxID) { return texelFetch(scales, COORD2(boxID), 0).rgb; }
+float alpha(int boxID) { return texelFetch(alphas, COORD2(boxID), 0).r; }
+vec3 color(int boxID) { return texelFetch(colors, COORD2(boxID * (48 / 4)), 0).rgb; }
+
+#endif
 
 mat3 quatToMat3(vec4 q) {
   float qx = q.y;
@@ -81,28 +108,24 @@ out vec3 ellipsoidScale;
 out mat3 ellipsoidRotation;
 out vec3 colorVert;
 out float alphaVert;
-out flat int boxID;
+flat out int boxID;
 
 void main() {
 	boxID = gl_InstanceID;
-    ellipsoidCenter = vec3(centers[3 * boxID + 0], centers[3 * boxID + 1], centers[3 * boxID + 2]);
-    float a = alphas[boxID];
+    ellipsoidCenter = center(boxID);
+    float a = alpha(boxID);
 	alphaVert = a;
-	ellipsoidScale = vec3(scales[3 * boxID + 0], scales[3 * boxID + 1], scales[3 * boxID + 2]);
+	ellipsoidScale = scale(boxID);
 	ellipsoidScale = 2 * ellipsoidScale;
 
-	vec4 q = rots[boxID];
+	vec4 q = rot(boxID);
 	ellipsoidRotation = transpose(quatToMat3(q));
 
     int vertexIndex = boxIndices[gl_VertexID];
     worldPos = ellipsoidRotation * (ellipsoidScale * boxVertices[vertexIndex]);
     worldPos += ellipsoidCenter;
 
-	float r = colors[boxID * 48 + 0] * 0.2 + 0.5;
-	float g = colors[boxID * 48 + 1] * 0.2 + 0.5;
-	float b = colors[boxID * 48 + 2] * 0.2 + 0.5;
-
-	colorVert = vec3(r, g, b);
+	colorVert = color(boxID) * 0.2 + 0.5;
 	
 	if((stage == 0 && a < alpha_limit) || (stage == 1 && a >= alpha_limit))
 	 	gl_Position = vec4(0,0,0,0);

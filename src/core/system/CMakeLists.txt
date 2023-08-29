@@ -14,7 +14,7 @@ file(GLOB SOURCES "*.cpp" "*.h" "*.hpp")
 source_group("Source Files" FILES ${SOURCES})
 
 ## Specify target rules
-add_library(${PROJECT_NAME} SHARED ${SOURCES})
+add_library(${PROJECT_NAME} STATIC ${SOURCES})
 
 include_directories(
 	${Boost_INCLUDE_DIRS}

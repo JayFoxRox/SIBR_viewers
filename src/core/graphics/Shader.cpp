@@ -20,6 +20,8 @@
 #  include "Shader.inl"
 # endif
 
+#include <regex>
+
 namespace sibr
 {
 	GLuint GLShader::compileShader(const char* shader_code, GLuint type)
@@ -117,6 +119,74 @@ namespace sibr
 
 		GLint vp = 0, fp = 0, gp = 0, tcs = 0, tes = 0;
 
+		std::map<std::string, int> bindings{};
+
+		auto handleAll = [&](std::string& code, std::string codeName) -> void {
+
+			if (code.empty()) {
+				return;
+			}
+
+			// Find each occurence of a string in another string
+			auto handle = [&](std::string& haystack, std::regex& needle, auto fn) -> void {
+				size_t cursor = 0;
+				std::smatch match;
+
+				//FIXME: Only start matching at cursor!
+				while (std::regex_search(haystack, match, needle)) {
+					std::string replacement = fn(match);
+
+					auto start = match[0].first;
+					auto end = match[0].second;
+					printf("%s: Replacing '%s' with '%s'\n", codeName.c_str(), match[0].str().c_str(), replacement.c_str());
+					haystack.replace(start, end, replacement);
+
+					cursor += replacement.length();
+				}
+			};
+
+			// Avoid windows line endings
+			std::regex crLfRegex("\r\n");
+			handle(code, crLfRegex, [&](std::smatch& match) -> std::string {
+				return "\n";
+			});
+
+			// Lower GLSL version
+			std::regex versionRegex(R"(#version\s*(\S*)\s*\n)");
+			handle(code, versionRegex, [&](std::smatch& match) -> std::string {
+				int version = atoi(match[1].str().c_str());
+				printf("%s: Found version %d\n", codeName.c_str(), version);
+				// Added the `/**/` so we don't rematch; should be fixed in handle loop instead
+				return "#version /**/ 410\n";
+			});
+
+			// Lower std430 to std140
+			std::regex std430BindingRegex(R"(layout\s*\(\s*std430\s*([,)]))");
+			handle(code, std430BindingRegex, [&](std::smatch& match) -> std::string {
+				return "layout(std140" + match[1].str();
+			});
+
+			// Emulate layout binding
+			std::regex layoutBindingRegex(R"(layout\s*\(\s*binding\s*=\s*(\S*)\s*\)\s*uniform\s*(\S*)\s*(\S*)\s*;)");
+			handle(code, layoutBindingRegex, [&](std::smatch& match) -> std::string {
+				int bindingNumber = atoi(match[1].str().c_str());
+				std::string variableType = match[2];
+				std::string variableName = match[3];
+				printf("%s: Found '%s' (%s) bound to %d\n", codeName.c_str(), variableName.c_str(), variableType.c_str(), bindingNumber);
+
+				bindings[variableName] = bindingNumber;
+
+				return "uniform " + variableType + " " + variableName + ";";
+			});
+		};
+
+		handleAll(vp_code, "vp");
+		handleAll(fp_code, "fp");
+		handleAll(gp_code, "gp");
+		handleAll(tcs_code, "tcs");
+		handleAll(tes_code, "tes");
+
+
 		if (!vp_code.empty()) {
 			vp = compileShader(vp_code.c_str(), GL_VERTEX_SHADER);
 			if (!vp) return false;
@@ -177,6 +247,17 @@ namespace sibr
 		if (gp) glDeleteShader(gp);
 		if (tcs) glDeleteShader(tcs);
 		if (tes) glDeleteShader(tes);
+
+		glUseProgram(m_Shader);
+		CHECK_GL_ERROR;
+
+		for (const auto& [key, value] : bindings) {
+			GLint location = glGetUniformLocation(m_Shader, key.c_str());
+			CHECK_GL_ERROR;
+			printf("Binding '%s' (location %d) to %d\n", key.c_str(), location, value);
+			glUniform1i(location, value);
+			CHECK_GL_ERROR;
+		}
 
 		glUseProgram(0);
 

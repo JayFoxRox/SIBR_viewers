@@ -10,12 +10,18 @@
 set(SIBR_PROJECT "gaussian")
 project(sibr_${SIBR_PROJECT} LANGUAGES CXX)
 
+set(ENABLE_CUDA 0)
+
+if (ENABLE_CUDA)
 sibr_gitlibrary(TARGET CudaRasterizer
     GIT_REPOSITORY 	"https://github.com/graphdeco-inria/diff-gaussian-rasterization.git"
     GIT_TAG			"3509be80f83ee30599b23bb3542d45aea2174a03"
 )
 
 find_package(CUDAToolkit REQUIRED)
+
+add_compile_definitions("-DENABLE_CUDA=1")
+endif()
 
 file(GLOB SOURCES "*.cpp" "*.h" "*.hpp")
 source_group("Source Files" FILES ${SOURCES})
@@ -33,7 +39,7 @@ if (WIN32)
 target_link_libraries(${PROJECT_NAME}
 	${Boost_LIBRARIES}
 	${ASSIMP_LIBRARIES}
-	${GLEW_LIBRARIES}
+	GLEW::GLEW
 	${OPENGL_LIBRARIES}
 	${OpenCV_LIBRARIES}
 	glfw3
@@ -49,7 +55,7 @@ else()
 target_link_libraries(${PROJECT_NAME}
 	${Boost_LIBRARIES}
 	${ASSIMP_LIBRARIES}
-	${GLEW_LIBRARIES}
+	GLEW::GLEW
 	${OPENGL_LIBRARIES}
 	${OpenCV_LIBRARIES}
 	glfw
@@ -58,8 +64,8 @@ target_link_libraries(${PROJECT_NAME}
 	sibr_assets
 	sibr_renderer
 	sibr_basic
-	CUDA::cudart
-	CudaRasterizer
+	#CUDA::cudart
+	#CudaRasterizer
 )
 endif()
 

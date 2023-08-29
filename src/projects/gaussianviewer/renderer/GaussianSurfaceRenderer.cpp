@@ -19,26 +19,92 @@ namespace sibr {
 	GaussianData::GaussianData(int num_gaussians, float* mean_data, float* rot_data, float* scale_data, float* alpha_data, float* color_data)
 	{
 		_num_gaussians = num_gaussians;
-		glCreateBuffers(1, &meanBuffer);
-		glCreateBuffers(1, &rotBuffer);
-		glCreateBuffers(1, &scaleBuffer);
-		glCreateBuffers(1, &alphaBuffer);
-		glCreateBuffers(1, &colorBuffer);
-		glNamedBufferStorage(meanBuffer, num_gaussians * 3 * sizeof(float), mean_data, 0);
-		glNamedBufferStorage(rotBuffer, num_gaussians * 4 * sizeof(float), rot_data, 0);
-		glNamedBufferStorage(scaleBuffer, num_gaussians * 3 * sizeof(float), scale_data, 0);
-		glNamedBufferStorage(alphaBuffer, num_gaussians * sizeof(float), alpha_data, 0);
-		glNamedBufferStorage(colorBuffer, num_gaussians * sizeof(float) * 48, color_data, 0);
+		auto upload = [](GLuint& buffer, int n, int components, float* data) {
+#ifdef SSBO
+			glCreateBuffers(1, &buffer);
+			glNamedBufferStorage(buffer, num_gaussians * components * sizeof(float), data, 0);
+#else
+			GLenum type = GL_FLOAT;
+			GLenum internalformat;
+			GLenum format;
+			if (components == 1) {
+				format = GL_RED;
+				internalformat = GL_R32F;
+			} else if (components == 2) {
+				format = GL_RG;
+				internalformat = GL_RG32F;
+			} else if (components == 3) {
+				format = GL_RGB;
+				internalformat = GL_RGB32F;
+			} else if (components == 4) {
+				format = GL_RGBA;
+				internalformat = GL_RGBA32F;
+			} else {
+				assert(false);
+			}
+
+			#define WIDTH 4096
+			
+			int full_rows = n / WIDTH;
+			int remaining_cols = n % WIDTH;
+
+			int total_cols = std::min(n, WIDTH);
+			int total_rows = full_rows + (int)(remaining_cols > 0);
+
+			printf("Uploading as %dx%d texture (%d components)\n", total_cols, total_rows, components);
+
+			glGenTextures(1, &buffer);
+			glBindTexture(GL_TEXTURE_2D, buffer);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			CHECK_GL_ERROR;
+
+			glTexImage2D(GL_TEXTURE_2D, 0, internalformat, total_cols, total_rows, 0, format, type, nullptr);
+			CHECK_GL_ERROR;
+
+
+			// Fill the full rows, then the reminder for the last row
+			//								  X,	     Y,          Width,    Height,
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0,         0,     total_cols, full_rows, format, type, data);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, full_rows, remaining_cols,         1, format, type, data);
+#endif
+			CHECK_GL_ERROR;
+		};
+
+		upload(meanBuffer, num_gaussians, 3, mean_data);
+		upload(rotBuffer, num_gaussians, 4, rot_data);
+		upload(scaleBuffer, num_gaussians, 3, scale_data);
+		upload(alphaBuffer, num_gaussians, 1, alpha_data);
+		upload(colorBuffer, num_gaussians * (48 / 4), 4, color_data); // actually 3 components and stride of 48
 	}
 
 	void GaussianData::render(int G) const
 	{
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, meanBuffer);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, rotBuffer);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, scaleBuffer);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, alphaBuffer);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, colorBuffer);
+		auto setBuffer = [](int binding, GLuint buffer) {
+#ifdef SSBO
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding, buffer);
+#else
+			glActiveTexture(GL_TEXTURE0 + binding);
+			glBindTexture(GL_TEXTURE_2D, buffer);
+#endif
+			CHECK_GL_ERROR;
+		};
+
+		setBuffer(0, meanBuffer);
+		setBuffer(1, rotBuffer);
+		setBuffer(2, scaleBuffer);
+		setBuffer(3, alphaBuffer);
+		setBuffer(4, colorBuffer);
+
+		static GLuint vao = 0;
+		if (vao == 0) {
+			glGenVertexArrays(1, &vao);
+		}
+		glBindVertexArray(vao);
+
 		glDrawArraysInstanced(GL_TRIANGLES, 0, 36, G);
+
+		CHECK_GL_ERROR;
 	}
 
 	GaussianSurfaceRenderer::GaussianSurfaceRenderer( void )
@@ -52,40 +118,20 @@ namespace sibr {
 		_paramLimit.init(_shader, "alpha_limit");
 		_paramStage.init(_shader, "stage");
 
-		glCreateTextures(GL_TEXTURE_2D, 1, &idTexture);
-		glTextureParameteri(idTexture, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTextureParameteri(idTexture, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glCreateTextures(GL_TEXTURE_2D, 1, &colorTexture);
-		glTextureParameteri(colorTexture, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTextureParameteri(colorTexture, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glCreateFramebuffers(1, &fbo);
-		glCreateRenderbuffers(1, &depthBuffer);
+		glGenTextures(1, &idTexture);
+		glBindTexture(GL_TEXTURE_2D, idTexture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glGenTextures(1, &colorTexture);
+		glBindTexture(GL_TEXTURE_2D, colorTexture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glGenFramebuffers(1, &fbo);
+		glGenRenderbuffers(1, &depthBuffer);
+
+		CHECK_GL_ERROR;
 
 		makeFBO(800, 800);
-
-		clearProg = glCreateProgram();
-		const char* clearShaderSrc = R"(
-			#version 430
-
-			layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
-
-			layout(std430, binding = 0) buffer IntArray {
-				int arr[];
-			};
-
-			layout(location = 0) uniform int size;
-
-			void main() {
-				uint index = gl_GlobalInvocationID.x;
-				if (index < size) {
-					arr[index] = 0;
-				}
-			} 
-			)";
-		clearShader = glCreateShader(GL_COMPUTE_SHADER);
-		glShaderSource(clearShader, 1, &clearShaderSrc, nullptr);
-		glAttachShader(clearProg, clearShader);
-		glLinkProgram(clearProg);
 	}
 
 	void GaussianSurfaceRenderer::makeFBO(int w, int h)
@@ -100,12 +146,18 @@ namespace sibr {
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, resX, resY, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 		glBindTexture(GL_TEXTURE_2D, 0);
 
-		glNamedRenderbufferStorage(depthBuffer, GL_DEPTH_COMPONENT, resX, resY);
+		glBindRenderbuffer(GL_RENDERBUFFER, depthBuffer);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, resX, resY);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTexture, 0);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, idTexture, 0);
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuffer);
+
+		GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		assert(status == GL_FRAMEBUFFER_COMPLETE);
+
+		CHECK_GL_ERROR;
 	}
 
 	int	GaussianSurfaceRenderer::process(int G, const GaussianData& mesh, const Camera& eye, IRenderTarget& target, float limit, sibr::Mesh::RenderMode mode, bool backFaceCulling)
@@ -154,6 +206,8 @@ namespace sibr {
 			0, 0, resX, resY,
 			0, 0, resX, resY,
 			GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+		CHECK_GL_ERROR;
 
 		return 0;
 	}

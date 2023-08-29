@@ -87,7 +87,6 @@ namespace sibr {
 		GLParameter			_paramCamPos;
 		GLParameter			_paramLimit;
 		GLParameter			_paramStage;
-		GLuint clearProg;
 		GLuint clearShader;
 	};
 

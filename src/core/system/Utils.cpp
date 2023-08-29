@@ -29,7 +29,9 @@
 #else
 	#include <nfd.h>
 	#include <libgen.h>
+#ifndef __APPLE__
 	#include <linux/limits.h>
+#endif
 	#include <unistd.h>
 	#include <sys/types.h>
 	#include <pwd.h>
@@ -329,6 +331,9 @@ namespace sibr
 		unsigned int len = GetModuleFileNameA(GetModuleHandleA(0x0), exePath, MAX_PATH);
 
 		std::string installDirectory = parentDirectory(parentDirectory(exePath));
+#elif __APPLE__
+		unsigned int len = 1;
+		std::string installDirectory = "../install";
 #else
 		unsigned int len=0;
 

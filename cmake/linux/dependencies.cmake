@@ -124,7 +124,7 @@ sibr_addlibrary(
 
 # CLUSTER
 #find_package(embree 3.0 REQUIRED PATHS "/data/graphdeco/share/embree/usr/local/lib64/cmake/" )
-find_package(embree 3.0 )
+find_package(embree 4.0 REQUIRED)
 
 ###################
 ## Find eigen3
@@ -137,7 +137,8 @@ sibr_addlibrary(
     MSVC14 "https://repo-sam.inria.fr/fungraph/dependencies/ibr-common/win3rdParty-MSVC15-splitted%20version/eigen3.7z"
     SET CHECK_CACHED_VAR eigen3_DIR PATH "eigen/share/eigen3/cmake"
 )
-include_directories(/usr/include/eigen3)
+find_package(eigen3)
+include_directories(${EIGEN3_INCLUDE_DIR})
 add_definitions(-DEIGEN_INITIALIZE_MATRICES_BY_ZERO)
 
 #############

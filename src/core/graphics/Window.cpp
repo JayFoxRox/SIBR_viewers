@@ -258,10 +258,19 @@ namespace sibr
 	void Window::setup(int width, int height, const std::string& title, const WindowArgs & args, const std::string& defaultSettingsFilename) {
 		// IMPORTANT NOTE: if you got compatibility problem with old opengl function,
 		// try to load compat 3.2 instead of core 4.2
-
+		
+#if 1
+		// Best that macOS can do
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+		glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
+		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#else
+		// Windows and Linux get proper context
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
+#endif
 
 #ifdef GLEW_EGL
 		glfwWindowHint(GLFW_CONTEXT_CREATION_API, (args.offscreen) ?
@@ -319,6 +328,18 @@ namespace sibr
 			SIBR_ERR << "cannot initialize GLEW (used to load OpenGL function)" << std::endl;
 		(void)glGetError(); // I notice that glew might do wrong things during its init()
 							// some drivers complain about it. So I reset OpenGL's errors to discard this.
+
+// Stub GL_KHR_debug
+glPushDebugGroup = [](unsigned int a, unsigned int b, int c, const char * d) -> void {};
+glPopDebugGroup = []() -> void {};
+
+// Emulate glBlitNamedFramebuffer; we avoid named objects, but here it makes sense to abstract it
+glBlitNamedFramebuffer = [](GLuint readFramebuffer, GLuint drawFramebuffer, GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter) -> void {
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, readFramebuffer);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFramebuffer);
+	glBlitFramebuffer(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
+	//FIXME: Restore previous framebuffers
+};
 
 		glfwSetWindowUserPointer(_glfwWin.get(), this);
 		/// \todo TODO: fix, width and height might be erroneous. SR

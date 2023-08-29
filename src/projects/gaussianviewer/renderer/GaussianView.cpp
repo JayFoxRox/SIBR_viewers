@@ -13,7 +13,10 @@
 #include <core/graphics/GUI.hpp>
 #include <thread>
 #include <boost/asio.hpp>
+
+#ifdef ENABLE_CUDA
 #include <rasterizer.h>
+#endif
 #include <imgui_internal.h>
 
 // Define the types and sizes that make up the contents of each Gaussian 
@@ -53,6 +56,7 @@ float inverse_sigmoid(const float m1)
 	return log(m1 / (1.0f - m1));
 }
 
+#ifdef ENABLE_CUDA
 # define CUDA_SAFE_CALL_ALWAYS(A) \
 A; \
 cudaDeviceSynchronize(); \
@@ -63,6 +67,7 @@ SIBR_ERR << cudaGetErrorString(cudaGetLastError());
 # define CUDA_SAFE_CALL(A) CUDA_SAFE_CALL_ALWAYS(A)
 #else
 # define CUDA_SAFE_CALL(A) A
+#endif
 #endif
 
 // Load the Gaussians from the given file.
@@ -279,7 +284,12 @@ namespace sibr
 			dst.clear();
 			dst.bind();
 
+#ifdef SSBO
 			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, bufferID);
+#else
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, bufferID);
+#endif
 
 			sibr::RenderUtility::renderScreenQuad();
 
@@ -301,6 +311,7 @@ namespace sibr
 	};
 }
 
+#ifdef ENABLE_CUDA
 std::function<char* (size_t N)> resizeFunctional(void** ptr, size_t& S) {
 	auto lambda = [ptr, &S](size_t N) {
 		if (N > S)
@@ -314,6 +325,7 @@ std::function<char* (size_t N)> resizeFunctional(void** ptr, size_t& S) {
 	};
 	return lambda;
 }
+#endif
 
 sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint render_w, uint render_h, const char* file, bool* messageRead, int sh_degree, bool white_bg, bool useInterop, int device) :
 	_scene(ibrScene),
@@ -321,6 +333,7 @@ sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint
 	_sh_degree(sh_degree),
 	sibr::ViewBase(render_w, render_h)
 {
+#ifdef ENABLE_CUDA
 	int num_devices;
 	CUDA_SAFE_CALL_ALWAYS(cudaGetDeviceCount(&num_devices));
 	_device = device;
@@ -338,6 +351,7 @@ sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint
 	{
 		SIBR_ERR << "Sorry, need at least compute capability 7.0+!";
 	}
+#endif
 
 	_pointbasedrenderer.reset(new PointBasedRenderer());
 	_copyRenderer = new BufferCopyRenderer();
@@ -378,6 +392,8 @@ sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint
 
 	int P = count;
 
+#ifdef ENABLE_CUDA
+
 	// Allocate and fill the GPU data
 	CUDA_SAFE_CALL_ALWAYS(cudaMalloc((void**)&pos_cuda, sizeof(Pos) * P));
 	CUDA_SAFE_CALL_ALWAYS(cudaMemcpy(pos_cuda, pos.data(), sizeof(Pos) * P, cudaMemcpyHostToDevice));
@@ -400,6 +416,8 @@ sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint
 	float bg[3] = { white_bg ? 1.f : 0.f, white_bg ? 1.f : 0.f, white_bg ? 1.f : 0.f };
 	CUDA_SAFE_CALL_ALWAYS(cudaMemcpy(background_cuda, bg, 3 * sizeof(float), cudaMemcpyHostToDevice));
 
+#endif
+
 	gData = new GaussianData(P, 
 		(float*)pos.data(),
 		(float*)rot.data(),
@@ -409,6 +427,7 @@ sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint
 
 	_gaussianRenderer = new GaussianSurfaceRenderer();
 
+#ifdef ENABLE_CUDA
 	// Create GL buffer ready for CUDA/GL interop
 	glCreateBuffers(1, &imageBuffer);
 	glNamedBufferStorage(imageBuffer, render_w * render_h * 3 * sizeof(float), nullptr, GL_DYNAMIC_STORAGE_BIT);
@@ -432,6 +451,7 @@ sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint
 	geomBufferFunc = resizeFunctional(&geomPtr, allocdGeom);
 	binningBufferFunc = resizeFunctional(&binningPtr, allocdBinning);
 	imgBufferFunc = resizeFunctional(&imgPtr, allocdImg);
+#endif
 }
 
 void sibr::GaussianView::setScene(const sibr::BasicIBRScene::Ptr & newScene)
@@ -461,6 +481,7 @@ void sibr::GaussianView::onRenderIBR(sibr::IRenderTarget & dst, const sibr::Came
 	}
 	else
 	{
+#ifdef ENABLE_CUDA
 		// Convert view and projection to target coordinate system
 		auto view_mat = eye.view();
 		auto proj_mat = eye.viewproj();
@@ -534,12 +555,17 @@ void sibr::GaussianView::onRenderIBR(sibr::IRenderTarget & dst, const sibr::Came
 		}
 		// Copy image contents to framebuffer
 		_copyRenderer->process(imageBuffer, dst, _resolution.x(), _resolution.y());
+#else
+		printf("CUDA not enabled!\n");
+#endif
 	}
 
+#ifdef ENABLE_CUDA
 	if (cudaPeekAtLastError() != cudaSuccess)
 	{
 		SIBR_ERR << "A CUDA error occurred during rendering:" << cudaGetErrorString(cudaGetLastError()) << ". Please rerun in Debug to find the exact line!";
 	}
+#endif
 }
 
 void sibr::GaussianView::onUpdate(Input & input)
@@ -581,6 +607,7 @@ void sibr::GaussianView::onGUI()
 		ImGui::InputText("File", _buff, 512);
 		if (ImGui::Button("Save"))
 		{
+#ifdef ENABLE_CUDA
 			std::vector<Pos> pos(count);
 			std::vector<Rot> rot(count);
 			std::vector<float> opacity(count);
@@ -592,6 +619,9 @@ void sibr::GaussianView::onGUI()
 			CUDA_SAFE_CALL_ALWAYS(cudaMemcpy(shs.data(), shs_cuda, sizeof(SHs<3>) * count, cudaMemcpyDeviceToHost));
 			CUDA_SAFE_CALL_ALWAYS(cudaMemcpy(scale.data(), scale_cuda, sizeof(Scale) * count, cudaMemcpyDeviceToHost));
 			savePly(_buff, pos, shs, opacity, scale, rot, _boxmin, _boxmax);
+#else
+			printf("CUDA not enabled!\n");
+#endif
 		}
 	}
 
@@ -628,6 +658,7 @@ void sibr::GaussianView::onGUI()
 sibr::GaussianView::~GaussianView()
 {
 	// Cleanup
+#ifdef ENABLE_CUDA
 	cudaFree(pos_cuda);
 	cudaFree(rot_cuda);
 	cudaFree(scale_cuda);
@@ -648,14 +679,17 @@ sibr::GaussianView::~GaussianView()
 	{
 		cudaFree(fallbackBufferCuda);
 	}
+#endif
 	glDeleteBuffers(1, &imageBuffer);
 
+#ifdef ENABLE_CUDA
 	if (geomPtr)
 		cudaFree(geomPtr);
 	if (binningPtr)
 		cudaFree(binningPtr);
 	if (imgPtr)
 		cudaFree(imgPtr);
+#endif
 
 	delete _copyRenderer;
 }

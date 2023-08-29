@@ -50,10 +50,14 @@ namespace sibr
 	{
 		if (!g_device)
 		{
+#ifdef __x86_64__
 			// The two following macros set flagbits on the control register
 			// used by SSE (see http://softpixel.com/~cwright/programming/simd/sse.php)
 			_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);			// Enable 'Flush Zero' bit
 			_MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);	// Enable 'Denormals Zero'bit
+#else
+#warning "BUGBUG"
+#endif
 
 			SIBR_LOG << "Initializing Raycaster" << std::endl;
 
@@ -208,9 +212,7 @@ namespace sibr
 			SIBR_ERR << "cannot initialize embree, failed cast rays." << std::endl;
 		else
 		{
-			RTCIntersectContext context;
-			rtcInitIntersectContext(&context);
-			rtcOccluded1(*_scene.get(), &context, &ray);
+			rtcOccluded1(*_scene, &ray);
 		}
 		return ray.tfar < 0.0f;
 	}
@@ -237,9 +239,7 @@ namespace sibr
 			SIBR_ERR << "cannot initialize embree, failed cast rays." << std::endl;
 		else
 		{
-			RTCIntersectContext context;
-			rtcInitIntersectContext(&context);
-			rtcOccluded8(valid8, *_scene.get(), &context, &ray);
+			rtcOccluded8(valid8, *_scene, &ray);
 		}
 
 		std::array<bool, 8> res;
@@ -272,9 +272,7 @@ namespace sibr
 			SIBR_ERR << "cannot initialize embree, failed cast rays." << std::endl;
 		else
 		{
-			RTCIntersectContext context;
-			rtcInitIntersectContext(&context);
-			rtcIntersect1(*_scene.get(), &context, &rh);
+			rtcIntersect1(*_scene, &rh);
 			rh.hit.Ng_x = -rh.hit.Ng_x; // EMBREE_FIXME: only correct for triangles,quads, and subdivision surfaces
 			rh.hit.Ng_y = -rh.hit.Ng_y;
 			rh.hit.Ng_z = -rh.hit.Ng_z;
@@ -319,9 +317,7 @@ namespace sibr
 			SIBR_ERR << "cannot initialize embree, failed cast rays." << std::endl;
 		else
 		{
-			RTCIntersectContext context;
-			rtcInitIntersectContext(&context);
-			rtcIntersect8(valid8.data(), *_scene.get(), &context, &rh);
+			rtcIntersect8(valid8.data(), *_scene, &rh);
 		}
 
 		std::array<RayHit, 8> res;

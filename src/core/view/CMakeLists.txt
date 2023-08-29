@@ -26,13 +26,13 @@ file(GLOB SOURCES
 	)
 
 ## Specify target rules
-add_library(${PROJECT_NAME} SHARED ${SOURCES})
+add_library(${PROJECT_NAME} STATIC ${SOURCES})
 
 include_directories(
 	${Boost_INCLUDE_DIRS}
 	${imgui_INCLUDE_DIRS}
 )
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(${PROJECT_NAME} PRIVATE
 	${Boost_LIBRARIES}
 	${OpenCV_LIBRARIES}
 	OpenMP::OpenMP_CXX
@@ -42,6 +42,7 @@ target_link_libraries(${PROJECT_NAME}
 	sibr_raycaster
 	sibr_scene
 	sibr_video
+	sibr_system
 )
 
 add_definitions( -DSIBR_VIEW_EXPORTS -DBOOST_ALL_DYN_LINK  )

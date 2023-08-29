@@ -15,19 +15,20 @@ source_group("Source Files" FILES ${SOURCES})
 
 
 ## Specify target rules
-add_library(${PROJECT_NAME} SHARED ${SOURCES})
+add_library(${PROJECT_NAME} STATIC ${SOURCES})
 
 include_directories(${Boost_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(${PROJECT_NAME} PRIVATE
     ${Boost_LIBRARIES}
     ${ASSIMP_LIBRARIES}
-    ${GLEW_LIBRARIES}
+    GLEW::GLEW
     ${OPENGL_LIBRARIES}
     ${OpenCV_LIBRARIES}
 	OpenMP::OpenMP_CXX
     sibr_assets
     sibr_graphics
     sibr_raycaster
+    sibr_system
 )
 
 add_definitions( -DSIBR_SCENE_EXPORTS -DBOOST_ALL_DYN_LINK  )

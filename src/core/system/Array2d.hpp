@@ -46,7 +46,7 @@ namespace sibr
 		/// Build from the given size and using the given default value.
 		/// Note you can't resize your Array2d (just create a new one 
 		/// if you need).
-		Array2d( uint width, uint height, const_reference defaultValue );
+		Array2d( uint width, uint height, T defaultValue );
 
 		/// Destructor.
 		~Array2d( );
@@ -124,7 +124,7 @@ namespace sibr
 	}
 
 	template<typename T>
-	Array2d<T>::Array2d( uint width, uint height, const_reference defaultValue )
+	Array2d<T>::Array2d( uint width, uint height, T defaultValue )
 	: _width(width), _height(height), _data(_width*_height, defaultValue) {
 	}
 

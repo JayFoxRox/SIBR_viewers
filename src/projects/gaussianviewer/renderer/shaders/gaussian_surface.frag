@@ -22,10 +22,13 @@ in vec3 ellipsoidScale;
 in mat3 ellipsoidRotation;
 in vec3 colorVert;
 in float alphaVert;
-in flat int boxID;
+flat in int boxID;
 
 layout (location = 0) out vec4 out_color;
 layout (location = 1) out uint out_id;
+
+#define dvec3 vec3
+#define double float
 
 vec3 closestEllipsoidIntersection(vec3 rayDirection, out vec3 normal) {
   // Convert ray to ellipsoid space

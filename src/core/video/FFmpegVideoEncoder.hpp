@@ -104,10 +104,10 @@ namespace sibr {
 
 #ifndef HEADLESS
 		AVFormatContext* pFormatCtx; ///< Format context.
-		AVOutputFormat* fmt; ///< Output format.
+		const AVOutputFormat* fmt; ///< Output format.
 		AVStream* video_st; ///< Output stream.
 		AVCodecContext* pCodecCtx; ///< Codec context.
-		AVCodec* pCodec; ///< Codec.
+		const AVCodec* pCodec; ///< Codec.
 		AVPacket * pkt; ///< Encoding packet.
 		
 #endif
